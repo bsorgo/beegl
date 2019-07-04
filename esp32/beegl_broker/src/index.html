@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<!--
+
+/*
+  BeeGl node index file.
+  
+  This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
+  Copyright (c) 2019 Bostjan Sorgo
+  
+  This program is free software: you can redistribute it and/or modify  
+  it under the terms of the GNU General Public License as published by  
+  the Free Software Foundation, version 3.
+ 
+  This program is distributed in the hope that it will be useful, but 
+  WITHOUT ANY WARRANTY; without even the implied warranty of 
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+  General Public License for more details.
+ 
+  You should have received a copy of the GNU General Public License 
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+
+-->
+<html>
+
+<head>
+    <title>BeeGl Broker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css"
+        integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+    <style scoped>
+        .button-success,
+        .button-error,
+        .button-warning,
+        .button-secondary {
+            color: white;
+            border-radius: 4px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-success {
+            background: rgb(28, 184, 65);
+            /* this is a green */
+        }
+
+        .button-error {
+            background: rgb(202, 60, 60);
+            /* this is a maroon */
+        }
+
+        .button-warning {
+            background: rgb(223, 117, 20);
+            /* this is an orange */
+        }
+
+        .button-secondary {
+            background: rgb(66, 184, 221);
+            /* this is a light blue */
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            transition: opacity 500ms;
+            visibility: hidden;
+            opacity: 0;
+        }
+
+        .overlay:target {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .popup {
+            margin: 70px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 5px;
+            width: 30%;
+            position: relative;
+            transition: all 5s ease-in-out;
+        }
+
+        .popup h2 {
+            margin-top: 0;
+            color: #333;
+            font-family: Tahoma, Arial, sans-serif;
+        }
+
+        .popup .close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            transition: all 200ms;
+            font-size: 30px;
+            font-weight: bold;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .popup .close:hover {
+            color: #06D85F;
+        }
+
+        .popup .content {
+            max-height: 30%;
+            overflow: auto;
+        }
+    </style>
+    <script type="text/javascript">
+        var schedulerHeader = new Array();
+        function initializeSchedulerTable() {
+            var empTab = document.getElementById('schedulerTable');
+            var rowCnt = empTab.rows.length;
+            while (rowCnt > 1) {
+                empTab.deleteRow(rowCnt-1);
+                rowCnt--;
+            }
+        }
+        function addSchedulerRow(schedulerEntry) {
+            var empTab = document.getElementById('schedulerTable');
+
+            var rowCnt = empTab.rows.length;
+            if (rowCnt > 10) {
+                window.location.replace("#popup1");
+                document.getElementById("messageContent").innerText = "Max scheduler entries (10) reached.";
+                return;
+            }
+            var tr = empTab.insertRow(rowCnt);
+
+            var tdRemove = document.createElement('td');
+            tdRemove = tr.insertCell(0);
+            var button = document.createElement('input');
+            button.setAttribute('type', 'button');
+            button.setAttribute('class', 'button-secondary pure-button');
+            button.setAttribute('value', 'Remove');
+            button.setAttribute('onclick', 'removeSchedulerRow(this)');
+            tdRemove.appendChild(button);
+
+            var tdFrom = document.createElement('td');
+            tdFrom = tr.insertCell(1);
+            var ele = document.createElement('input');
+            ele.setAttribute('type', 'text');
+            ele.setAttribute('value', '');
+            ele.setAttribute('required', '');
+            ele.setAttribute('placeholder', 'Specify time in hh:mm');
+            ele.setAttribute('class', 'pure-u-1');
+            ele.setAttribute('pattern', '([01]?[0-9]{1}|2[0-3]{1}):[0-5]{1}[0-9]{1}');
+            ele.value = schedulerEntry !== undefined ? schedulerEntry.from : '';
+            tdFrom.appendChild(ele);
+
+            var tdTo = document.createElement('td');
+            tdTo = tr.insertCell(2);
+            var ele = document.createElement('input');
+            ele.setAttribute('type', 'text');
+            ele.setAttribute('value', '');
+            ele.setAttribute('required', '');
+            ele.setAttribute('placeholder', 'Specify time in hh:mm');
+            ele.setAttribute('class', 'pure-u-1');
+            ele.setAttribute('pattern', '([01]?[0-9]{1}|2[0-3]{1}):[0-5]{1}[0-9]{1}');
+            ele.value = schedulerEntry !== undefined ? schedulerEntry.to : '';
+            tdTo.appendChild(ele);
+
+            var tdUpd = document.createElement('td');
+            tdUpd = tr.insertCell(3);
+            var ele = document.createElement('select');
+            tdUpd.appendChild(ele);
+            ele.setAttribute('type', 'text');
+            ele.setAttribute('placeholder', 'Specify time in hh:mm');
+            ele.setAttribute('class', 'pure-u-1');
+            
+            var eleTrue = document.createElement('option');
+            eleTrue.setAttribute('value',"true");
+            eleTrue.innerHTML="Yes";
+            ele.add(eleTrue);
+            
+            var eleFalse= document.createElement('option');
+            eleFalse.setAttribute('value',"false");
+            eleFalse.innerHTML="No";
+            ele.add(eleFalse);
+
+            ele.value = schedulerEntry !== undefined ? schedulerEntry.upd : false;
+            
+
+        }
+
+        function removeSchedulerRow(oButton) {
+            var empTab = document.getElementById('schedulerTable');
+            empTab.deleteRow(oButton.parentNode.parentNode.rowIndex);
+        }
+
+        function measure() {
+            var xhr = new XMLHttpRequest();
+            var url = "/rest/measure?scaleFactor=" + document.getElementById("scaleFactor").value + "&scaleOffset=" + document.getElementById("scaleOffset").value ;
+            xhr.open("GET", url, true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var json = JSON.parse(xhr.responseText);
+                    document.getElementById("weight").value = json.whtS.w
+                } else if (xhr.readyState === 4) {
+                    window.location.replace("#popup1");
+                    document.getElementById("messageContent").innerText = "Error performing measure.";
+                }
+            };
+            xhr.send();
+        }
+
+        function tare() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/rest/scale/tare", true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    document.getElementById("scaleOffset").value = xhr.responseText;
+                } else if (xhr.readyState === 4) {
+                    window.location.replace("#popup1");
+                    document.getElementById("messageContent").innerText = "Error performing scale tare.";
+                }
+            };
+            xhr.send();
+        }
+
+        function reboot() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/rest/reboot", true);
+            xhr.send();
+        }
+
+        function init() {
+            getInfo();
+            fillForm();
+        }
+
+        function getInfo() {
+            var xhr = new XMLHttpRequest();
+            var url = "/info";
+            xhr.open("GET", url, true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    document.getElementById("version").innerText = xhr.responseText;
+                } else if (xhr.readyState === 4) {
+                    window.location.replace("#popup1");
+                    document.getElementById("messageContent").innerText = "Error obtaining info.";
+                }
+            };
+            xhr.send();
+        }
+
+
+        function submitForm() {
+
+            var form = document.getElementById('settings');
+            var isValidForm = form.checkValidity()
+
+            if (isValidForm) {
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/rest/settings", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        window.location.replace("#popup1");
+                        document.getElementById("messageContent").innerText = "Settings saved.";
+                    } else if (xhr.readyState === 4) {
+                        window.location.replace("#popup1");
+                        document.getElementById("messageContent").innerText = "Error saving settings.";
+                    }
+                };
+                var json =
+
+                {
+                    "id": document.getElementById("deviceName").value,
+                    "inM": document.getElementById("inboundMode").value,
+                    "outM": document.getElementById("outboundMode").value,
+                    "refresh": document.getElementById("refresh").value,
+                    "setUrl": document.getElementById("setUrl").value,
+                    "setUser": document.getElementById("setUsername").value,
+                    "setPwd": document.getElementById("setPassword").value,
+                    "pubS":
+                    {
+                        "proto": document.getElementById("publisherProtocol").value
+                    },
+                    "mesS":
+                    {
+                        "mesW": document.getElementById("measurerMeasureWeight").value,
+                        "mesTh": document.getElementById("measurerMeasureTempAndHumidity").value
+                    },
+                    "scaleS":
+                    {
+                        "f": document.getElementById("scaleFactor").value,
+                        "u": document.getElementById("scaleUnit").value,
+                        "off": document.getElementById("scaleOffset").value,
+
+                    },
+                    "wifiS":
+                    {
+                        "ssid": document.getElementById("wifiSSID").value,
+                        "pwd": document.getElementById("wifiPassword").value,
+                        "cip": document.getElementById("wifiCustomIp").value,
+                        "ip": document.getElementById("wifiIp").value,
+                        "gw": document.getElementById("wifiGateway").value,
+                        "nmsk": document.getElementById("wifiNetmask").value
+                    },
+                    "apS":
+                    {
+                        "pwd": document.getElementById("apPassword").value,
+                        "ip": document.getElementById("apIp").value,
+                        "gw": document.getElementById("apGateway").value,
+                        "nmsk": document.getElementById("apNetmask").value
+                    },
+                    "gprsS":
+                    {
+                        "apn": document.getElementById("gprsAPN").value,
+                        "user": document.getElementById("gprsUsername").value,
+                        "pwd": document.getElementById("gprsPassword").value
+                    },
+                    "timeS":
+                    {
+                        "zone": document.getElementById("timeZone").value,
+                        "sZone": document.getElementById("timeSZone").value
+                    },
+                    "mqttS":
+                    {
+                        "server": document.getElementById("mqttServer").value,
+                        "port": document.getElementById("mqttPort").value,
+                        "user": document.getElementById("mqttUsername").value,
+                        "pwd": document.getElementById("mqttPassword").value,
+                        "topic" : document.getElementById("mqttTopic").value
+                    },
+                    "schS": []
+                };
+                var unsortedSchS = [];
+                var schedulerTable = document.getElementById('schedulerTable');
+                for (i = 1; i < schedulerTable.rows.length; i++) {
+
+                    var row = schedulerTable.rows.item(i);
+                    if (row !== null) {
+                        var fromArr = row.cells.item(1).children.item(0).value.split(':');
+                        var toArr = row.cells.item(2).children.item(0).value.split(':');
+                        var upd = row.cells.item(3).children.item(0).value;
+                        unsortedSchS.push({ hf: fromArr[0], mf: fromArr[1], ht: toArr[0], mt: toArr[1], upd: upd});
+                    }
+                }
+                json.schS = unsortedSchS.sort(function (a, b) {
+                    var afrom = a.hf + a.mf * 60;
+                    var bfrom = b.hf + b.mf * 60;
+                    if (afrom < bfrom) {
+                        return -1;
+                    } else {
+                        return 1;
+                    }
+                });
+
+                var data = JSON.stringify(json);
+                console.log(data);
+                xhr.send(data);
+            } else  {
+                        window.location.replace("#popup1");
+                        document.getElementById("messageContent").innerText = "Settings are not valid.";
+            }
+        }
+
+        function fillForm() {
+            initializeSchedulerTable();
+            var xhr = new XMLHttpRequest();
+            var url = "/rest/settings";
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var json = JSON.parse(xhr.responseText);
+                    document.getElementById("deviceName").value = json.id;
+                    document.getElementById("inboundMode").value = json.inM;
+                    document.getElementById("outboundMode").value = json.outM;
+                    document.getElementById("refresh").value = json.refresh;
+
+                    document.getElementById("setUrl").value = json.setUrl;
+                    document.getElementById("setUsername").value = json.setUser;
+                    document.getElementById("setPassword").value = json.setPwd;
+
+                    document.getElementById("publisherProtocol").value = json.pubS.proto;
+
+                    document.getElementById("scaleFactor").value = json.scaleS.f;
+                    document.getElementById("scaleOffset").value = json.scaleS.off;
+                    document.getElementById("scaleUnit").value = json.scaleS.u;
+
+                    document.getElementById("measurerMeasureWeight").value = json.mesS.mesW;
+                    document.getElementById("measurerMeasureTempAndHumidity").value = json.mesS.mesTh;
+
+                    document.getElementById("wifiSSID").value = json.wifiS.ssid;
+                    document.getElementById("wifiPassword").value = json.wifiS.pwd;
+                    document.getElementById("wifiCustomIp").value = json.wifiS.cip;
+                    document.getElementById("wifiIp").value = json.wifiS.ip
+                    document.getElementById("wifiGateway").value = json.wifiS.gw;
+                    document.getElementById("wifiNetmask").value = json.wifiS.nmsk;
+
+                    document.getElementById("apPassword").value = json.apS.pwd;
+                    document.getElementById("apIp").value = json.apS.ip;
+                    document.getElementById("apGateway").value = json.apS.gw;
+                    document.getElementById("apNetmask").value = json.apS.nmsk;
+
+                    document.getElementById("gprsAPN").value = json.gprsS.apn;
+                    document.getElementById("gprsUsername").value = json.gprsS.user;
+                    document.getElementById("gprsPassword").value = json.gprsS.pwd;
+
+                    document.getElementById("timeZone").value = json.timeS.zone;
+                    document.getElementById("timeSZone").value = json.timeS.sZone;
+
+                    document.getElementById("mqttServer").value = json.mqttS.server;
+                    document.getElementById("mqttPort").value = json.mqttS.port;
+                    document.getElementById("mqttUsername").value = json.mqttS.user;
+                    document.getElementById("mqttPassword").value = json.mqttS.pwd;
+                    document.getElementById("mqttTopic").value = json.mqttS.topic;
+
+                    for (i = 0; i < json.schS.length; i++) {
+                        var k = json.schS[i];
+                        var entry = { from: "" + pad(k.hf, 2) + ":" + pad(k.mf, 2), to: "" + pad(k.ht, 2) + ":" + pad(k.mt, 2)};
+                        if(typeof k.upd!=='undefined') {
+                            entry.upd = k.upd;
+                        }
+                        addSchedulerRow(entry);
+                    }
+                } else if (xhr.readyState === 4) {
+                    window.location.replace("#popup1");
+                    document.getElementById("messageContent").innerText = "Error obtaining settings.";
+                }
+            };
+            xhr.send();
+        }
+
+        function pad(num, size) {
+            var s = num + "";
+            while (s.length < size) s = "0" + s;
+            return s;
+        }
+
+        function syncSettings() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/rest/settings/sync", true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    window.location.replace("#popup1");
+                    document.getElementById("messageContent").innerText = "Settings synced to server.";
+                } else if (xhr.readyState === 4) {
+                    window.location.replace("#popup1");
+                    document.getElementById("messageContent").innerText = "Error syncing settings."
+                }
+
+            }
+            xhr.send();
+        }
+
+    </script>
+
+</head>
+
+<body onload="init()">
+    <h1>BeeGl Broker</h1>
+    <button onclick="submitForm()" type="button" class="button-success pure-button">Save</button>
+    <button onclick="reboot()" type="button" class="button-warning pure-button">Reboot</button>
+    <button onclick="fillForm()" type="button" class="button-warning pure-button">Reload</button>
+    <button onclick="syncSettings()" type="button" class="button-success pure-button">Sync to server</button>
+
+    <form class="pure-form pure-form-stacked" id="settings">
+        <fieldset>
+            <legend>Info</legend>
+            <label for="version">Version</label>
+            <span id="version"></span>
+        </fieldset>
+        <fieldset>
+            <legend>General Settings</legend>
+            <label for="deviceName">Name</label>
+            <input type="text" id="deviceName" placeholder="Device name">
+            <label for="outboundMode">Outbound mode</label>
+            <select id="outboundMode">
+                <option value="1">WiFi</option>
+                <option value="2">GPRS</option>
+            </select>
+
+
+            <label for="inboundMode">Inbound mode</label>
+            <select id="inboundMode">
+                <option value="0">No inbound</option>
+                <option value="1">WiFi</option>
+                <option value="2">Bluetooth(BLE)</option>
+                <option value="3">Wifi+Bluetooth(BLE)</option>
+            </select>
+            <label for="refresh">Refresh</label>
+            <input type="number" id="refresh" placeholder="Refresh in ms">
+            <label for="setUrl">Settings URL prefix</label>
+            <input type="text" maxlength="64" id="setUrl"
+                placeholder="Settings URL in format: &lt;hostname&gt;/&lt;resource&gt;/">
+
+            <label for="setUsername">Settings username</label>
+            <input type="text" maxlength="16" id="setUsername">
+
+            <label for="setPassword">Settings password</label>
+            <input type="password" maxlength="16" id="setPassword">
+        </fieldset>
+
+        <fieldset>
+            <legend>Time Settings</legend>
+            <label for="timeZone">Standard time zone</label><select id="timeZone">
+                <option value="-720">(GMT -12:000)</option>
+                <option value="-660">(GMT -11:000)</option>
+                <option value="-600">(GMT -10:000)</option>
+                <option value="-540">(GMT -9:000)</option>
+                <option value="-480">(GMT -8:000)</option>
+                <option value="-420">(GMT -7:000)</option>
+                <option value="-360">(GMT -6:000)</option>
+                <option value="-300">(GMT -5:000)</option>
+                <option value="-240">(GMT -4:000)</option>
+                <option value="-210">(GMT -3:30)</option>
+                <option value="-180">(GMT -3:000)</option>
+                <option value="-120">(GMT -2:000)</option>
+                <option value="-60">(GMT -1:000)</option>
+                <option value="0:00">(GMT)</option>
+                <option value="60">(GMT +1:000)</option>
+                <option value="120">(GMT +2:000)</option>
+                <option value="180">(GMT +3:000)</option>
+                <option value="210">(GMT +3:30)</option>
+                <option value="240">(GMT +4:000)</option>
+                <option value="270">(GMT +4:30)</option>
+                <option value="300">(GMT +5:000)</option>
+                <option value="330">(GMT +5:30)</option>
+                <option value="345">(GMT +5:45)</option>
+                <option value="360">(GMT +6:000)</option>
+                <option value="420">(GMT +7:000)</option>
+                <option value="480">(GMT +8:000)</option>
+                <option value="540">(GMT +9:000)</option>
+                <option value="570">(GMT +9:30)</option>
+                <option value="600">(GMT +10:000)</option>
+                <option value="660">(GMT +11:000)</option>
+                <option value="720">(GMT +12:000)</option>
+            </select>
+            <label for="timeSZone">Summer time zone</label>
+            <select id="timeSZone">
+                <option value="-720">(GMT -12:000)</option>
+                <option value="-660">(GMT -11:000)</option>
+                <option value="-600">(GMT -10:000)</option>
+                <option value="-540">(GMT -9:000)</option>
+                <option value="-480">(GMT -8:000)</option>
+                <option value="-420">(GMT -7:000)</option>
+                <option value="-360">(GMT -6:000)</option>
+                <option value="-300">(GMT -5:000)</option>
+                <option value="-240">(GMT -4:000)</option>
+                <option value="-210">(GMT -3:30)</option>
+                <option value="-180">(GMT -3:000)</option>
+                <option value="-120">(GMT -2:000)</option>
+                <option value="-60">(GMT -1:000)</option>
+                <option value="0:00">(GMT)</option>
+                <option value="60">(GMT +1:000)</option>
+                <option value="120">(GMT +2:000)</option>
+                <option value="180">(GMT +3:000)</option>
+                <option value="210">(GMT +3:30)</option>
+                <option value="240">(GMT +4:000)</option>
+                <option value="270">(GMT +4:30)</option>
+                <option value="300">(GMT +5:000)</option>
+                <option value="330">(GMT +5:30)</option>
+                <option value="345">(GMT +5:45)</option>
+                <option value="360">(GMT +6:000)</option>
+                <option value="420">(GMT +7:000)</option>
+                <option value="480">(GMT +8:000)</option>
+                <option value="540">(GMT +9:000)</option>
+                <option value="570">(GMT +9:30)</option>
+                <option value="600">(GMT +10:000)</option>
+                <option value="660">(GMT +11:000)</option>
+                <option value="720">(GMT +12:000)</option>
+            </select>
+        </fieldset>
+
+        <fieldset>
+            <legend>Outbound WiFi Settings</legend>
+            <label for="wifiSSID">SSID</label><input type="text" id="wifiSSID" maxlength="32">
+            <label for="wifiPassword">Password</label><input type="password" id="wifiPassword" maxlength="32">
+            <label for="wifiCustomIp">IP assignment</label><select id="wifiCustomIp">
+                <option value="0">DHCP</option>
+                <option value="1">Static</option>
+            </select>
+            <label for="wifiIp">Static IP</label><input type="text" id="wifiIp" minlength="7" maxlength="15" size="15"
+                pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
+            <label for="wifiGateway">Static gateway</label><input type="text" id="wifiGateway" minlength="7"
+                maxlength="15" size="15"
+                pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
+            <label for="wifiNetmask">Static netmask</label><input type="text" id="wifiNetmask" minlength="7"
+                maxlength="15" size="15"
+                pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
+        </fieldset>
+
+        <fieldset>
+            <legend>Inbound (AP) WiFi Settings </legend>
+            <label for="apPassword">Password</label><input type="password" id="apPassword" maxlength="16">
+            <label for="apIp">IP</label><input type="text" id="apIp" minlength="7" maxlength="15" size="15"
+                pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
+            <label for="apGateway">Gateway</label><input type="text" id="apGateway" minlength="7" maxlength="15"
+                size="15" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
+            <label for="apNetmask">Netmask</label><input type="text" id="apNetmask" minlength="7" maxlength="15"
+                size="15" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
+        </fieldset>
+
+        <fieldset>
+            <legend>Outbound GSM/GPRS Settings</legend>
+            <label for="gprsAPN">APN</label><input type="text" maxlength="32" id="gprsAPN">
+            <label for="gprsUsername">Username</label><input type="text" maxlength="16" id="gprsUsername">
+            <label for="gprsPassword">Password</label><input type="password" maxlength="16" id="gprsPassword">
+        </fieldset>
+
+        <fieldset>
+            <legend>Measurer Settings</legend>
+            <label for="measurerMeasureWeight">Measure weight</label><select id="measurerMeasureWeight">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+            <label for="measurerMeasureTempAndHumidity">Measure temperature and humidity</label><select
+                id="measurerMeasureTempAndHumidity">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+        </fieldset>
+
+
+        <fieldset>
+            <legend>Scale Settings</legend>
+            <label for="scaleFactor">Factor</label><input type="number" step="0.0001" id="scaleFactor">
+            <label for="scaleOffset">Offset</label><input type="number" step="1" id="scaleOffset">
+            <button onclick="tare()" type="button" class="button-secondary pure-button">Tare</button>
+            <label for="scaleUnit">Unit</label><select id="scaleUnit">
+                <option value="kg">kg</option>
+                <option value="g">g</option>
+            </select>
+            <button onclick="measure()" type="button" class="button-secondary pure-button">Measure</button>
+            <label for="weight">Weight</label> <input type="text" id="weight" readonly>
+        </fieldset>
+
+        <fieldset>
+            <legend>Publisher Settings</legend>
+            <label for="publisherProtocol">Publish protocol</label>
+            <select id="publisherProtocol">
+                <option value="1">MQTT</option>
+                <option value="2">HTTP</option>
+            </select>
+        </fieldset>
+
+        <fieldset>
+            <legend>MQTT Settings</legend>
+            <label for="mqttServer">Server address</label><input type="text" id="mqttServer" maxLength="32">
+            <label for="mqttPort">Port</label><input type="number" min="1" max="65536" id="mqttPort">
+            <label for="mqttUsername">Username</label><input type="text" maxlength="16" id="mqttUsername">
+            <label for="mqttPassword">Password</label><input type="password" maxlength="16" id="mqttPassword">
+            <label for="mqttTopic">Measurement topic</label><input type="text" id="mqttTopic" maxLength="32">
+
+        </fieldset>
+        <fieldset>
+            <legend>Operational Time Intervals</legend>
+            <button onclick="addSchedulerRow(undefined)" type="button" class="button-secondary pure-button">Add
+                entry</button>
+            <table id="schedulerTable">
+                <tr>
+                    <th></th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Check for updates</th>
+                </tr>
+            </table>
+        </fieldset>
+
+        <button onclick="submitForm()" type="button" class="button-success pure-button">Save</button>
+        <button onclick="reboot()" type="button" class="button-warning pure-button">Reboot</button>
+        <button onclick="fillForm()" type="button" class="button-warning pure-button">Reload</button>
+        <button onclick="syncSettings()" type="button" class="button-success pure-button">Sync to server</button>
+    </form>
+    <form method="POST" action="/update" enctype="multipart/form-data" id="upload_form"
+        class="pure-form pure-form-stacked">
+        <fieldset>
+            <legend>Firmware</legend>
+            <label for="update">Bin file</label>
+            <input type="file" name="update" id="update" placeholder="Select Vx.yy.bin file">
+            <input type="Submit" value="Update firmware" class="button-error pure-button">
+        </fieldset>
+    </form>
+
+    <div id="popup1" class="overlay">
+        <div class="popup">
+            <h2>Message</h2>
+            <a class="close" href="#">&times;</a>
+            <div class="messageContent" id="messageContent">
+
+            </div>
+        </div>
+    </div>
+</body>
+
+</html> 
