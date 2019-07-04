@@ -15,7 +15,7 @@
  3. Run Platform.IO and install Espressif 32 Platform
  4. Open Folder which represents local path of esp32/platformio/beegl_broker
  5. Modify platform.ini [configuration](https://docs.platformio.org/en/latest/platforms/espressif32.html#configuration) `[env:esp32dev]`, `[env:env:lolin_d32_pro_16mb]` 
-    or create a new one. In particulal `monitor_port` and  `upload_port`should be changed to match assigned local COM port
+    or create a new one. In particular `monitor_port` and  `upload_port`should be changed to match assigned local COM port
 ```
 [env:esp32dev]
 platform = espressif32
