@@ -29,7 +29,8 @@ monitor_speed = 115200
 build_flags = 
     -DCOMPONENT_EMBED_TXTFILES=src/index.html 
     -DCORE_DEBUG_LEVEL=4
-    -DVER=\"1.4\"
+    -DTINY_GSM_MODEM_SIM800
+    -DVER=\"1.0.1\"
 ```
   6. Upload 
   7. Examine serial output using Monitor 
@@ -152,8 +153,8 @@ During main program loop:
 
 Settings can be managed:
 
-- Using web interface on http: 'http://<device ip>
-- Using rest api GET/POST 'http://<device ip>/rest/settings'
+- Using web interface on http: `'http://<device ip>`
+- Using rest api GET/POST `'http://<device ip>/rest/settings'`
 
 <img src="https://thingiverse-production-new.s3.amazonaws.com/assets/12/31/a1/04/04/Screenshot_20190626-173703.jpg" width="100" />
 
