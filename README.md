@@ -1,10 +1,10 @@
 # BeeGl
 
-Beehive monitoring system based on _ESP32 based boards_ and _Node Red_
+Beehive monitoring system based on _ESP32 based boards_ and _Node Red_.  Main system application is beehive monitoring but can be used also as weather station.
 
 # Main features
 
-- Measures weight, temperature and humidity. Main application is beehive monitoring but can be used also as weather station
+- Measures weight, temperature and humidity 
 - Outbound communication through WiFi and GPRS (2G)
 - Inbound communication using WiFi and Bluetooth (BLE)
 - Web based management API - Web GUI and rest
