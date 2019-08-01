@@ -21,6 +21,7 @@
 #ifndef Service_h
 #define Service_h
 
+#include "Log.h"
 #include <ESPAsyncWebServer.h>
 #include <Settings.h>
 

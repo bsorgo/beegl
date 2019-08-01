@@ -40,11 +40,11 @@ void Measurer::webServerBind()
     m_server->getWebServer()->on("/rest/measure", HTTP_GET, [&](AsyncWebServerRequest *request) {
         if(request->hasParam("scaleFactor")) m_settings->scaleFactor = atof(request->getParam("scaleFactor", false,false)->value().c_str());
         if(request->hasParam("scaleOffset")) m_settings->scaleOffset = atoi(request->getParam("scaleOffset", false,false)->value().c_str());
-        log_d("Scale factor: %f, offset: %u", m_settings->scaleFactor, m_settings->scaleOffset);
+        blog_d("Scale factor: %f, offset: %u", m_settings->scaleFactor, m_settings->scaleOffset);
         char *message = measure();
         if (message)
         {
-            log_d("Payload: %s", message);
+            blog_d("Payload: %s", message);
             request->send(200, "text/plain", message);
         }
         else
@@ -66,10 +66,10 @@ bool Measurer::scaleSetup()
 {
     if (m_settings->measureWeight)
     {
-        log_i("[HX711] Setup");
-        log_i("[HX711] Scale factor: %f", m_settings->scaleFactor);
-        log_i("[HX711] Scale offset: %u", m_settings->scaleOffset);
-        log_i("[HX711] Scale unit: %s", m_settings->scaleUnit);
+        blog_i("[HX711] Setup");
+        blog_i("[HX711] Scale factor: %f", m_settings->scaleFactor);
+        blog_i("[HX711] Scale offset: %u", m_settings->scaleOffset);
+        blog_i("[HX711] Scale unit: %s", m_settings->scaleUnit);
         m_scale->power_up();
         delay(100);
     }
@@ -80,7 +80,7 @@ bool Measurer::dhtSetup()
 {
     if (m_settings->measureTempAndHumidity)
     {
-        log_i("[DHT] Setup");
+        blog_i("[DHT] Setup");
         m_dht->setup(DHT_PIN, DHTesp::DHT22);
     }
     return true;
@@ -97,16 +97,16 @@ bool Measurer::setup()
 
 long Measurer::zero()
 {
-    log_d("[HX711] Powerup");
+    blog_d("[HX711] Powerup");
     m_scale->power_up();
     m_scale->set_scale(m_settings->scaleFactor);
     m_scale->set_offset(m_settings->scaleOffset);
-    log_i("[HX711] Tare");
+    blog_i("[HX711] Tare");
     m_scale->tare(10);
     long tareValue = m_scale->get_offset();
-    log_d("[HX711] Tare value: %u", tareValue);
+    blog_d("[HX711] Tare value: %u", tareValue);
     m_settings->scaleOffset = m_scale->get_offset();
-    log_d("[HX711] Shutdown");
+    blog_d("[HX711] Shutdown");
     m_scale->power_down();
     return tareValue;
 }
@@ -118,14 +118,14 @@ char *Measurer::measure()
 
     if (m_settings->measureWeight)
     {
-        log_d("[HX711] Powerup");
+        blog_d("[HX711] Powerup");
         m_scale->power_up();
         m_scale->set_scale(m_settings->scaleFactor);
         m_scale->set_offset(m_settings->scaleOffset);
         data.weight = -1;
         data.weight = m_scale->get_units(10);
-        log_d("[MEASURER] Read weight %f ", data.weight);
-        log_d("[HX711] Shutdown");
+        blog_d("[MEASURER] Read weight %f ", data.weight);
+        blog_d("[HX711] Shutdown");
         m_scale->power_down();
     }
     if (m_settings->measureTempAndHumidity)
@@ -133,7 +133,7 @@ char *Measurer::measure()
         TempAndHumidity sensorData = m_dht->getTempAndHumidity();
         data.temp = sensorData.temperature;
         data.humidity = sensorData.humidity;
-        log_d("[MEASURER] Read temperature and humidity: %.2f C %.2f %% ", data.temp, data.humidity);
+        blog_d("[MEASURER] Read temperature and humidity: %.2f C %.2f %% ", data.temp, data.humidity);
     }
     char *message = storeMessage(data);
 

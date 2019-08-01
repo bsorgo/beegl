@@ -121,7 +121,7 @@ SchEntryType Settings::getCurrentSchedulerEntry()
         int iTimeTo = schEntries[i].schedulerHourTo * 60 + schEntries[i].schedulerMinTo;
         if (iTimeFrom <= time && iTimeTo > time)
         {
-            log_d("[SCHEDULER] Current entry: %u;%u:%u,%u:%u;%d",
+            blog_d("[SCHEDULER] Current entry: %u;%u:%u,%u:%u;%d",
                   i,
                   schEntries[i].schedulerHourFrom,
                   schEntries[i].schedulerMinFrom,
@@ -132,7 +132,7 @@ SchEntryType Settings::getCurrentSchedulerEntry()
         }
     }
     SchEntryType entry = {0, 0, 0, 0, false};
-    log_d("[SCHEDULER] Returning default entry: -1;0:0;0:0;false");
+    blog_d("[SCHEDULER] Returning default entry: -1;0:0;0:0;false");
     return entry;
 }
 

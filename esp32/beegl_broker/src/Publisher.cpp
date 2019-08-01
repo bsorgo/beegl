@@ -57,7 +57,7 @@ char* Publisher::storeMessage(JsonObject &jsonObj)
 {
   int i = getIndex();
   jsonObj.printTo(messageStorage[i], jsonObj.measureLength() + 1);
-  log_d( "[STORE] Message");
+  blog_d( "[STORE] Message");
   return messageStorage[i];
 }
 
@@ -92,7 +92,7 @@ bool Publisher::publish()
 
         while (publishIndex != storageIndex)
         {
-            Serial.println(messageStorage[publishIndex + 1]);
+            blog_d("%s", messageStorage[publishIndex + 1]);
             if (publishMessage(messageStorage[publishIndex + 1]))
             {
                 publishIndex++;

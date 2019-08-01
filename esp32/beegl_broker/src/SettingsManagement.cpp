@@ -1,3 +1,27 @@
+/*
+  SettingsManagement.cpp - settings & time management:
+
+  - Settings FS read/write
+  - Central server read/write
+  - Other setting | time related functions
+  
+  This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
+  Copyright (c) 2019 Bostjan Sorgo
+  
+  This program is free software: you can redistribute it and/or modify  
+  it under the terms of the GNU General Public License as published by  
+  the Free Software Foundation, version 3.
+ 
+  This program is distributed in the hope that it will be useful, but 
+  WITHOUT ANY WARRANTY; without even the implied warranty of 
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+  General Public License for more details.
+ 
+  You should have received a copy of the GNU General Public License 
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
 #include "SettingsManagement.h"
 
 SettingsManagement::SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime* runtime)
@@ -23,7 +47,7 @@ void SettingsManagement::webServerBind()
         if (request->hasParam("at", true, false))
         {
             const String value = request->getParam("at", true, false)->value();
-            log_d("[MODEM] at value: %s", value.c_str());
+            blog_d("[MODEM] at value: %s", value.c_str());
             m_connection->getModem()->sendAT(value.c_str());
             String response = String();
             if(m_connection->getModem()->waitResponse(3000, response, GSM_OK)) {
@@ -72,7 +96,7 @@ void SettingsManagement::webServerBind()
                                      File file;
                                      if (!index)
                                      {
-                                         log_i("[WEB] BodyStart: %u B\n", total);
+                                         blog_i("[WEB] BodyStart: %u B\n", total);
                                          file = SPIFFS.open(CONFIGJSONTEMP, FILE_WRITE);
                                      }
                                      else
@@ -93,7 +117,7 @@ void SettingsManagement::webServerBind()
                                      }
                                      if (index + len == total)
                                      {
-                                         log_i("[WEB] BodyEnd: %u B\n", total);
+                                         blog_i("[WEB] BodyEnd: %u B\n", total);
                                          file = SPIFFS.open(CONFIGJSONTEMP, FILE_READ);
                                          if (file)
                                          {
@@ -103,7 +127,7 @@ void SettingsManagement::webServerBind()
                                              {
                                                  if (writeConfig(root))
                                                  {
-                                                     log_i("[WEB] Writing config\n");
+                                                     blog_i("[WEB] Writing config\n");
                                                      jsonBuffer.clear();
                                                      readConfig();
                                                      request->send(200);
@@ -132,7 +156,7 @@ void SettingsManagement::webServerBind()
 bool SettingsManagement::writeConfig(JsonObject &input)
 {
 
-    log_i("[SETTINGS] Writing settings");
+    blog_i("[SETTINGS] Writing settings");
 
     StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
@@ -228,7 +252,7 @@ bool SettingsManagement::writeConfig(JsonObject &input)
             schEntry[STR_SCHUPDATE] = m_settings->schEntries[i].updateFromServer;
         }
     }
-    log_i("[SETTINGS] Merge configuration ");
+    blog_i("[SETTINGS] Merge configuration ");
     return writeConfigToFS(CONFIGJSON, root);
     jsonBuffer.clear();
 }
@@ -249,7 +273,7 @@ bool SettingsManagement::readConfig()
 
     if (!file)
     {
-        log_e("[SETTINGS] Failed to open config file for reading.");
+        blog_e("[SETTINGS] Failed to open config file for reading.");
         if (!writeConfig())
         {
             return false;
@@ -261,7 +285,7 @@ bool SettingsManagement::readConfig()
     file.close();
     if (!root.success())
     {
-        log_e("[SETTINGS] Corrupted file. Creating default config.");
+        blog_e("[SETTINGS] Corrupted file. Creating default config.");
         writeConfig();
         return false;
     }
@@ -360,9 +384,9 @@ bool SettingsManagement::writeSettingsToServer()
     char *hostname = m_settings->getSettingsHostname();
     char *path = m_settings->getSettingsPath();
 
-    log_d("[SETTINGS] Hostname: %s", hostname);
-    log_d("[SETTINGS] Path: %s", path);
-    log_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+    blog_d("[SETTINGS] Hostname: %s", hostname);
+    blog_d("[SETTINGS] Path: %s", path);
+    blog_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
 
     HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
     bool res = writeSettings(&httpClient, path, m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
@@ -374,14 +398,14 @@ bool SettingsManagement::writeSettingsToServer()
 void SettingsManagement::syncTimeAndSettings()
 {
 
-    log_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
+    blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
 
     char *hostname = m_settings->getSettingsHostname();
     char *path = m_settings->getSettingsPath();
 
-    log_d("[SETTINGS] Hostname: %s", hostname);
-    log_d("[SETTINGS] Path: %s", path);
-    log_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+    blog_d("[SETTINGS] Hostname: %s", hostname);
+    blog_d("[SETTINGS] Path: %s", path);
+    blog_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
     m_connection->checkConnect();
     HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
     this->readTimeAndSettings(&httpClient, path);
@@ -398,7 +422,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
     httpClient->sendBasicAuth(m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
     httpClient->endRequest();
     int responseCode = httpClient->responseStatusCode();
-    log_i("[SETTINGS] Response code from server: %u", responseCode);
+    blog_d("[SETTINGS] Response code from server: %u", responseCode);
     if (res == 0)
     {
         while (httpClient->headerAvailable())
@@ -408,7 +432,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
             {
                 String dateStr = httpClient->readHeaderValue();
 
-                log_i("[SETTINGS] Header date string: %s", dateStr.c_str());
+                blog_i("[SETTINGS] Header date string: %s", dateStr.c_str());
                 char p[32];
 
                 char *token;
@@ -442,7 +466,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
                 // seconds
                 token = strtok(NULL, ": ");
                 int seconds = atoi(token);
-                log_d("[SETTINGS] Time fractions: %04d-%02d-%02dT%02d:%02d:%02d.000Z", years, months, days, hours, minutes, seconds);
+                blog_d("[SETTINGS] Time fractions: %04d-%02d-%02dT%02d:%02d:%02d.000Z", years, months, days, hours, minutes, seconds);
 
                 setTime(hours, minutes, seconds, days, months, years);
             }
@@ -460,6 +484,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
             if (root.success())
             {   
                 String preMD5 = getLocalFileMd5(CONFIG_JSON);
+
                 writeConfig(root);
                 String postMD5 = getLocalFileMd5(CONFIG_JSON);
                 if(preMD5.compareTo(postMD5)!=0) {
@@ -515,22 +540,20 @@ void SettingsManagement::merge(JsonObject &dest, JsonObject &src)
 bool SettingsManagement::writeConfigToFS(const char *filename, JsonObject &root)
 {
     SPIFFS.remove(filename);
-    log_i("[SPIFFS] Writing file ");
-    Serial.println(filename);
+    blog_i("[SPIFFS] Writing file %s", filename);
     File file = SPIFFS.open(filename, FILE_WRITE);
     if (!file)
     {
-        log_e("[SPIFFS] Failed to create file %s ", filename);
+        blog_e("[SPIFFS] Failed to create file %s ", filename);
         Serial.println(filename);
         return false;
     }
     if (root.printTo(file) == 0)
     {
-        log_e("[SPIFFS] Failed to write to file %s", filename);
+        blog_e("[SPIFFS] Failed to write to file %s", filename);
         return false;
     }
     file.close();
-
     return true;
 }
 
@@ -561,7 +584,7 @@ bool SettingsManagement::writeSettings(HttpClient *httpClient, char *path, char 
     httpClient->stop();
     if (responseCode != 200)
     {
-        log_e("[SETTINGS] Error. Response code from server: %u", responseCode);
+        blog_e("[SETTINGS] Error. Response code from server: %u", responseCode);
         return false;
     }
     return true;
@@ -626,7 +649,7 @@ String SettingsManagement::getLocalFileMd5(const char *path)
   File file = SPIFFS.open(path, FILE_READ);
   if (!file)
   {
-    log_e("[SETTINGS] Error. File %s not found.", path);;
+    blog_e("[SETTINGS] Error. File %s not found.", path);;
     return "0";
   }
   MD5Builder md5;
@@ -634,7 +657,7 @@ String SettingsManagement::getLocalFileMd5(const char *path)
   md5.addStream(file, 50000);
   md5.calculate();
   String md5str = md5.toString();
-  log_i("[SETTINGS] Local file:%s MD5:%s", path, md5str.c_str());
+  blog_i("[SETTINGS] Local file:%s MD5:%s", path, md5str.c_str());
   file.close();
   return md5str;
 }

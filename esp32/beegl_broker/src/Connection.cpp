@@ -35,13 +35,13 @@ Connection::Connection(Settings *settings)
 
 void Connection::btOff()
 {
-    log_i( "[BLE] OFF");
+    blog_i( "[BLE] OFF");
     esp_bt_controller_disable();
 }
 
 void Connection::modemOff()
 {
-    log_i( "[GSM] OFF");
+    blog_i( "[GSM] OFF");
 #ifdef TINY_GSM_MODEM_SIM800
     modem->radioOff();
 #endif
@@ -63,7 +63,7 @@ void Connection::shutdown()
 
 void Connection::wifiOff()
 {
-    log_i( "[WIFI] OFF");
+    blog_i( "[WIFI] OFF");
     WiFi.mode(WIFI_OFF);
 }
 
@@ -72,13 +72,13 @@ bool Connection::gprsSetup()
     if (m_settings->outboundMode & 0x2)
     {
 
-        log_i( "[GSM] Connecting to APN %s with username %s and password %s", m_settings->apn, m_settings->apnUser, m_settings->apnPass);
+        blog_i( "[GSM] Connecting to APN %s with username %s and password %s", m_settings->apn, m_settings->apnUser, m_settings->apnPass);
         if (!modem->gprsConnect(m_settings->apn, m_settings->apnUser, m_settings->apnPass))
         {
-            log_i( "[GSM] NOK");
+            blog_i( "[GSM] NOK");
             return false;
         }
-        log_i( "[GSM] OK");
+        blog_i( "[GSM] OK");
     }
     return true;
 }
@@ -88,15 +88,15 @@ bool Connection::wifiSetup()
 {
 
     int retries = 0;
-    log_i( "[WIFI] Settings: Use custom ip: %u, IP: %s GW: %s NETMASK: %s", m_settings->wifiCustomIp, m_settings->wifiIp.toString().c_str(), m_settings->wifiGateway.toString().c_str(), m_settings->wifiSubnet.toString().c_str());
-    log_i( "[WIFI] APSettings: IP: %s GW: %s NETMASK: %s", m_settings->apIp.toString().c_str(), m_settings->apGateway.toString().c_str(), m_settings->apSubnet.toString().c_str());
+    blog_i( "[WIFI] Settings: Use custom ip: %u, IP: %s GW: %s NETMASK: %s", m_settings->wifiCustomIp, m_settings->wifiIp.toString().c_str(), m_settings->wifiGateway.toString().c_str(), m_settings->wifiSubnet.toString().c_str());
+    blog_i( "[WIFI] APSettings: IP: %s GW: %s NETMASK: %s", m_settings->apIp.toString().c_str(), m_settings->apGateway.toString().c_str(), m_settings->apSubnet.toString().c_str());
     if ((m_settings->inboundMode & 0x1) && (m_settings->outboundMode & 0x1))
     {
 
         // STA + AP
 
-        log_i( "[WIFI] Starting AP STA");
-        log_i( "[WIFI] Outbound connecting to %s", m_settings->wifiSSID);
+        blog_i( "[WIFI] Starting AP STA");
+        blog_i( "[WIFI] Outbound connecting to %s", m_settings->wifiSSID);
         WiFi.disconnect();
         WiFi.mode(WIFI_AP_STA);
         if (m_settings->wifiCustomIp)
@@ -109,8 +109,8 @@ bool Connection::wifiSetup()
 
         WiFi.begin(m_settings->wifiSSID, m_settings->wifiPassword);
 
-        log_i( "[WIFI] AP started");
-        log_i( "[WIFI] AP IP: %s ", WiFi.softAPIP().toString().c_str());
+        blog_i( "[WIFI] AP started");
+        blog_i( "[WIFI] AP IP: %s ", WiFi.softAPIP().toString().c_str());
 
         while (WiFi.status() != WL_CONNECTED)
         {
@@ -122,30 +122,30 @@ bool Connection::wifiSetup()
             }
             retries++;
         }
-        log_i( "[WIFI] connected");
-        log_i( "[WIFI] address: %s ", WiFi.localIP().toString().c_str());
+        blog_i( "[WIFI] connected");
+        blog_i( "[WIFI] address: %s ", WiFi.localIP().toString().c_str());
     }
     else if ((m_settings->inboundMode & 0x1) && !(m_settings->outboundMode & 0x1))
     {
-        log_i( "[WIFI] Starting AP");
+        blog_i( "[WIFI] Starting AP");
         WiFi.disconnect();
         WiFi.mode(WIFI_AP);
         WiFi.softAP(m_settings->deviceName, m_settings->apPassword);
-        log_i( "[WIFI] AP started");
-        log_i( "[WIFI] AP IP: %s", WiFi.softAPIP().toString().c_str());
-        log_i( "[WIFI] AP password: %s", m_settings->apPassword);
+        blog_i( "[WIFI] AP started");
+        blog_i( "[WIFI] AP IP: %s", WiFi.softAPIP().toString().c_str());
+        blog_i( "[WIFI] AP password: %s", m_settings->apPassword);
         }
     else if (!(m_settings->inboundMode & 0x1) && (m_settings->outboundMode & 0x1))
     {
-        log_i( "[WIFI] Starting STA");
-        log_i( "[WIFI] Outbound connecting to  %s", m_settings->wifiSSID);
+        blog_i( "[WIFI] Starting STA");
+        blog_i( "[WIFI] Outbound connecting to  %s", m_settings->wifiSSID);
         WiFi.disconnect();
         WiFi.mode(WIFI_STA);
         if (m_settings->wifiCustomIp)
         {
             if (!WiFi.config(m_settings->wifiIp, m_settings->wifiGateway, m_settings->wifiSubnet))
             {
-                log_e( "[WIFI] STA Config Failed");
+                blog_e( "[WIFI] STA Config Failed");
             }
         }
         WiFi.begin(m_settings->wifiSSID, m_settings->wifiPassword);
@@ -158,8 +158,8 @@ bool Connection::wifiSetup()
             }
             retries++;
         }
-        log_i( "[WIFI] connected");
-        log_i( "[WIFI] IP: %s", WiFi.localIP().toString().c_str());
+        blog_i( "[WIFI] connected");
+        blog_i( "[WIFI] IP: %s", WiFi.localIP().toString().c_str());
         return true;
     }
     else
@@ -181,12 +181,12 @@ bool Connection::gsmSetup()
         modem->sendAT("+CSCLK=0");
         // Restart takes quite some time
         // To skip it, call init() instead of restart()
-        log_i( "[GSM] Initializing GPRS modem");
+        blog_i( "[GSM] Initializing GPRS modem");
         modem->restart();
         delay(2000);
-        log_i( "[GSM] Modem type: %s , IMEI: %s", modem->getModemInfo().c_str(), modem->getIMEI().c_str());
+        blog_i( "[GSM] Modem type: %s , IMEI: %s", modem->getModemInfo().c_str(), modem->getIMEI().c_str());
         delay(1000);
-        log_i( "[GSM] Waiting for network...");
+        blog_i( "[GSM] Waiting for network...");
         if (!modem->waitForNetwork())
         {
             modemOff();
@@ -194,7 +194,7 @@ bool Connection::gsmSetup()
         }
         else
         {
-            log_i( "[GSM] OK");
+            blog_i( "[GSM] OK");
         }
     }
     else

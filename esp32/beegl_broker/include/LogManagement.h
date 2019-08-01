@@ -1,9 +1,5 @@
-#ifndef Connection_h
-#define Connection_h
-
-
 /*
-  Connection.h - Connection header file
+  LogManagement.h - Log management interface 
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -22,42 +18,23 @@
 
 */
 
+#ifndef LogManagement_h
+#define LogManagement_h
+
 #include "Log.h"
 #include "Settings.h"
-#include <TinyGsmClient.h>
-#include <WiFiClient.h>
-#include <esp_bt.h>
+#include "Service.h"
 
-
-class Connection
+class LogManagement
 {
+    public:
+    LogManagement(Settings* settings, Service* service);
 
-public:
-    Connection(Settings *settings);
-    Client *getClient();
-    void checkConnect();
-    bool setup();
-    void shutdown();
-    TinyGsm * getModem();
-
-private:
-    const int MODEM_RX_PIN = 15;
-    const int MODEM_TX_PIN = 14;
-
+    private:
     Settings *m_settings;
+    Service* m_server;
+    void webServerBind();
 
-    HardwareSerial *serialAT;
-    TinyGsm *modem;
-    TinyGsmClient *gsmClient;
-
-    WiFiClient *wifiClient;
-
-    void btOff();
-    void modemOff();
-    void wifiOff();
-
-    bool gsmSetup();
-    bool gprsSetup();
-    bool wifiSetup();
 };
-#endif 
+
+#endif

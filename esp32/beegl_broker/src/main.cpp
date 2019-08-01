@@ -27,7 +27,8 @@
 #include <SPI.h>
 #include <WiFi.h>
 
-#include <SPIFFS.h>
+#include <ArduinoNvs.h>
+#include <Storage.h>
 #include <EEPROM.h>
 #include <TimeLib.h>
 #include <unistd.h>
@@ -44,6 +45,7 @@
 #include "MqttPublisher.h"
 #include "Measurer.h"
 #include "SettingsManagement.h"
+#include "LogManagement.h"
 
 #include "Broker.h"
 #ifdef HEAPTRACE
@@ -60,6 +62,7 @@ Connection connection = Connection(&settings);
 Runtime runtime = Runtime(&service, &settings, &connection);
 Updater updater = Updater(&runtime, &service, &settings, &connection);
 SettingsManagement settingsManagement = SettingsManagement(&settings, &connection, &service, &runtime);
+LogManagement logManagement = LogManagement(&settings, &service);
 
 Publisher *publisher;
 Measurer *measurer;
@@ -77,12 +80,14 @@ void reportStatus()
   }
 }
 
-bool spiffsSetup()
+
+
+bool nvsSetup()
 {
-  Serial.println("[SPIFFS] Begin FS");
-  if (!SPIFFS.begin(true))
+  Serial.println("[NVS] Begin NVS");
+  if (!NVS.begin())
   {
-    Serial.println("[SPIFFS] An Error has occurred while mounting SPIFFS");
+    Serial.println("[NVS] An Error has occurred while initilizing NVS");
     return false;
   }
   return true;
@@ -96,16 +101,16 @@ void setup()
   {
     ;
   }
-  runtime.initialize();
-  if (!spiffsSetup())
+  if (!nvsSetup() || !storage_setup())
   {
     indicator.reportFail(1);
-    runtime.setSafeMode(1);
+    return;
   }
   else
   {
     indicator.reportSuccess(1);
   }
+  runtime.initialize();
   runtime.setSafeModeOnRestart(1);
 
   delay(500);

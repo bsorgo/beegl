@@ -24,6 +24,7 @@
 #define SERVICE_UUID "ebd31aa0-b7c7-497a-a92c-e18f78f64efa"
 #define CHARACTERISTIC_UUID "df878320-0c82-45c9-a5e2-47ff1ee43883"
 
+#include "Log.h"
 #include "Service.h"
 #include "Publisher.h"
 #include <BLEDevice.h>

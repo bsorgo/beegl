@@ -39,9 +39,9 @@ bool HttpPublisher::publishMessage(const char *message)
   char *hostname = m_settings->getSettingsHostname();
   char *path = m_settings->getSensorPublishPath();
 
-  log_d("[HTTPPUBLISHER] Hostname: %s", hostname);
-  log_d("[HTTPPUBLISHER] Path: %s", path);
-  log_d("[HTTPPUBLISHER] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+  blog_d("[HTTPPUBLISHER] Hostname: %s", hostname);
+  blog_d("[HTTPPUBLISHER] Path: %s", path);
+  blog_d("[HTTPPUBLISHER] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
   HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
   httpClient.connectionKeepAlive();
   httpClient.beginRequest();
@@ -63,7 +63,7 @@ bool HttpPublisher::publishMessage(const char *message)
   }
   else
   {
-     log_e("[HTTPPUBLISHER] Error. Response code from server: %u", responseCode);
+     blog_e("[HTTPPUBLISHER] Error. Response code from server: %u", responseCode);
     return false;
   }
 }

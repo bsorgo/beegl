@@ -74,8 +74,8 @@ void Updater::checkFirmware()
       char *path = m_settings->getFirmwarePath();
       strcat(path, m_settings->firmwareVersion);
       strcat(path, ".bin");
-      log_i("[UPDATER] Firmware hostname: %s", hostname);
-      log_i("[UPDATER] Firmware file path: %s", path);
+      blog_i("[UPDATER] Firmware hostname: %s", hostname);
+      blog_i("[UPDATER] Firmware file path: %s", path);
       m_connection->checkConnect();
       HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
       downloadFirmware(&httpClient, path);
@@ -91,11 +91,11 @@ String Updater::getLocalFileMd5(const char *filename)
   char *localFilename = (char *)malloc(sizeof(char) * 32);
   strcpy(localFilename, "/");
   strcat(localFilename, filename);
-  File file = SPIFFS.open(localFilename, FILE_READ);
+  File file = FILESYSTEM.open(localFilename, FILE_READ);
 
   if (!file)
   {
-    log_e("[UPDATER] Error. File %s not found.", localFilename);;
+    blog_e("[UPDATER] Error. File %s not found.", localFilename);;
     return "0";
   }
   MD5Builder md5;
@@ -103,7 +103,7 @@ String Updater::getLocalFileMd5(const char *filename)
   md5.addStream(file, 50000);
   md5.calculate();
   String md5str = md5.toString();
-  log_i("[UPDATER] Local file:%s MD5:%s", filename, md5str.c_str());
+  blog_i("[UPDATER] Local file:%s MD5:%s", filename, md5str.c_str());
   file.close();
   free(localFilename);
   return md5str;
@@ -124,15 +124,15 @@ String Updater::getServerFileMd5(const char *filename)
   {
     httpClient.skipResponseHeaders();
     String md5str =  httpClient.readString();
-    log_i("[UPDATER] Server file:%s MD5:%s", path, md5str.c_str());
+    blog_i("[UPDATER] Server file:%s MD5:%s", path, md5str.c_str());
     return md5str;
   }
   else if (res == 0 && responseCode == 404)
   {
-    log_i("[UPDATER] No server file on path:%s", path);
+    blog_i("[UPDATER] No server file on path:%s", path);
     return "";
   } else {
-    log_e("[UPDATER] Error obtaining md5 file :%s. Response code:%u", path, responseCode);
+    blog_e("[UPDATER] Error obtaining md5 file :%s. Response code:%u", path, responseCode);
     return "";
   }
   free(hostname);
@@ -151,9 +151,9 @@ void Updater::downloadFirmware(HttpClient *httpClient, char *filePath)
       Update.printError(Serial);
       return;
     }
-    log_i("[UPDATER] Download start: %s\n", filePath);
+    blog_i("[UPDATER] Download start: %s\n", filePath);
     int len = httpClient->contentLength();
-    log_d("[UPDATER] Found file size: %u ", len);
+    blog_d("[UPDATER] Found file size: %u ", len);
     uint8_t buff[1024] = {0};
     while (httpClient->connected() && (len > 0 || len == -1))
     {
@@ -170,13 +170,13 @@ void Updater::downloadFirmware(HttpClient *httpClient, char *filePath)
       {
         len -= c;
       }
-      log_d("[UPDATER] Downloading .. left %u ", len);
+      blog_d("[UPDATER] Downloading .. left %u ", len);
       delay(2);
     }
     delay(100);
     if (Update.end(true))
     {
-      log_i("[UPDATER] Update success: %u. \nRebooting...\n", len);
+      blog_i("[UPDATER] Update success: %u. \nRebooting...\n", len);
       m_runtime->setSafeModeOnRestart(0);
       ESP.restart();
     }
@@ -223,15 +223,15 @@ bool Updater::downloadFile(const char *hostname, const char *path, const char *f
   err = httpClient.get(path);
   if (err == 0 && httpClient.responseStatusCode() == 200)
   {
-    File f = SPIFFS.open(localFilename, FILE_WRITE);
+    File f = FILESYSTEM.open(localFilename, FILE_WRITE);
     if (!f)
     {
       free(localFilename);
       return false;
     }
-    log_i("[UPDATER] Download start: %s\n", path);
+    blog_i("[UPDATER] Download start: %s\n", path);
     int len = httpClient.contentLength();
-    log_d("[UPDATER] File size: %u ", len);
+    blog_d("[UPDATER] File size: %u ", len);
     uint8_t buff[512] = {0};
     while (httpClient.connected() && (len > 0 || len == -1))
     {
@@ -244,7 +244,7 @@ bool Updater::downloadFile(const char *hostname, const char *path, const char *f
       {
         len -= c;
       }
-      log_d("[UPDATER] Downloading .. left %u ", len);
+      blog_d("[UPDATER] Downloading .. left %u ", len);
       delay(2);
     }
     f.close();

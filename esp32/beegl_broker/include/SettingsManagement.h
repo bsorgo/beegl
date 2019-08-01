@@ -25,6 +25,8 @@
 #define CONTENTTYPE "Content-Type"
 #define CONTENTLENGTH "Content-Length"
 
+#include "Log.h"
+#include <SPIFFS.h>
 #include <ESPAsyncWebServer.h>
 #include "Settings.h"
 #include "Connection.h"
@@ -38,7 +40,7 @@ class SettingsManagement
 public:
     SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime *runtime);
     void setup();
-    void readFromSPIFFS(char *path);
+    void readFromFilesystem(char *path);
     bool writeConfig(JsonObject &input);
     bool writeConfig();
     bool readConfig();

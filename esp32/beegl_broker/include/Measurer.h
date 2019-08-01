@@ -21,6 +21,7 @@
 #ifndef Measurer_h
 #define Measurer_h
 
+#include "Log.h"
 #include "DHTesp.h"
 #include <HX711.h>
 #include "Service.h"
@@ -28,11 +29,11 @@
 #include "Publisher.h"
 
 struct MeasureData
-  {
-      float weight;
-      float temp;
-      float humidity;
-  };
+{
+    float weight;
+    float temp;
+    float humidity;
+};
 
 class Measurer
 {

@@ -21,13 +21,12 @@
 #ifndef Runtime_h
 #define Runtime_h
 
-
+#include "Log.h"
 #include "Settings.h"
 #include "Connection.h"
 #include "Service.h"
 
-#include <nvs_flash.h>
-#include <nvs.h>
+#include <ArduinoNvs.h>
 
 
 class Runtime

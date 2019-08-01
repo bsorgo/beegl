@@ -91,11 +91,12 @@
 #define STR_VER "ver"
 #define STR_FW_PREFIX "fwUrl"
 #define CONFIG_JSON "/config.json"
+#define CONFIG_BACKUP "/config_backup.json"
 #define CONFIG_JSON_LAST_GOOD "/config_last_good.json"
 #define CONFIG_JSON_TEMP "/config_temp.json"
 
+#include "Log.h"
 #include <Timezone.h>
-#include <SPIFFS.h>
 #include <WiFi.h>
 
 #include <ArduinoJson.h>

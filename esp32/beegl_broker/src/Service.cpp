@@ -31,9 +31,9 @@ void Service::webServerSetup()
 {
   
   if(m_settings->inboundMode & 0x1 || m_settings->outboundMode & 0x1) {
-    log_i("[WEB Server] Starting web server");
+    blog_i("[WEB Server] Starting web server");
     m_webserver->begin();
-    log_i("[WEB Server] Web server started");
+    blog_i("[WEB Server] Web server started");
   }
   
   

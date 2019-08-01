@@ -22,7 +22,7 @@
 #ifndef Updater_h
 #define Updater_h
 
-
+#include "Log.h"
 #include "Settings.h"
 #include "Connection.h"
 #include "Service.h"

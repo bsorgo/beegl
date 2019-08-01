@@ -22,10 +22,10 @@
 
 void MqttPublisher::setup()
 {
-  log_i("[MQTT] Setup");
+  blog_i("[MQTT] Setup");
   mqttClient->setClient(*m_connection->getClient());
-  log_i("[MQTT] Server: mqttServer ");
-  log_i("[MQTT] Server: %s, port %u",m_settings->mqttServer, m_settings->mqttPort);
+  blog_i("[MQTT] Server: mqttServer ");
+  blog_i("[MQTT] Server: %s, port %u",m_settings->mqttServer, m_settings->mqttPort);
   mqttClient->setServer(m_settings->mqttServer, m_settings->mqttPort);
 }
 
@@ -37,16 +37,16 @@ MqttPublisher::MqttPublisher(Runtime * runtime, Settings *settings, Connection *
 bool MqttPublisher::publishMessage(const char *message)
 {
 
-    log_d( "[MQTTPUBLISHER] %s", m_settings->sensorTopic);
+    blog_d( "[MQTTPUBLISHER] %s", m_settings->sensorTopic);
     
     if (mqttClient->publish(m_settings->sensorTopic, message))
     {
-        log_i( "[MQTTPUBLISHER] Publish OK");
+        blog_d( "[MQTTPUBLISHER] Publish OK");
         return true;
     }
     else
     {
-        log_e( "[MQTTPUBLISHER] Publish NOK");
+        blog_e( "[MQTTPUBLISHER] Publish NOK");
         return false;
     }
 }
@@ -61,15 +61,15 @@ bool MqttPublisher::reconnect()
         clientName += "-";
         clientName += String(micros() & 0xff, 16);
         // Attempt to connect
-        log_d( "[MQTTPUBLISHER] Client: %s, username: %s ", clientName.c_str(), m_settings->mqttUsername);
+        blog_d( "[MQTTPUBLISHER] Client: %s, username: %s ", clientName.c_str(), m_settings->mqttUsername);
         if (mqttClient->connect((char *)clientName.c_str(), m_settings->mqttUsername, m_settings->mqttPassword))
         {
-            log_d( "[MQTTPUBLISHER] Connected. ");
+            blog_d( "[MQTTPUBLISHER] Connected. ");
             return true;
         }
         else
         {
-            log_e( "[MQTTPUBLISHER] failed, rc=%u, try again in 5 seconds", mqttClient->state());
+            blog_e( "[MQTTPUBLISHER] failed, rc=%u, try again in 5 seconds", mqttClient->state());
             // Wait 5 seconds before retrying
             delay(5000);
             return false;

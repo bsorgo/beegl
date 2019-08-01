@@ -62,13 +62,13 @@ bool Broker::bleBind()
 {
     if (m_settings->inboundMode & 0x2)
     {
-        log_i( "[BLE] Configuring BLE Server %s ", m_settings->deviceName);
-        log_i( "[BLE] Service %s ", SERVICE_UUID);
-        log_i( "[BLE] Characteristic %s ", CHARACTERISTIC_UUID);
+        blog_i( "[BLE] Configuring BLE Server %s ", m_settings->deviceName);
+        blog_i( "[BLE] Service %s ", SERVICE_UUID);
+        blog_i( "[BLE] Characteristic %s ", CHARACTERISTIC_UUID);
 
         if (esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P4) == OK)
         {
-            log_i( "[BLE] Transmission power changed\n");
+            blog_i( "[BLE] Transmission power changed\n");
         }
         BLEDevice::init(m_settings->deviceName);
         BLEServer *pServer = BLEDevice::createServer();

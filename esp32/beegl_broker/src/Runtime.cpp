@@ -38,7 +38,7 @@ Runtime::Runtime(Service *server, Settings *settings, Connection *connection)
 
 void Runtime::initialize()
 {
-  log_i("[ESP] Firmware version %s", FIRMWAREVERSION);
+  blog_i("[ESP] Firmware version %s", FIRMWAREVERSION);
   m_safeMode = getSafeModeOnRestart();
 }
 
@@ -71,7 +71,7 @@ void Runtime::checkOperationalTime()
       int iTimeTo = m_settings->schEntries[i].schedulerHourTo * 60 + m_settings->schEntries[i].schedulerMinTo;
       int nextTimeFrom = m_settings->schEntries[nextEntry].schedulerHourFrom * 60 + m_settings->schEntries[nextEntry].schedulerMinFrom;
 
-      log_d("[SCHEDULER] Entries:%u, Entry: %u;%u:%u,%u:%u  Next entry: %u;%u:%u,%u:%u\n\r", m_settings->schEntriesLength, i,
+      blog_d("[SCHEDULER] Entries:%u, Entry: %u;%u:%u,%u:%u  Next entry: %u;%u:%u,%u:%u", m_settings->schEntriesLength, i,
             m_settings->schEntries[i].schedulerHourFrom,
             m_settings->schEntries[i].schedulerMinFrom,
             m_settings->schEntries[i].schedulerHourTo,
@@ -83,7 +83,7 @@ void Runtime::checkOperationalTime()
             m_settings->schEntries[nextEntry].schedulerHourTo,
             m_settings->schEntries[nextEntry].schedulerMinTo);
 
-      log_d("[SCHEDULER] Calculated time: %u, iFrom:%u, iTo:%u, nextFrom:%u\n\r", time, iTimeFrom, iTimeTo, nextTimeFrom);
+      blog_d("[SCHEDULER] Calculated time: %u, iFrom:%u, iTo:%u, nextFrom:%u", time, iTimeFrom, iTimeTo, nextTimeFrom);
       if ((iTimeFrom > 0 || iTimeTo > 0) && ((i == 0 && time < iTimeFrom) || (time > iTimeTo)) &&
           ((time < nextTimeFrom) ||
            nextEntry == 0))
@@ -98,7 +98,7 @@ void Runtime::checkOperationalTime()
         {
           sleepTime = (nextTimeFrom - time) * 60;
         }
-        log_d("[SCHEDULER] Sleep time: %u seconds\n\r", sleepTime);
+        blog_d("[SCHEDULER] Sleep time: %u seconds\n\r", sleepTime);
         if (sleepTime)
         {
           break;
@@ -116,7 +116,7 @@ void Runtime::checkOperationalTime()
 void Runtime::deepSleep(uint32_t timeToSleep)
 {
   uint64_t timeToSleepuSeconds = timeToSleep * uS_TO_S_FACTOR;
-  log_i("[ESP32] Deep sleep for %u s", timeToSleep);
+  blog_i("[ESP32] Deep sleep for %u s", timeToSleep);
   m_connection->shutdown();
   Serial.flush();
   delay(1000);
@@ -137,115 +137,34 @@ void Runtime::printWakeupReason()
   switch (wakeup_reason)
   {
   case ESP_SLEEP_WAKEUP_EXT0:
-    log_i("[ESP32] Wakeup caused by external signal using RTC_IO");
+    blog_i("[ESP32] Wakeup caused by external signal using RTC_IO");
     break;
   case ESP_SLEEP_WAKEUP_EXT1:
-    log_i("[ESP32] Wakeup caused by external signal using RTC_CNTL");
+    blog_i("[ESP32] Wakeup caused by external signal using RTC_CNTL");
     break;
   case ESP_SLEEP_WAKEUP_TIMER:
-    log_i("[ESP32] Wakeup caused by timer");
+    blog_i("[ESP32] Wakeup caused by timer");
     break;
   case ESP_SLEEP_WAKEUP_TOUCHPAD:
-    log_i("[ESP32] Wakeup caused by touchpad");
+    blog_i("[ESP32] Wakeup caused by touchpad");
     break;
   case ESP_SLEEP_WAKEUP_ULP:
-    log_i("[ESP32] Wakeup caused by ULP program");
+    blog_i("[ESP32] Wakeup caused by ULP program");
     break;
   default:
-    log_i("[ESP32] Wakeup was not caused by deep sleep. Reason: %u", wakeup_reason);
+    blog_i("[ESP32] Wakeup was not caused by deep sleep. Reason: %u", wakeup_reason);
     break;
   }
 }
 
 int8_t Runtime::getSafeModeOnRestart()
 {
-  // Initialize NVS
-  esp_err_t err = nvs_flash_init();
-  if (err == ESP_ERR_NVS_NO_FREE_PAGES)
-  {
-    // NVS partition was truncated and needs to be erased
-    // Retry nvs_flash_init
-    ESP_ERROR_CHECK(nvs_flash_erase());
-    err = nvs_flash_init();
-  }
-  ESP_ERROR_CHECK(err);
-
-  nvs_handle my_handle;
-  err = nvs_open("storage", NVS_READONLY, &my_handle);
-  if (err != ESP_OK)
-  {
-    log_e("[ESP32] Error opening NVS handle!");
-  }
-  else
-  {
-    log_d("[ESP32] Open done");
-    int8_t safeModeOnRestart = false;
-    // Read
-    err = nvs_get_i8(my_handle, "sfres", &safeModeOnRestart);
-    switch (err)
-    {
-    case ESP_OK:
-      log_d("[ESP32] Read OK, value: %u ", safeModeOnRestart);
-      break;
-    case ESP_ERR_NVS_NOT_FOUND:
-      log_e("[ESP32] Read sfres NOT FOUND");
-      break;
-    }
-
-    nvs_close(my_handle);
-    return safeModeOnRestart;
-  }
-
-  return true;
+  return NVS.getInt("sfres");
 }
 
 void Runtime::setSafeModeOnRestart(int8_t safeModeOnRestart)
 {
-  // Initialize NVS
-  esp_err_t err = nvs_flash_init();
-  if (err == ESP_ERR_NVS_NO_FREE_PAGES)
-  {
-    // NVS partition was truncated and needs to be erased
-    // Retry nvs_flash_init
-    ESP_ERROR_CHECK(nvs_flash_erase());
-    err = nvs_flash_init();
-  }
-  ESP_ERROR_CHECK(err);
-
-  nvs_handle my_handle;
-  err = nvs_open("storage", NVS_READWRITE, &my_handle);
-  if (err != ESP_OK)
-  {
-    log_e("[ESP32] Error opening NVS handle!");
-  }
-  else
-  {
-    log_d("[ESP32] Open done");
-
-    // Write
-    err = nvs_set_i8(my_handle, "sfres", safeModeOnRestart);
-    if (err != ESP_OK)
-    {
-      log_d("[ESP32] Write failed.");
-    }
-    else
-    {
-      log_d("[ESP32] Write fdone.");
-    }
-
-    err = nvs_commit(my_handle);
-    if (err != ESP_OK)
-    {
-      log_d("[ESP32] Commit failed.");
-    }
-    else
-    {
-      log_d("[ESP32] Commit done.");
-    }
-
-    // Close
-    nvs_close(my_handle);
-  }
+  NVS.setInt("sfres", safeModeOnRestart);
 }
 
 int8_t Runtime::getSafeMode()
