@@ -91,8 +91,9 @@
 #define STR_VER "ver"
 #define STR_FW_PREFIX "fwUrl"
 #define CONFIG_JSON "/config.json"
-#define CONFIG_BACKUP "/config_backup.json"
+#define CONFIG_JSON_DEFAULT "/config_default.json"
 #define CONFIG_JSON_LAST_GOOD "/config_last_good.json"
+#define CONFIG_JSON_BACKUP "/config_backup.json"
 #define CONFIG_JSON_TEMP "/config_temp.json"
 
 #include "Log.h"
@@ -114,6 +115,8 @@ struct SchEntryType
 static const char CONFIGJSON[] = CONFIG_JSON;
 static const char CONFIGJSONLASTGOOD[] = CONFIG_JSON_LAST_GOOD;
 static const char CONFIGJSONTEMP[] = CONFIG_JSON_TEMP;
+static const char CONFIGJSONBACKUP[] = CONFIG_JSON_BACKUP;
+static const char CONFIGJSONDEFAULT[] = CONFIG_JSON_DEFAULT;
 
 extern const uint8_t index_html_start[] asm("_binary_src_index_html_start");
 extern const uint8_t index_html_end[] asm("_binary_src_index_html_end");

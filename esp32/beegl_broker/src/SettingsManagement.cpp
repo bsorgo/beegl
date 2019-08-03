@@ -24,7 +24,7 @@
 
 #include "SettingsManagement.h"
 
-SettingsManagement::SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime* runtime)
+SettingsManagement::SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime *runtime)
 {
 
     m_server = service;
@@ -50,9 +50,12 @@ void SettingsManagement::webServerBind()
             blog_d("[MODEM] at value: %s", value.c_str());
             m_connection->getModem()->sendAT(value.c_str());
             String response = String();
-            if(m_connection->getModem()->waitResponse(3000, response, GSM_OK)) {
+            if (m_connection->getModem()->waitResponse(3000, response, GSM_OK))
+            {
                 request->send(200, "text/plain", response);
-            } else  {
+            }
+            else
+            {
                 request->send(405, "text/plain", response);
             }
         }
@@ -265,30 +268,58 @@ bool SettingsManagement::writeConfig()
     JsonObject &root = jsonBuffer.createObject();
     return this->writeConfig(root);
 }
+
+bool SettingsManagement::readAndParseJson(const char *filename, JsonObject **root, StaticJsonBuffer<CONFIG_BUFFER> *jsonBuffer)
+{
+    File file = SPIFFS.open(filename);
+    if (!file)
+    {
+        return false;
+    }
+    JsonObject& rootObj= jsonBuffer->parseObject(file);
+    
+    file.close();
+    if (!rootObj.success())
+    {
+        return false;
+    }
+    *root = &rootObj;
+    return true;
+}
+
 /* Reads config from file
  */
 bool SettingsManagement::readConfig()
 {
-    File file = SPIFFS.open(CONFIGJSON);
-
-    if (!file)
+    StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
+    JsonObject* rootObj;
+    if (!readAndParseJson(CONFIGJSON, &rootObj, &jsonBuffer))
     {
         blog_e("[SETTINGS] Failed to open config file for reading.");
-        if (!writeConfig())
+        blog_i("[SETTINGS] Trying last good config.");
+        if (!readAndParseJson(CONFIGJSONLASTGOOD, &rootObj, &jsonBuffer))
         {
-            return false;
+            blog_e("[SETTINGS] Failed to open last good config file for reading.");
+            blog_i("[SETTINGS] Trying backup config.");
+            if (!readAndParseJson(CONFIGJSONBACKUP, &rootObj, &jsonBuffer))
+            {
+                blog_e("[SETTINGS] Failed to open backup config file for reading.");
+                blog_i("[SETTINGS] Trying default minimalistic config.");
+                if (!readAndParseJson(CONFIGJSONDEFAULT, &rootObj, &jsonBuffer))
+                {
+                    blog_e("[SETTINGS] Failed to open default config file for reading.");
+                    blog_i("[SETTINGS] Creating config from defaults.");
+                    writeConfig();
+                    if (!readAndParseJson(CONFIGJSON, &rootObj, &jsonBuffer))
+                    {
+                        blog_e("[SETTINGS] Failed even to open config from defaults. Returning");
+                        return false;
+                    }
+                }
+            }
         }
-        file = SPIFFS.open(CONFIGJSON);
     }
-    StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(file);
-    file.close();
-    if (!root.success())
-    {
-        blog_e("[SETTINGS] Corrupted file. Creating default config.");
-        writeConfig();
-        return false;
-    }
+    JsonObject &root = *rootObj;
 
     strlcpy(m_settings->deviceName, root[STR_DEVICENAME] | m_settings->deviceName, 16);
     m_settings->inboundMode = root.get<char>(STR_INBOUNDMODE);
@@ -374,7 +405,6 @@ bool SettingsManagement::readConfig()
         m_settings->schEntries[i].updateFromServer = schEntryInput.get<bool>(STR_SCHUPDATE);
         i++;
     }
-    file.close();
     jsonBuffer.clear();
     return true;
 }
@@ -482,12 +512,13 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
             JsonObject &root = jsonBuffer.parseObject(responseBody.c_str());
 
             if (root.success())
-            {   
+            {
                 String preMD5 = getLocalFileMd5(CONFIG_JSON);
 
                 writeConfig(root);
                 String postMD5 = getLocalFileMd5(CONFIG_JSON);
-                if(preMD5.compareTo(postMD5)!=0) {
+                if (preMD5.compareTo(postMD5) != 0)
+                {
                     m_runtime->setSafeModeOnRestart(0);
                     delay(100);
                     ESP.restart();
@@ -539,7 +570,8 @@ void SettingsManagement::merge(JsonObject &dest, JsonObject &src)
  */
 bool SettingsManagement::writeConfigToFS(const char *filename, JsonObject &root)
 {
-    SPIFFS.remove(filename);
+
+    SPIFFS.rename(CONFIGJSON, CONFIGJSONBACKUP);
     blog_i("[SPIFFS] Writing file %s", filename);
     File file = SPIFFS.open(filename, FILE_WRITE);
     if (!file)
@@ -646,18 +678,19 @@ int SettingsManagement::getMonthFromString(char *s)
 
 String SettingsManagement::getLocalFileMd5(const char *path)
 {
-  File file = SPIFFS.open(path, FILE_READ);
-  if (!file)
-  {
-    blog_e("[SETTINGS] Error. File %s not found.", path);;
-    return "0";
-  }
-  MD5Builder md5;
-  md5.begin();
-  md5.addStream(file, 50000);
-  md5.calculate();
-  String md5str = md5.toString();
-  blog_i("[SETTINGS] Local file:%s MD5:%s", path, md5str.c_str());
-  file.close();
-  return md5str;
+    File file = SPIFFS.open(path, FILE_READ);
+    if (!file)
+    {
+        blog_e("[SETTINGS] Error. File %s not found.", path);
+        ;
+        return "0";
+    }
+    MD5Builder md5;
+    md5.begin();
+    md5.addStream(file, 50000);
+    md5.calculate();
+    String md5str = md5.toString();
+    blog_i("[SETTINGS] Local file:%s MD5:%s", path, md5str.c_str());
+    file.close();
+    return md5str;
 }

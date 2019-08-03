@@ -61,6 +61,7 @@ private:
     bool writeConfigToFS(const char *filename, JsonObject &root);
     int getMonthFromString(char *s);
     String getLocalFileMd5(const char *filename);
+    bool readAndParseJson(const char *filename, JsonObject **root, StaticJsonBuffer<CONFIG_BUFFER> *jsonBuffer);
 };
 
 #endif
