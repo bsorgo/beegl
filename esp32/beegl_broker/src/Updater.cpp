@@ -72,6 +72,7 @@ void Updater::checkFirmware()
     {
       char *hostname = m_settings->getSettingsHostname();
       char *path = m_settings->getFirmwarePath();
+      strcat(path, SYSTEM_VARIANT);
       strcat(path, m_settings->firmwareVersion);
       strcat(path, ".bin");
       blog_i("[UPDATER] Firmware hostname: %s", hostname);

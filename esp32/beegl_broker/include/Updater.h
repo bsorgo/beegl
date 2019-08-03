@@ -33,6 +33,9 @@
 
 #define STORAGE_SIZE 30
 #define INDEXHTML "index.html"
+#ifndef SYSTEM_VARIANT
+#define SYSTEM_VARIANT ""
+#endif;
 class Updater
 {
 
