@@ -6,7 +6,6 @@
 #include <SD.h>
 #else
 #define FILESYSTEM SPIFFS
-
 #endif
 
 bool storage_setup();

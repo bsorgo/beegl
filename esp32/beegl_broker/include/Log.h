@@ -49,7 +49,7 @@
 int fs_log_printf(const char *fmt, ...);
 long log_number() ;
 #define BEEGL_LONG_LOG_FORMAT(letter, format) "[" #letter "][%s:%u] %s(): " format  "\r\n", pathToFileName(__FILE__), __LINE__, __FUNCTION__
-#define BEEGL_SHORT_LOG_FORMAT(letter, format)  format  "\r\n"
+#define BEEGL_SHORT_LOG_FORMAT(letter, format)  "[" #letter "]"  format  "\r\n"
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_VERBOSE
 #define blog_v(format, ...) do {\
@@ -64,7 +64,7 @@ long log_number() ;
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
 #define blog_d(format, ...) do {\
     log_printf(ARDUHAL_LOG_FORMAT(D, format), ##__VA_ARGS__);\
-    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(V,format), ##__VA_ARGS__);\
+    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(D,format), ##__VA_ARGS__);\
 } while (0)
 #else
 #define blog_d(format, ...)
@@ -73,7 +73,7 @@ long log_number() ;
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
 #define blog_i(format, ...) do {\
     log_printf(ARDUHAL_LOG_FORMAT(I, format), ##__VA_ARGS__);\
-    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(V,format), ##__VA_ARGS__);\
+    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(I,format), ##__VA_ARGS__);\
 } while (0)
 #else
 #define blog_i(format, ...)
@@ -82,7 +82,7 @@ long log_number() ;
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_WARN
 #define blog_w(format, ...) do {\
     log_printf(ARDUHAL_LOG_FORMAT(W, format), ##__VA_ARGS__);\
-    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(V,format), ##__VA_ARGS__);\
+    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(W,format), ##__VA_ARGS__);\
 } while (0)
 #else
 #define blog_w(format, ...)
@@ -91,7 +91,7 @@ long log_number() ;
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_ERROR
 #define blog_e(format, ...) do {\
     log_printf(ARDUHAL_LOG_FORMAT(E, format), ##__VA_ARGS__);\
-    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(V,format), ##__VA_ARGS__);\
+    fs_log_printf(BEEGL_SHORT_LOG_FORMAT(E,format), ##__VA_ARGS__);\
 } while (0)
 #else
 #define blog_e(format, ...)

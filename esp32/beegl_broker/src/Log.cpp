@@ -18,7 +18,6 @@
 
 */
 
-
 #include "Log.h"
 
 int fs_log_printf(const char *fmt, ...);
@@ -54,10 +53,18 @@ int fs_log_printf(const char *format, ...)
 
     if (!logFile)
     {
-        if(!FILESYSTEM.exists(LOG_DIR))
+#ifdef FILESYSTEM_SD
+        uint8_t cardType = SD.cardType();
+        if (cardType == CARD_NONE)
         {
-            
-            if(!FILESYSTEM.mkdir(LOG_DIR))
+            log_e("[LOG] No SD card attached.");
+            return 0;
+        }
+#endif
+        if (!FILESYSTEM.exists(LOG_DIR))
+        {
+
+            if (!FILESYSTEM.mkdir(LOG_DIR))
             {
                 log_e("[LOG] Error creating dir: %s", LOG_DIR);
             }
@@ -111,16 +118,17 @@ int fs_log_printf(const char *format, ...)
         if (removeLog > 0)
         {
             String removeFilename = String(LOG_DIR_PREFIX);
-            removeFilename+= String(removeLog);
-            removeFilename+=LOG_EXTENSION;
-            if(!FILESYSTEM.remove(removeFilename)) {
+            removeFilename += String(removeLog);
+            removeFilename += LOG_EXTENSION;
+            if (!FILESYSTEM.remove(removeFilename))
+            {
                 log_e("[LOG] Failed to remove log: %s", removeFilename.c_str());
             }
         }
     }
-    
-    logFile.write((uint8_t*)temp, (size_t)len);
-    lastLogFileSize+=len;
+
+    logFile.write((uint8_t *)temp, (size_t)len);
+    lastLogFileSize += len;
     logFile.flush();
     va_end(arg);
     if (len >= sizeof(loc_buf))
@@ -130,9 +138,7 @@ int fs_log_printf(const char *format, ...)
     return len;
 }
 
-long log_number() {
+long log_number()
+{
     return lastLog;
 }
-
-
-
