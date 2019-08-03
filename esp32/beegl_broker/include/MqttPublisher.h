@@ -29,7 +29,7 @@
 class MqttPublisher : public Publisher
 {
 public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection);
+  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
   void setup();
 
 private:

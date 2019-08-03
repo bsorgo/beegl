@@ -29,7 +29,7 @@ void HttpPublisher::setup()
 {
 }
 
-HttpPublisher::HttpPublisher(Runtime *runtime, Settings *settings, Connection *connection) : Publisher(runtime, settings, connection)
+HttpPublisher::HttpPublisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
 {
 }
 
@@ -44,6 +44,7 @@ bool HttpPublisher::publishMessage(const char *message)
   blog_d("[HTTPPUBLISHER] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
   HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
   httpClient.connectionKeepAlive();
+  httpClient.setHttpResponseTimeout(8000);
   httpClient.beginRequest();
   httpClient.post(path);
   httpClient.sendBasicAuth(m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);

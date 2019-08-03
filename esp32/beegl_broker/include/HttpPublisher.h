@@ -26,7 +26,7 @@
 class HttpPublisher : public Publisher
 {
 public:
-  HttpPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection);
+  HttpPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
   void setup();
 
 protected:

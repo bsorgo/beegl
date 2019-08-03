@@ -29,7 +29,7 @@ void MqttPublisher::setup()
   mqttClient->setServer(m_settings->mqttServer, m_settings->mqttPort);
 }
 
-MqttPublisher::MqttPublisher(Runtime * runtime, Settings *settings, Connection *connection) : Publisher(runtime, settings, connection)
+MqttPublisher::MqttPublisher(Runtime * runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
 {
     mqttClient = new PubSubClient(*m_connection->getClient());
 }
@@ -69,9 +69,9 @@ bool MqttPublisher::reconnect()
         }
         else
         {
-            blog_e( "[MQTTPUBLISHER] failed, rc=%u, try again in 5 seconds", mqttClient->state());
+            blog_e( "[MQTTPUBLISHER] failed, rc=%u, try again in 3 seconds", mqttClient->state());
             // Wait 5 seconds before retrying
-            delay(5000);
+            delay(3000);
             return false;
         }
     }

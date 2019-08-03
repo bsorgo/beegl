@@ -194,7 +194,7 @@ bool Connection::gsmSetup()
         }
         else
         {
-            blog_i( "[GSM] OK");
+            blog_i("[GSM] OK");
         }
     }
     else

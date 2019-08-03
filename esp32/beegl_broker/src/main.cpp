@@ -163,11 +163,11 @@ void setup()
 
   if (settings.protocol & 0x2)
   {
-    publisher = new HttpPublisher(&runtime, &settings, &connection);
+    publisher = new HttpPublisher(&runtime, &settings, &connection, &service);
   }
   else if (settings.protocol & 0x1)
   {
-    publisher = new MqttPublisher(&runtime, &settings, &connection);
+    publisher = new MqttPublisher(&runtime, &settings, &connection, &service);
   }
   publisher->setup();
   measurer = new Measurer(&runtime, &service, &settings, publisher);

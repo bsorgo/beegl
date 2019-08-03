@@ -25,24 +25,38 @@
 #include "Settings.h"
 #include "Connection.h"
 #include "Runtime.h"
+#include "Service.h"
 
 #include <PubSubClient.h>
 
 #define STORAGE_SIZE 30
+#define BACKLOG_NVS "backlog"
+#define BACKLOG_DIR  "/backlog"
+#define BACKLOG_DIR_PREFIX  BACKLOG_DIR "/"
+#define BACKLOG_EXTENSION ".json"
+#ifndef MAX_BACKLOG 
+  #define MAX_BACKLOG 200
+#endif
+
 class Publisher
 {
 
 public:
-  Publisher(Runtime *runtime, Settings *settings, Connection *outboundConnection);
+  Publisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
   void setSettings(Settings *settings);
   virtual void setup();
   bool publish();
   char *storeMessage(JsonObject &jsonObj);
 
+private:
+  int32_t backlogCount;
+  void webServerBind();
+  
 protected:
   Connection *m_connection;
   Settings *m_settings;
   Runtime *m_runtime;
+  Service *m_service;
   char messageStorage[STORAGE_SIZE][350];
   int storageIndex = -1;
   int publishIndex = -1;
