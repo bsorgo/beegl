@@ -17,7 +17,7 @@
  5. Modify platform.ini [configuration](https://docs.platformio.org/en/latest/platforms/espressif32.html#configuration) `[env:esp32dev]`, `[env:env:lolin_d32_pro_16mb]` 
     or create a new one. In particular `monitor_port` and  `upload_port`should be changed to match assigned local COM port
 ```
-[env:esp32dev]
+[env:esp32dev_sim800_spiffs]
 platform = espressif32
 lib_deps = ${common.lib_deps}
 board = esp32dev
@@ -28,16 +28,21 @@ monitor_port = COM10
 monitor_speed = 115200
 build_flags = 
     -DCOMPONENT_EMBED_TXTFILES=src/index.html 
-    -DCORE_DEBUG_LEVEL=4
+    -DCORE_DEBUG_LEVEL=5
     -DTINY_GSM_MODEM_SIM800
-    -DVER=\"1.0.1\"
+    -DMAX_LOG_FILES=5
+    -DMAX_LOG_FILE_SIZE=65536
+    -DMQTT_MAX_PACKET_SIZE=512
+    -DSYSTEM_VARIANT=\"esp32dev_sim800_spiffs\"
+    -DMAX_BACKLOG=200
+    -DVER=\"1.1.0\"
 ```
   6. Upload 
   7. Examine serial output using Monitor 
 
 #### Development/Stable releases
 
-TBD
+Check [Releases](http://www.github.com/bsorgo/beegl/releases/)
 
 ## Runtime
 

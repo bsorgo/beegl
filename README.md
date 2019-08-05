@@ -15,7 +15,7 @@ Beehive monitoring system based on _ESP32 based boards_ and _Node Red_.  Main sy
 
 <img src="https://thingiverse-production-new.s3.amazonaws.com/assets/0e/e0/21/0f/2a/BeeGl_Architecture.png" width="640"/>
 
-If you like **BeeGl**, give it a star, or fork it and contribute! If you find this system useful please [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](bostjan.sorgo@gmail.com)
+If you like **BeeGl**, give it a star, or fork it and contribute! If you find this system useful please [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=bostjan.sorgo%40gmail.com&currency_code=EUR&source=url)
 
 ## Quick Install
 
