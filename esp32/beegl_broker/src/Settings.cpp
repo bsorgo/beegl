@@ -152,7 +152,7 @@ char *Settings::getHostname(char *url)
  */
 char *Settings::getPath(char *url)
 {
-    char *path = (char *)malloc(sizeof(char) * 64);
+    char *path = (char *)malloc(sizeof(char) * 128);
     int firstDelimiter = strcspn(url, "/");
     strncpy(path, url + firstDelimiter, strlen(url) - firstDelimiter + 1);
     return path;
