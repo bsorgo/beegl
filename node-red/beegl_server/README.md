@@ -82,5 +82,4 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
 3.  Run test
    ``` 
     mocha --timeout 5000
-    ```	
-
+   ```
