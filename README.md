@@ -20,7 +20,7 @@ If you like **BeeGl**, give it a star, or fork it and contribute! If you find th
 ## Quick Install
 
 - Broker Device - [README.md](esp32/beegl_broker/README.md)
-- Server [README.md](node-red/beegl_server/README.md)
+- Server [README.md](http://github.com/bsorgo/beegl_server/README.md)
 
 ## Libraries Used
 
