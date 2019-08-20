@@ -25,7 +25,7 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
   
   Don't forget to secure access with username and password. Unfortunately current version of BeeGl Broker supports only usecure MQTT communication.
 2. MongoDB 
-  - Install MongoDB - [Install MongoDB] (https://docs.mongodb.com/manual/installation/). Or
+  - Install MongoDB - [Install MongoDB](https://docs.mongodb.com/manual/installation/). Or
   - use existing MongoDB DB instance(s)
   - using CLI mongodb create MongoDB user and database. In our case user and database are named beegl.
 	```
@@ -49,8 +49,8 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
   
   Don't forget to secure node server with setting username and password. Unfortunately current version of BeeGl Broker supports only http communication. 
 6. In .node-red home directory install required components:
-  - [node-red-dashboard] (https://flows.nodered.org/node/node-red-dashboard)
-  - [node-red-contrib-mongodb3] (https://www.npmjs.com/package/node-red-contrib-mongodb3)
+  - [node-red-dashboard](https://flows.nodered.org/node/node-red-dashboard)
+  - [node-red-contrib-mongodb3](https://www.npmjs.com/package/node-red-contrib-mongodb3)
 
 7. Run node red service and navigate to node red admin 
 
@@ -66,7 +66,7 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
 
 ### Migrate from <1.2.0
 
-1. Execute steps 2, 3, 4, 5 and 6 described in [New installation]
+1. Execute steps 2, 3, 4, 5 and 6 described in [New installation](#new-installation)
 2. Migrate data to mongodb by executing migrate_to_mongodb.js. The script reads node red flow.json file to obtain devices and log.txt file to obtain measurements. Change file locations (--flowcontext, --logfile), connection parameters, credentials (-dburl) and database name (-dbname) accordingly
     ``` 
     node ./migrate_to_mongodb.js  --flowcontext /home/ubuntu/.node-red/context/9a302785.7fd8f8/flow.json --logfile /home/ubuntu/beegl/log.txt --dburl mongodb://beegl:abc123@localhost:27017/beegl --dbname beegl
