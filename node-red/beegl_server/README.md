@@ -27,7 +27,7 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
 2. MongoDB 
   - Install MongoDB - [Install MongoDB](https://docs.mongodb.com/manual/installation/). Or
   - use existing MongoDB DB instance(s)
-  - using CLI mongodb create MongoDB user and database. In our case user and database are named beegl.
+  - using mongodb CLI or other administrative tool create MongoDB user and database. In our case both user and database are named beegl.
 	```
 	use beegl
 	db.createUser(
@@ -38,9 +38,10 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
 	  }
 	)
 	```
-3. In beegl_server execute npm install --production. This will install necessary libraries. 
-4. Execute database schema script create_mongodb_schema.js . This will create collection schema and required indexes. Change connection parameters, credentials (-dburl) and database name (-dbname) accordingly
+3. In beegl_server directory execute npm install --production. This will install necessary libraries 
+4. Execute database schema script: create_mongodb_schema.js . It will create collection schema and required indexes. Change connection parameters, credentials (-dburl) and database name (-dbname) accordingly
     ``` 
+    cd beegl/node-red/beegl-server
     node ./create_mongodb_schema.js --dburl mongodb://beegl:abc123@localhost:27017/beegl --dbname beegl 
     ```	
 5. Install node red - [Getting Started](https://nodered.org/docs/getting-started/). To highlight few of them:
@@ -66,13 +67,20 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
 
 ### Migrate from <1.2.0
 
-1. Execute steps 2, 3, 4, 5 and 6 described in [New installation](#new-installation)
-2. Migrate data to mongodb by executing migrate_to_mongodb.js. The script reads node red flow.json file to obtain devices and log.txt file to obtain measurements. Change file locations (--flowcontext, --logfile), connection parameters, credentials (-dburl) and database name (-dbname) accordingly
+1. Execute steps 2, 3, 4, 5 and 6 as described in [New installation](#new-installation)
+2. Migrate data to mongodb database by executing migrate_to_mongodb.js. The script reads node red flow.json file to obtain devices and log.txt file to obtain measurements. Change file locations (--flowcontext, --logfile), connection parameters, credentials (-dburl) and database name (-dbname) accordingly
     ``` 
     node ./migrate_to_mongodb.js  --flowcontext /home/ubuntu/.node-red/context/9a302785.7fd8f8/flow.json --logfile /home/ubuntu/beegl/log.txt --dburl mongodb://beegl:abc123@localhost:27017/beegl --dbname beegl
     ```	
+3. Replace existing flow by importing latest beegl_server_flow.json
+4. Execute steps 9 and 10 as described in [New installation](#new-installation)
 
+### Integration tests
 
-
-
+1.  In beegl_server directory execute npm install . This will install necessary libraries for production and development
+2.  Modify test/tests.js accordingly. Yes in future version we'll include config files for environments
+3.  Run test
+   ``` 
+    mocha --timeout 5000
+    ```	
 
