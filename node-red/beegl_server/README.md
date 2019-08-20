@@ -24,10 +24,11 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
   - use/install any other MQTT 3.1.1 compatible MQTT server
   
   Don't forget to secure access with username and password. Unfortunately current version of BeeGl Broker supports only usecure MQTT communication.
+  
 2. MongoDB 
   - Install MongoDB - [Install MongoDB](https://docs.mongodb.com/manual/installation/). Or
   - use existing MongoDB DB instance(s)
-  - using mongodb CLI or other administrative tool create MongoDB user and database. In our case both user and database are named beegl.
+  - Using mongodb CLI or other db administrative tool create MongoDB user and database. In our case both user and database are named beegl.
 	```
 	use beegl
 	db.createUser(
