@@ -77,9 +77,9 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
 
 ### Integration tests
 
-1.  In beegl_server directory execute npm install . This will install necessary libraries for production and development
-2.  Modify test/tests.js accordingly. Yes in future version we'll include config files for environments
-3.  Run test
-   ``` 
+1. In beegl_server directory execute npm install . This will install necessary libraries for production and development
+2. Modify test/tests.js accordingly. Yes in future version we'll include config files for environments
+3. Run test
+    ``` 
     mocha --timeout 5000
-   ```
+    ```
