@@ -28,8 +28,10 @@ From version 1.2.0 server requires document database - MongoDB. To migrate check
 2. MongoDB 
   - Install MongoDB - [Install MongoDB](https://docs.mongodb.com/manual/installation/). Or
   - use existing MongoDB DB instance(s)
-  - Using mongodb CLI or other db administrative tool create MongoDB user and database. In our case both user and database are named beegl.
+  - Using mongo CLI or other db administrative tool create MongoDB user and database. In our case both user and database are named beegl.
 	```
+	mongo
+	
 	use beegl
 	db.createUser(
 	  {
