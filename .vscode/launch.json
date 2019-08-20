@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program",
+            "program": "${workspaceFolder}/node-red/beegl_server/beegl_migrate_to_mongo.js",
+            "args": ["beegl_migrate_to_mongo.js", "flows_ip-172-31-46-91.json", "localhost:27017", "beegl", "beegl", "abc123"],
+            "localRoot" : "${workspaceFolder}/node-red/beegl_server",
+            "remoteRoot" : "${workspaceFolder}/node-red/beegl_server",
+            "autoAttachChildProcesses": true
+        }
+    ]
+}

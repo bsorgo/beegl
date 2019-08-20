@@ -1,0 +1,12 @@
+{
+    "dependencies": {
+        "commander": "^3.0.0",
+        "mongodb": "^3.3.0"
+    },
+    "devDependencies": {
+        "mocha": "^6.2.0",
+        "mqtt": "^3.0.0",
+        "should": "^13.2.3",
+        "supertest": "^4.0.2"
+    }
+}
