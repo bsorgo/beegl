@@ -39,6 +39,9 @@ public:
     bool setup();
     void shutdown();
     TinyGsm * getModem();
+    void modemOff();
+    void suspend();
+    void resume();
 
 private:
     const int MODEM_RX_PIN = 15;
@@ -53,7 +56,7 @@ private:
     WiFiClient *wifiClient;
 
     void btOff();
-    void modemOff();
+    
     void wifiOff();
 
     bool gsmSetup();

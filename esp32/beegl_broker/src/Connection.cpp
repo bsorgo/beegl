@@ -49,6 +49,31 @@ void Connection::modemOff()
     modem->sendAT("+CSCLK=2");
 }
 
+void Connection::suspend()
+{
+    if (m_settings->outboundMode & 0x2)
+    {
+#ifdef TINY_GSM_MODEM_SIM800
+        modem->sendAT("+CFUN=4");
+#endif
+        delay(500);
+        log_d( "[GSM] SUSPENDED");
+    }
+}
+
+void Connection::resume()
+{
+    if (m_settings->outboundMode & 0x2)
+    {
+    #ifdef TINY_GSM_MODEM_SIM800
+        modem->sendAT("+CFUN=1");
+    #endif
+        blog_d( "[GSM] RESUMED");
+    }
+    
+
+}
+
 void Connection::shutdown()
 {
     if (m_settings->outboundMode & 0x2)
@@ -178,13 +203,16 @@ bool Connection::gsmSetup()
     modem->waitResponse(GSM_OK);
     if (m_settings->outboundMode & 0x2)
     {
-        modem->sendAT("+CSCLK=0");
+
+        
         // Restart takes quite some time
         // To skip it, call init() instead of restart()
         blog_i( "[GSM] Initializing GPRS modem");
+        modem->sendAT("+CSCLK=0");
+        modem->sendAT("+CFUN=1");
         modem->restart();
         delay(2000);
-        blog_i( "[GSM] Modem type: %s , IMEI: %s", modem->getModemInfo().c_str(), modem->getIMEI().c_str());
+        blog_i( "[GSM] Modem type: %s , IMEI: %s, ICCID: %s", modem->getModemInfo().c_str(), modem->getIMEI().c_str(), modem->getSimCCID().c_str());
         delay(1000);
         blog_i( "[GSM] Waiting for network...");
         if (!modem->waitForNetwork())
@@ -194,7 +222,8 @@ bool Connection::gsmSetup()
         }
         else
         {
-            blog_i("[GSM] OK");
+
+            blog_i("[GSM] OK. Network strenght: %u ", modem->getSignalQuality());
         }
     }
     else

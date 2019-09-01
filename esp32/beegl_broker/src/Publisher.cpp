@@ -93,6 +93,7 @@ bool Publisher::publish()
 {
     if (publishIndex != storageIndex || backlogCount>0)
     {
+        m_connection->resume();
         m_connection->checkConnect();
         bool connected = false;
         int retries = 0;
@@ -181,6 +182,8 @@ bool Publisher::publish()
                 }
             }
         }
+        m_connection->suspend();
     }
+    
     return true;
 }

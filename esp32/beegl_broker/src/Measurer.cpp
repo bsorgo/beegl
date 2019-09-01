@@ -70,8 +70,6 @@ bool Measurer::scaleSetup()
         blog_i("[HX711] Scale factor: %f", m_settings->scaleFactor);
         blog_i("[HX711] Scale offset: %u", m_settings->scaleOffset);
         blog_i("[HX711] Scale unit: %s", m_settings->scaleUnit);
-        m_scale->power_up();
-        delay(100);
     }
     return true;
 }
@@ -120,8 +118,10 @@ char *Measurer::measure()
     {
         blog_d("[HX711] Powerup");
         m_scale->power_up();
+        delay(200);
         m_scale->set_scale(m_settings->scaleFactor);
         m_scale->set_offset(m_settings->scaleOffset);
+        delay(200);
         data.weight = -1;
         data.weight = m_scale->get_units(10);
         blog_d("[MEASURER] Read weight %f ", data.weight);

@@ -178,6 +178,8 @@ void setup()
   runtime.setSafeModeOnRestart(0);
   settingsManagement.storeLastGood();
   indicator.reportSuccess(4);
+  connection.suspend();
+  delay(2000);
 }
 
 void loop()

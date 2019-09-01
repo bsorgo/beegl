@@ -337,6 +337,19 @@
             xhr.send();
         }
 
+        function sendModemAT() {
+            var xhr = new XMLHttpRequest();
+            var formData = new FormData();
+            formData.append('at', document.getElementById("modemAtCommand").value);
+            var url = "/modem";
+            xhr.open("POST", url, true);
+            xhr.onreadystatechange = function () {
+                window.location.replace("#popup1");
+                document.getElementById("messageContent").innerText = xhr.responseText;
+            };
+            xhr.send(formData);
+        }
+
 
         function submitForm() {
 
@@ -852,6 +865,14 @@
                         <input type="Submit" value="Update firmware" class="button-error pure-button">
                     </fieldset>
                 </form>
+                <form>
+                    <fieldset>
+                        <legend>Modem</legend>
+                        <label for="modemAtCommand"></label>Send AT Command</label><input type="text"" maxlength="16" id="modemAtCommand">
+                    </fieldset>
+                    <button type="button" class="button-success pure-button" onclick="sendModemAT()">Send AT command</button>
+                </form>
+                
             </div>
         </div>
     </div>
