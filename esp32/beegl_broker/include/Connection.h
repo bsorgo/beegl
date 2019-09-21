@@ -29,6 +29,7 @@
 #include <esp_bt.h>
 
 
+
 class Connection
 {
 
@@ -42,10 +43,11 @@ public:
     void modemOff();
     void suspend();
     void resume();
-
+    void modemPowerup();
 private:
     const int MODEM_RX_PIN = 15;
     const int MODEM_TX_PIN = 14;
+    const int MODEM_POWER_PIN = 5;
 
     Settings *m_settings;
 

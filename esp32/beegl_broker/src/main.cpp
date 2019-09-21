@@ -54,6 +54,11 @@
 static heap_trace_record_t trace_record[HEAP_TRACE_NUM_RECORDS]; // This buffer must be in internal RAM
 #endif
 
+#define SerialMon Serial
+#define TINY_GSM_DEBUG SerialMon
+
+
+
 WiFiClient wifiClient;
 Indicator indicator = Indicator();
 Settings settings = Settings();
@@ -79,6 +84,7 @@ void reportStatus()
     indicator.reportSuccess();
   }
 }
+
 
 
 
