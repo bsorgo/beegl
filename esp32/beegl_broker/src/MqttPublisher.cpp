@@ -1,5 +1,5 @@
 /*
-  Publisher.cpp - Provides Temporary storage and publishes messages to central server over Mqtt
+  MqttPublisher.cpp - Provides Temporary storage and publishes messages to central server over Mqtt
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo

@@ -1,5 +1,5 @@
 /*
-  MqttPublisher.h - Mqtt Publisher header file
+  LoraPublisher.cpp - Publishes messages over Lorawan
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,26 +18,25 @@
 
 */
 
-#ifndef MqttPublisher_h
-#define MqttPublisher_h
+#include "MqttPublisher.h"
 
-
-#include "Publisher.h"
-#include <PubSubClient.h>
-
-
-class MqttPublisher : public Publisher
+void LoraPublisher::setup()
 {
-public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup();
 
-private:
-  PubSubClient *mqttClient;
+}
 
-protected:
-  bool reconnect();
-  bool publishMessage(const char *message);
-};
+LoraPublisher::LoraPublisher(Runtime * runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
+{
+    mqttClient = new PubSubClient(*m_connection->getClient());
+}
 
-#endif
+bool MqttPublisher::publishMessage(const char *message)
+{
+
+}
+
+
+bool MqttPublisher::reconnect()
+{
+    return true;
+}

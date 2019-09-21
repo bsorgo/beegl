@@ -1,5 +1,5 @@
 /*
-  MqttPublisher.h - Mqtt Publisher header file
+  LoraPublisher.h - Mqtt Publisher header file
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,18 +18,20 @@
 
 */
 
-#ifndef MqttPublisher_h
-#define MqttPublisher_h
+#ifndef LoraPublisher_h
+#define LoraPublisher_h
 
 
 #include "Publisher.h"
-#include <PubSubClient.h>
+#include <lmic.h>
+#include <hal/hal.h>
+#include <SPI.h>
 
 
-class MqttPublisher : public Publisher
+class LoraPublisher : public Publisher
 {
 public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
+  LoraPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
   void setup();
 
 private:
