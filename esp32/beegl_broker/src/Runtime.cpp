@@ -57,8 +57,9 @@ void Runtime::webServerBind()
 void Runtime::checkOperationalTime()
 {
   uint32_t sleepTime = 0;
-  if (millis() > 600000)
+  if (millis() > 600000 && !getSafeMode())
   {
+    
     time_t t = m_settings->getTimezone()->toLocal(now());
     // in seconds
 

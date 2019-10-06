@@ -1,7 +1,6 @@
 #ifndef Connection_h
 #define Connection_h
 
-
 /*
   Connection.h - Connection header file
   
@@ -24,45 +23,49 @@
 
 #include "Log.h"
 #include "Settings.h"
-#include <TinyGsmClient.h>
+
 #include <WiFiClient.h>
-#include <esp_bt.h>
 
+class ConnectionProvider
+{
+public:
+  ConnectionProvider(Settings *settings) {m_settings = settings;};
+  virtual Client *getClient() {return nullptr;};
+  virtual void checkConnect() {};
+  virtual bool setup() { return true;};
+  virtual void shutdown() {};
+  virtual void suspend() {};
+  virtual void resume() {};
+  virtual char getInboundType() { return 0x00;}; 
+  virtual char getOutboundType() {return 0x00;};
+  virtual const char* getName() { return EMPTY;};
 
+protected:
+  Settings *m_settings;
+private:
+  const char EMPTY[1] = ""; 
+
+};
 
 class Connection
 {
 
 public:
-    Connection(Settings *settings);
-    Client *getClient();
-    void checkConnect();
-    bool setup();
-    void shutdown();
-    TinyGsm * getModem();
-    void modemOff();
-    void suspend();
-    void resume();
-    void modemPowerup();
+  Connection(Settings *settings);
+  Client *getClient();
+  void checkConnect();
+  bool setup();
+  void shutdown();
+  void suspend();
+  void resume();
+  void addConnectionProvider(ConnectionProvider *connection);
+  
 private:
-    const int MODEM_RX_PIN = 15;
-    const int MODEM_TX_PIN = 14;
-    const int MODEM_POWER_PIN = 5;
-
-    Settings *m_settings;
-
-    HardwareSerial *serialAT;
-    TinyGsm *modem;
-    TinyGsmClient *gsmClient;
-
-    WiFiClient *wifiClient;
-
-    void btOff();
-    
-    void wifiOff();
-
-    bool gsmSetup();
-    bool gprsSetup();
-    bool wifiSetup();
+  Settings *m_settings;
+  ConnectionProvider* m_connection[5];
+  int connectionSize = 0;
 };
-#endif 
+
+
+
+#endif

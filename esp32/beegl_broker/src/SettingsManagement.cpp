@@ -43,27 +43,7 @@ void SettingsManagement::webServerBind()
         request->send_P(200, "text/html", (char *)index_html_start);
     });
 
-    m_server->getWebServer()->on("/modem", HTTP_POST, [&](AsyncWebServerRequest *request) {
-        if (request->hasParam("at", true, false))
-        {
-            const String value = request->getParam("at", true, false)->value();
-            blog_d("[MODEM] at value: %s", value.c_str());
-            m_connection->getModem()->sendAT(value.c_str());
-            String response = String();
-            if (m_connection->getModem()->waitResponse(3000, response, GSM_OK))
-            {
-                request->send(200, "text/plain", response);
-            }
-            else
-            {
-                request->send(405, "text/plain", response);
-            }
-        }
-        else
-        {
-            request->send(405);
-        }
-    });
+   
 
     m_server->getWebServer()->on("/rest/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SPIFFS, CONFIGJSON, String(), false);
@@ -209,10 +189,19 @@ bool SettingsManagement::writeConfig(JsonObject &input)
     mqttSettings[STR_MQTTTOPIC] = m_settings->sensorTopic;
 
     merge(mqttSettings, input[STR_MQTTSETTINGS]);
+
+    JsonObject &loraSettings = root.createNestedObject(STR_LORASETTINGS);
+    loraSettings[STR_LORAAPPEUI] = m_settings->loraAppEUI;
+    loraSettings[STR_LORADEVEUI] = m_settings->loraDeviceEUI;
+    loraSettings[STR_LORAAPPKEY] = m_settings->loraAppKey;
+
+    merge(loraSettings, input[STR_LORASETTINGS]);
+
     JsonObject &gprsSettings = root.createNestedObject(STR_GPRSSETTINGS);
     gprsSettings[STR_GPRSAPN] = m_settings->apn;
     gprsSettings[STR_GPRSPASSWORD] = m_settings->apnPass;
     gprsSettings[STR_GPRSUSERNAME] = m_settings->apnUser;
+    
 
     merge(gprsSettings, input[STR_GPRSSETTINGS]);
 
@@ -321,21 +310,21 @@ bool SettingsManagement::readConfig()
     }
     JsonObject &root = *rootObj;
 
-    strlcpy(m_settings->deviceName, root[STR_DEVICENAME] | m_settings->deviceName, 16);
+    strlcpy(m_settings->deviceName, root[STR_DEVICENAME] | m_settings->deviceName, 17);
     m_settings->inboundMode = root.get<char>(STR_INBOUNDMODE);
     m_settings->outboundMode = (root.get<char>(STR_OUTBOUNDMODE) ? root.get<char>(STR_OUTBOUNDMODE) : m_settings->outboundMode);
     m_settings->deviceType = (root.get<char>(STR_DEVICETYPE) ? root.get<char>(STR_DEVICETYPE) : m_settings->deviceType);
     m_settings->refreshInterval = (root.get<uint32_t>(STR_REFRESH) ? root.get<uint32_t>(STR_REFRESH) : m_settings->refreshInterval);
-    strlcpy(m_settings->firmwareVersion, root[STR_VER] | m_settings->firmwareVersion, 8);
+    strlcpy(m_settings->firmwareVersion, root[STR_VER] | m_settings->firmwareVersion, 9);
     strlcpy(m_settings->httpTimeAndSettingsPrefix, root[STR_SETTINGSURL] | m_settings->httpTimeAndSettingsPrefix, 64);
-    strlcpy(m_settings->httpTimeAndSettingUsername, root[STR_SETTINGSUSERNAME] | m_settings->httpTimeAndSettingUsername, 16);
-    strlcpy(m_settings->httpTimeAndSettingPassword, root[STR_SETTINGSPASSWORD] | m_settings->httpTimeAndSettingPassword, 16);
+    strlcpy(m_settings->httpTimeAndSettingUsername, root[STR_SETTINGSUSERNAME] | m_settings->httpTimeAndSettingUsername, 17);
+    strlcpy(m_settings->httpTimeAndSettingPassword, root[STR_SETTINGSPASSWORD] | m_settings->httpTimeAndSettingPassword, 17);
 
     // wifi settings
 
     JsonObject &wifiSettings = root[STR_WIFISETTINGS];
-    strlcpy(m_settings->wifiSSID, wifiSettings[STR_WIFISSID] | m_settings->wifiSSID, 32);
-    strlcpy(m_settings->wifiPassword, wifiSettings[STR_WIFIPASSWORD] | m_settings->wifiPassword, 32);
+    strlcpy(m_settings->wifiSSID, wifiSettings[STR_WIFISSID] | m_settings->wifiSSID, 33);
+    strlcpy(m_settings->wifiPassword, wifiSettings[STR_WIFIPASSWORD] | m_settings->wifiPassword, 33);
     m_settings->wifiCustomIp = wifiSettings.get<int>(STR_WIFICUSTOMIP) ? wifiSettings.get<int>(STR_WIFICUSTOMIP) : m_settings->wifiCustomIp;
     m_settings->wifiIp.fromString(wifiSettings[STR_WIFIIP] | "192.168.0.155");
     m_settings->wifiGateway.fromString(wifiSettings[STR_WIFIGATEWAY] | "192.168.0.1");
@@ -348,23 +337,30 @@ bool SettingsManagement::readConfig()
         m_settings->scaleFactor = scaleSettings.get<float>(STR_SCALEFACTOR);
     }
     m_settings->scaleOffset = scaleSettings.get<long>(STR_SCALEOFFSET) | 0;
-    strlcpy(m_settings->scaleUnit, scaleSettings[STR_SCALEUNIT] | m_settings->scaleUnit, 5);
+    strlcpy(m_settings->scaleUnit, scaleSettings[STR_SCALEUNIT] | m_settings->scaleUnit, 6);
 
     // wifi ap settings
 
     JsonObject &apSettings = root[STR_APSETTINGS];
-    strlcpy(m_settings->apPassword, apSettings[STR_APPASSWORD] | m_settings->apPassword, 16);
+    strlcpy(m_settings->apPassword, apSettings[STR_APPASSWORD] | m_settings->apPassword, 17);
     m_settings->apIp.fromString(apSettings[STR_APIP] | "192.168.4.1");
     m_settings->apGateway.fromString(apSettings[STR_APGATEWAY] | "192.168.4.1");
     m_settings->apSubnet.fromString(apSettings[STR_APNETMASK] | "255.255.255.0");
     // mqtt settings
 
     JsonObject &mqttSettings = root[STR_MQTTSETTINGS];
-    strlcpy(m_settings->mqttServer, mqttSettings[STR_MQTTSERVER] | m_settings->mqttServer, 32);
+    strlcpy(m_settings->mqttServer, mqttSettings[STR_MQTTSERVER] | m_settings->mqttServer, 33);
     m_settings->mqttPort = mqttSettings.get<int>(STR_MQTTPORT) | 1883;
-    strlcpy(m_settings->mqttUsername, mqttSettings[STR_MQTTUSERNAME] | m_settings->mqttUsername, 16);
-    strlcpy(m_settings->mqttPassword, mqttSettings[STR_MQTTPASSWORD] | m_settings->mqttPassword, 16);
-    strlcpy(m_settings->sensorTopic, mqttSettings[STR_MQTTTOPIC] | m_settings->sensorTopic, 64);
+    strlcpy(m_settings->mqttUsername, mqttSettings[STR_MQTTUSERNAME] | m_settings->mqttUsername, 17);
+    strlcpy(m_settings->mqttPassword, mqttSettings[STR_MQTTPASSWORD] | m_settings->mqttPassword, 17);
+    strlcpy(m_settings->sensorTopic, mqttSettings[STR_MQTTTOPIC] | m_settings->sensorTopic, 65);
+
+    //lorawan settings
+
+    JsonObject &loraSettings = root[STR_LORASETTINGS];
+    strlcpy(m_settings->loraAppEUI, loraSettings[STR_LORAAPPEUI] | m_settings->loraAppEUI, 17);
+    strlcpy(m_settings->loraDeviceEUI, loraSettings[STR_LORADEVEUI] | m_settings->loraDeviceEUI, 17);
+    strlcpy(m_settings->loraAppKey, loraSettings[STR_LORAAPPKEY] | m_settings->loraAppKey, 33);
 
     // gprs settings
 
@@ -427,20 +423,22 @@ bool SettingsManagement::writeSettingsToServer()
 
 void SettingsManagement::syncTimeAndSettings()
 {
+    if(m_settings->outboundMode & 0x3) 
+    {
+        // GPRS || WiFi
+        blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
+        char *hostname = m_settings->getSettingsHostname();
+        char *path = m_settings->getSettingsPath();
 
-    blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
-
-    char *hostname = m_settings->getSettingsHostname();
-    char *path = m_settings->getSettingsPath();
-
-    blog_d("[SETTINGS] Hostname: %s", hostname);
-    blog_d("[SETTINGS] Path: %s", path);
-    blog_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
-    m_connection->checkConnect();
-    HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
-    this->readTimeAndSettings(&httpClient, path);
-    free(hostname);
-    free(path);
+        blog_d("[SETTINGS] Hostname: %s", hostname);
+        blog_d("[SETTINGS] Path: %s", path);
+        blog_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+        m_connection->checkConnect();
+        HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
+        this->readTimeAndSettings(&httpClient, path);
+        free(hostname);
+        free(path);
+    }
 }
 
 bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)

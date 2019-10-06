@@ -1,5 +1,6 @@
+
 /*
-  MqttPublisher.h - Mqtt Publisher header file
+  BLEConnectionProvider.cpp 
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,27 +19,50 @@
 
 */
 
-#ifndef MqttPublisher_h
-#define MqttPublisher_h
+#include "BLEConnectionProvider.h"
 
+// set up the data structures.
 
-#include "Publisher.h"
-#include <PubSubClient.h>
-
-
-class MqttPublisher : public Publisher
+BLEConnectionProvider::BLEConnectionProvider(Settings *settings) : ConnectionProvider(settings)
 {
-public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup();
-  void update();
-  
-private:
-  PubSubClient *mqttClient;
 
-protected:
-  bool reconnect();
-  bool publishMessage(const char *message);
-};
+}
 
-#endif
+void BLEConnectionProvider::btOff()
+{
+    blog_i("[BLE] OFF");
+    esp_bt_controller_disable();
+}
+
+void BLEConnectionProvider::suspend()
+{
+
+}
+
+void BLEConnectionProvider::resume()
+{
+
+}
+
+void BLEConnectionProvider::shutdown()
+{
+    btOff();
+}
+
+
+
+bool BLEConnectionProvider::setup()
+{
+    return true;
+}
+
+void BLEConnectionProvider::checkConnect()
+{
+   
+}
+
+Client *BLEConnectionProvider::getClient()
+{
+    return nullptr;
+}
+

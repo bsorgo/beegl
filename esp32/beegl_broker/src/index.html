@@ -431,6 +431,12 @@
                         "pwd": document.getElementById("mqttPassword").value,
                         "topic": document.getElementById("mqttTopic").value
                     },
+                    "loraS":
+                    {
+                        "deui": document.getElementById("loraDeviceEUI").value,
+                        "aeui" : document.getElementById("loraAppEUI").value,
+                        "akey": document.getElementById("loraAppKey").value
+                    },
                     "schS": []
                 };
                 var unsortedSchS = [];
@@ -515,6 +521,10 @@
                     document.getElementById("mqttUsername").value = json.mqttS.user;
                     document.getElementById("mqttPassword").value = json.mqttS.pwd;
                     document.getElementById("mqttTopic").value = json.mqttS.topic;
+
+                    document.getElementById("loraDeviceEUI").value = json.loraS.deui;
+                    document.getElementById("loraAppEUI").value = json.loraS.aeui;
+                    document.getElementById("loraAppKey").value = json.loraS.akey;
 
                     for (i = 0; i < json.schS.length; i++) {
                         var k = json.schS[i];
@@ -638,6 +648,7 @@
                         <select id="outboundMode">
                             <option value="1">WiFi</option>
                             <option value="2">GPRS</option>
+                            <option value="4">LoraWan</option>
                         </select>
 
 
@@ -806,6 +817,7 @@
                         <select id="publisherProtocol">
                             <option value="1">MQTT</option>
                             <option value="2">HTTP</option>
+                            <option value="4">LoraWan</option>
                         </select>
                     </fieldset>
 
@@ -819,6 +831,12 @@
                         <label for="mqttTopic">Measurement topic</label><input type="text" id="mqttTopic"
                             maxLength="32">
 
+                    </fieldset>
+                    <fieldset>
+                        <legend>LoraWan Settings</legend>
+                        <label for="loraDeviceEUI">Device EUI</label><input type="text" id="loraDeviceEUI" maxLength="16">
+                        <label for="loraAppEUI">Application EUI</label><input type="text" id="loraAppEUI" maxLength="16">
+                        <label for="loraAppKey">Application key</label><input type="password" id="loraAppKey" maxLength="32">
                     </fieldset>
                     <fieldset>
                         <legend>Operational Time Intervals</legend>

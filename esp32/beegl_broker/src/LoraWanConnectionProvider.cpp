@@ -1,5 +1,6 @@
+
 /*
-  MqttPublisher.h - Mqtt Publisher header file
+  LoraWanConnectionProvider.cpp - Lora Wan connection implementation
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,27 +19,39 @@
 
 */
 
-#ifndef MqttPublisher_h
-#define MqttPublisher_h
+#include "LoraWanConnectionProvider.h"
 
 
-#include "Publisher.h"
-#include <PubSubClient.h>
 
 
-class MqttPublisher : public Publisher
+// set up the data structures.
+
+LoraWanConnectionProvider::LoraWanConnectionProvider(Settings *settings) : ConnectionProvider(settings)
 {
-public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup();
-  void update();
+}
+
+void LoraWanConnectionProvider::suspend()
+{
+}
+
+void LoraWanConnectionProvider::resume()
+{
+}
+
+void LoraWanConnectionProvider::shutdown()
+{
+}
+
+bool LoraWanConnectionProvider::setup()
+{
   
-private:
-  PubSubClient *mqttClient;
+}
 
-protected:
-  bool reconnect();
-  bool publishMessage(const char *message);
-};
+void LoraWanConnectionProvider::checkConnect()
+{
+}
 
-#endif
+Client *LoraWanConnectionProvider::getClient()
+{
+  return nullptr;
+}

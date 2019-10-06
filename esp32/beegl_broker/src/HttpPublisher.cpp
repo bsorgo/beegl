@@ -29,6 +29,10 @@ void HttpPublisher::setup()
 {
 }
 
+void HttpPublisher::update()
+{
+}
+
 HttpPublisher::HttpPublisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
 {
 }

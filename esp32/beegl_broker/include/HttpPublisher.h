@@ -28,7 +28,7 @@ class HttpPublisher : public Publisher
 public:
   HttpPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
   void setup();
-
+  void update();
 protected:
   bool reconnect();
   bool publishMessage(const char *message);

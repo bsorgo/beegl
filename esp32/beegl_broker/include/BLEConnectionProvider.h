@@ -1,5 +1,8 @@
+#ifndef BLEConnectionProvider_h
+#define BLEConnectionProvider_h
+
 /*
-  MqttPublisher.h - Mqtt Publisher header file
+  BLEConnectionProvider.h - BLE connection
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,27 +21,28 @@
 
 */
 
-#ifndef MqttPublisher_h
-#define MqttPublisher_h
-
-
-#include "Publisher.h"
-#include <PubSubClient.h>
-
-
-class MqttPublisher : public Publisher
+#include "Log.h"
+#include "Connection.h"
+#include "Settings.h"
+#include <esp_bt.h>
+class BLEConnectionProvider : public ConnectionProvider
 {
-public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup();
-  void update();
-  
-private:
-  PubSubClient *mqttClient;
 
-protected:
-  bool reconnect();
-  bool publishMessage(const char *message);
+public:
+  BLEConnectionProvider(Settings *settings);
+  Client *getClient() override;
+  void checkConnect() override;
+  bool setup() override;
+  void shutdown() override;
+  void suspend() override;
+  void resume() override;
+  char getInboundType() { return 0x2;};
+  char getOutboundType() { return 0x0;};
+  const char* getName() { return m_name;}
+private:
+  bool bleSetup();
+  void btOff();
+  const char m_name[4] = "BLE";
 };
 
 #endif

@@ -63,6 +63,10 @@
 #define STR_MQTTUSERNAME "user"
 #define STR_MQTTPASSWORD "pwd"
 #define STR_MQTTTOPIC "topic"
+#define STR_LORASETTINGS "loraS"
+#define STR_LORAAPPEUI "aeui"
+#define STR_LORADEVEUI "deui"
+#define STR_LORAAPPKEY "akey"
 #define STR_GPRSSETTINGS "gprsS"
 #define STR_GPRSAPN "apn"
 #define STR_GPRSUSERNAME "user"
@@ -77,6 +81,7 @@
 #define STR_SCHUPDATE "upd"
 #define STR_TIMEFORMAT "%04d-%02d-%02dT%02d:%02d:%02d%s"
 #define STR_TIME "time"
+#define STR_EPOCHTIME "etime"
 #define STR_TIMESETTINGS "timeS"
 #define STR_TIMESZONE "sZone"
 #define STR_TIMEZONE "zone"
@@ -146,16 +151,16 @@ public:
 
 
     */
-   char deviceName[16] = "BEE000";
+   char deviceName[17] = "BEE000";
     int restartInterval = 3600;
     char outboundMode = 0x1;
     char inboundMode = 0x0;
     char deviceType = 0x1;
-    char httpTimeAndSettingsPrefix[64] = "www.example.com/beegl/";
-    char httpTimeAndSettingUsername[16] = "user";
-    char httpTimeAndSettingPassword[16] = "password";
+    char httpTimeAndSettingsPrefix[65] = "www.example.com/beegl/";
+    char httpTimeAndSettingUsername[17] = "user";
+    char httpTimeAndSettingPassword[17] = "password";
     uint32_t refreshInterval = 60000;
-    char firmwareVersion[8];
+    char firmwareVersion[9];
 
     /* Timezone
         summerTimeZone: 
@@ -169,6 +174,7 @@ public:
        protocol:
        0x1 - Publish over MQTT - Use MQTT settings
        0x2 - Publish over HTTP - use Setting resource path & credentials
+       0x4 - Publish over Lora 
     */
     char protocol =  0x1;
 
@@ -239,10 +245,10 @@ public:
     sensorTopic
     Measurement publish topic    
     */
-    char mqttServer[32] = "mqtt.example.com";
+    char mqttServer[33] = "mqtt.example.com";
     int mqttPort = 1883;
-    char mqttUsername[16] = "iot_username";
-    char mqttPassword[16] = "iot_password";
+    char mqttUsername[17] = "iot_username";
+    char mqttPassword[17] = "iot_password";
     char sensorTopic[64] = "measurements";
     /* GPRS parameters 
     apn:
@@ -252,9 +258,22 @@ public:
     apnPassword:
     APN password
     */
-    char apn[32] = "internet";
-    char apnUser[16] = "mobitel";
-    char apnPass[16] = "internet";
+    char apn[33] = "internet";
+    char apnUser[17] = "mobitel";
+    char apnPass[17] = "internet";
+
+    /* Lorawan parameters
+    loraAppEUI:
+    TTN App EUI
+    loraDevicEUI:
+    TTN Device EUI
+    loraAppKey
+    TTN App key
+    */
+
+    char loraAppEUI[17] = "0000000000000000";
+    char loraDeviceEUI[17] =  "0000000000000000";
+    char loraAppKey[33]=  "00000000000000000000000000000000";
     /* Scheduler parameters 
 
     Scheduler entries:

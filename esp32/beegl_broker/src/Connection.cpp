@@ -19,283 +19,105 @@
 
 */
 
-
 #include "Connection.h"
+
+// set up the data structures.
 
 
 
 Connection::Connection(Settings *settings)
 {
-    serialAT = new HardwareSerial(1);
-    modem = new TinyGsm(*serialAT);
-    gsmClient = new TinyGsmClient();
-    gsmClient->init(modem);
-    wifiClient = new WiFiClient();
     m_settings = settings;
-
-    pinMode(MODEM_POWER_PIN,OUTPUT);
-    digitalWrite(MODEM_POWER_PIN,HIGH); 
 }
 
-void Connection::btOff()
+void Connection::addConnectionProvider(ConnectionProvider *connection)
 {
-    blog_i( "[BLE] OFF");
-    esp_bt_controller_disable();
-}
-
-void Connection::modemOff()
-{
-    blog_i( "[GSM] OFF");
-    modem->poweroff();
-#if defined(TINY_GSM_MODEM_SIM800) || defined(TINY_GSM_MODEM_SIM800)
-    delay(500);
-    modem->sendAT(GF("+CSCLK=2"));
-    modem->waitResponse(5000L);
-#endif
-    
-}
-
-void Connection::modemPowerup() {
-#if defined(TINY_GSM_MODEM_SIM7020)||defined(TINY_GSM_MODEM_SIM800)
-    digitalWrite(MODEM_POWER_PIN,LOW);
-    delay(400);
-    digitalWrite(MODEM_POWER_PIN,HIGH);
-    delay(800);
-#endif
+    blog_d("[CONNECTION] Adding connection provider: %s, inbound: %u, outbound: %u", connection->getName(), connection->getInboundType(), connection->getOutboundType());
+    m_connection[connectionSize] = connection;
+    connectionSize++;
 }
 
 void Connection::suspend()
 {
-    if (m_settings->outboundMode & 0x2)
+    for(int i=0;i<connectionSize;i++)
     {
-#if defined(TINY_GSM_MODEM_SIM7020)
-        modem->sendAT(GF("+CPSMS=1"));
-        modem->waitResponse(5000L);
-#endif
-#if defined(TINY_GSM_MODEM_SIM7020)||defined(TINY_GSM_MODEM_SIM800)
-        modem->sendAT(GF("+CSCLK=2"));
-        modem->waitResponse(5000L);
-#endif
-        log_d( "[GSM] SUSPENDED");
+        ConnectionProvider *connection = m_connection[i];
+        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        {
+            connection->suspend();
+        }
     }
 }
 
 void Connection::resume()
 {
-    if (m_settings->outboundMode & 0x2)
+    for(int i=0;i<connectionSize;i++)
     {
-#if defined(TINY_GSM_MODEM_SIM7020)||defined(TINY_GSM_MODEM_SIM800)
-        modemPowerup();
-        
-        modem->testAT();
-        delay(200);
-        modem->testAT();
-        delay(200);
-        modem->waitResponse(10000L);
-#endif
-        blog_d( "[GSM] RESUMED");
-
+        ConnectionProvider *connection = m_connection[i];
+        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        {
+            connection->suspend();
+        }
     }
 }
 
 void Connection::shutdown()
 {
-    if (m_settings->outboundMode & 0x2)
+    for(int i=0;i<connectionSize;i++)
     {
-        modemOff();
-    }
-    if (m_settings->inboundMode & 0x2)
-    {
-        btOff();
-    }
-}
-
-void Connection::wifiOff()
-{
-    blog_i( "[WIFI] OFF");
-    WiFi.mode(WIFI_OFF);
-}
-
-bool Connection::gprsSetup()
-{
-    if (m_settings->outboundMode & 0x2)
-    {
-
-        blog_i( "[GSM] Connecting to APN %s with username %s and password %s", m_settings->apn, m_settings->apnUser, m_settings->apnPass);
-        if (!modem->gprsConnect(m_settings->apn, m_settings->apnUser, m_settings->apnPass))
+        ConnectionProvider *connection = m_connection[i];
+        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
         {
-            blog_i( "[GSM] NOK");
-            return false;
-        }
-        blog_i( "[GSM] OK");
-    }
-    return true;
-}
-
-// Wifi setup
-bool Connection::wifiSetup()
-{
-
-    int retries = 0;
-    blog_i( "[WIFI] Settings: Use custom ip: %u, IP: %s GW: %s NETMASK: %s", m_settings->wifiCustomIp, m_settings->wifiIp.toString().c_str(), m_settings->wifiGateway.toString().c_str(), m_settings->wifiSubnet.toString().c_str());
-    blog_i( "[WIFI] APSettings: IP: %s GW: %s NETMASK: %s", m_settings->apIp.toString().c_str(), m_settings->apGateway.toString().c_str(), m_settings->apSubnet.toString().c_str());
-    if ((m_settings->inboundMode & 0x1) && (m_settings->outboundMode & 0x1))
-    {
-
-        // STA + AP
-
-        blog_i( "[WIFI] Starting AP STA");
-        blog_i( "[WIFI] Outbound connecting to %s", m_settings->wifiSSID);
-        WiFi.disconnect();
-        WiFi.mode(WIFI_AP_STA);
-        if (m_settings->wifiCustomIp)
-        {
-            if (!WiFi.config(m_settings->wifiIp, m_settings->wifiGateway, m_settings->wifiSubnet))
-            {
-                Serial.println("[WIFI] STA Config Failed");
-            }
-        }
-
-        WiFi.begin(m_settings->wifiSSID, m_settings->wifiPassword);
-
-        blog_i( "[WIFI] AP started");
-        blog_i( "[WIFI] AP IP: %s ", WiFi.softAPIP().toString().c_str());
-
-        while (WiFi.status() != WL_CONNECTED)
-        {
-            delay(500);
-            Serial.print(".");
-            if (retries > 20)
-            {
-                return false;
-            }
-            retries++;
-        }
-        blog_i( "[WIFI] connected");
-        blog_i( "[WIFI] address: %s ", WiFi.localIP().toString().c_str());
-    }
-    else if ((m_settings->inboundMode & 0x1) && !(m_settings->outboundMode & 0x1))
-    {
-        blog_i( "[WIFI] Starting AP");
-        WiFi.disconnect();
-        WiFi.mode(WIFI_AP);
-        WiFi.softAP(m_settings->deviceName, m_settings->apPassword);
-        blog_i( "[WIFI] AP started");
-        blog_i( "[WIFI] AP IP: %s", WiFi.softAPIP().toString().c_str());
-        blog_i( "[WIFI] AP password: %s", m_settings->apPassword);
-        }
-    else if (!(m_settings->inboundMode & 0x1) && (m_settings->outboundMode & 0x1))
-    {
-        blog_i( "[WIFI] Starting STA");
-        blog_i( "[WIFI] Outbound connecting to  %s", m_settings->wifiSSID);
-        WiFi.disconnect();
-        WiFi.mode(WIFI_STA);
-        if (m_settings->wifiCustomIp)
-        {
-            if (!WiFi.config(m_settings->wifiIp, m_settings->wifiGateway, m_settings->wifiSubnet))
-            {
-                blog_e( "[WIFI] STA Config Failed");
-            }
-        }
-        WiFi.begin(m_settings->wifiSSID, m_settings->wifiPassword);
-        while (WiFi.status() != WL_CONNECTED)
-        {
-            delay(500);
-            if (retries > 20)
-            {
-                return false;
-            }
-            retries++;
-        }
-        blog_i( "[WIFI] connected");
-        blog_i( "[WIFI] IP: %s", WiFi.localIP().toString().c_str());
-        return true;
-    }
-    else
-    {
-        // NOWIFI
-        Serial.println("[WIFI] No WIFI");
-        wifiOff();
-    }
-    return true;
-}
-
-// GPRS setup
-bool Connection::gsmSetup()
-{
-    modemPowerup();
-    modem->sendAT("");
-    modem->waitResponse(GSM_OK);
-    if (m_settings->outboundMode & 0x2)
-    {
-
-        
-        // Restart takes quite some time
-        // To skip it, call init() instead of restart()
-        blog_i( "[GSM] Initializing GPRS modem");
-        modem->restart();
-        if (modem->testAT()!=1) {
-            return false;
-        }
-        blog_i( "[GSM] Modem type: %s , IMEI: %s, ICCID: %s", modem->getModemInfo().c_str(), modem->getIMEI().c_str(), modem->getSimCCID().c_str());
-        if (modem->testAT()!=1) {
-            return false;
-        }
-        blog_i( "[GSM] Waiting for network...");
-        if (!modem->waitForNetwork())
-        {
-            modemOff();
-            return false;
-        }
-        else
-        {
-
-            blog_i("[GSM] OK. Network strenght: %u ", modem->getSignalQuality());
+            blog_d("[CONNECTION] Shutdown connection provider: %s", connection->getName());
+            connection->shutdown();
         }
     }
-    else
-    {
-        modemOff();
-    }
-    return true;
 }
 
 bool Connection::setup()
 {
-    serialAT->begin(115200, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
-    while (!serialAT)
+    bool ret = true;
+    for(int i=0;i<connectionSize;i++)
     {
-        ;
+        ConnectionProvider *connection = m_connection[i];
+        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        {
+            blog_d("[CONNECTION] Setup connection provider: %s", connection->getName());
+            if(!connection->setup())
+            {
+                ret = false;
+            }
+        }
+        else
+        {
+            blog_d("[CONNECTION] Shutdown connection provider: %s", connection->getName());
+            connection->shutdown();
+        }
     }
-    if (!wifiSetup() || !gsmSetup() || !gprsSetup())
-    {
-        return false;
-    }
-    return true;
+    return ret;
 }
 
 void Connection::checkConnect()
 {
-    if (m_settings->outboundMode & 0x2)
+    for(int i=0;i<connectionSize;i++)
     {
-        if (!modem->isGprsConnected())
+        ConnectionProvider *connection = m_connection[i];
+        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
         {
-            gprsSetup();
+            connection->checkConnect();
         }
     }
 }
 
 Client *Connection::getClient()
 {
-    if (m_settings->outboundMode & 0x2)
+    for(int i=0;i<connectionSize;i++)
     {
-        return gsmClient;
+        ConnectionProvider *connection = m_connection[i];
+        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        {
+            return connection->getClient();
+        }
     }
-    else
-    {
-        return wifiClient;
-    }
-}
-TinyGsm *Connection::getModem() {
-    return modem;
+    return nullptr;
 }

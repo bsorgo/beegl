@@ -1,3 +1,5 @@
+#ifndef Indicator_h
+#define Indicator_h
 /*
   Indicator.h - Indicator header file
   
@@ -19,8 +21,7 @@
 */
 
 
-#ifndef Indicator_h
-#define Indicator_h
+
 
 #include "Log.h"
 #include <Arduino.h>

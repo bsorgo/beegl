@@ -26,7 +26,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <WiFi.h>
-
+#include <timer.h>
+#include <timerManager.h>
 #include <ArduinoNvs.h>
 #include <Storage.h>
 #include <EEPROM.h>
@@ -37,12 +38,22 @@
 #include "Service.h"
 #include "Settings.h"
 #include "Connection.h"
-
+#ifdef SUPPORTSGSM
+#include "TinyGsmConnectionProvider.h"
+#endif
+#ifdef SUPPORTSLORAWAN
+#include "LoraWanConnectionProvider.h"
+#endif
+#ifdef SUPPORTSBLE
+#include "BLEConnectionProvider.h"
+#endif
+#include "WiFiConnectionProvider.h"
 #include "Runtime.h"
 #include "Updater.h"
 #include "Publisher.h"
 #include "HttpPublisher.h"
 #include "MqttPublisher.h"
+#include "LoraPublisher.h"
 #include "Measurer.h"
 #include "SettingsManagement.h"
 #include "LogManagement.h"
@@ -55,14 +66,15 @@ static heap_trace_record_t trace_record[HEAP_TRACE_NUM_RECORDS]; // This buffer 
 #endif
 
 #define SerialMon Serial
-#define TINY_GSM_DEBUG SerialMon
 
-
+Timer publisherTimer;
+Timer runtimeTimer;
 
 WiFiClient wifiClient;
 Indicator indicator = Indicator();
 Settings settings = Settings();
 Service service = Service(&settings);
+WiFiConnectionProvider wifiConnectionProvider(&settings);
 Connection connection = Connection(&settings);
 Runtime runtime = Runtime(&service, &settings, &connection);
 Updater updater = Updater(&runtime, &service, &settings, &connection);
@@ -85,9 +97,6 @@ void reportStatus()
   }
 }
 
-
-
-
 bool nvsSetup()
 {
   Serial.println("[NVS] Begin NVS");
@@ -97,6 +106,19 @@ bool nvsSetup()
     return false;
   }
   return true;
+}
+
+void publish()
+{
+  if (!publisher->publish())
+  {
+    indicator.reportFail(2);
+  }
+}
+
+void checkScheduler()
+{
+  runtime.checkOperationalTime();
 }
 
 void setup()
@@ -116,6 +138,16 @@ void setup()
   {
     indicator.reportSuccess(1);
   }
+  connection.addConnectionProvider (new WiFiConnectionProvider(&settings));
+#ifdef SUPPORTSGSM
+  connection.addConnectionProvider( new TinyGsmConnectionProvider(&settings));
+#endif
+#ifdef SUPPORTSLORAWAN
+  connection.addConnectionProvider( new LoraWanConnectionProvider(&settings));
+#endif
+#ifdef SUPPORTSBLE
+  connection.addConnectionProvider( new BLEConnectionProvider(&settings));
+#endif
   runtime.initialize();
   runtime.setSafeModeOnRestart(1);
 
@@ -175,6 +207,10 @@ void setup()
   {
     publisher = new MqttPublisher(&runtime, &settings, &connection, &service);
   }
+  else if (settings.protocol & 0x4)
+  {
+    publisher = new LoraPublisher(&runtime, &settings, &connection, &service);
+  }
   publisher->setup();
   measurer = new Measurer(&runtime, &service, &settings, publisher);
   measurer->setup();
@@ -186,6 +222,16 @@ void setup()
   indicator.reportSuccess(4);
   connection.suspend();
   delay(2000);
+  if(!runtime.getSafeMode())
+  {
+    measurer->begin();
+    publisherTimer.setInterval(5000);
+    publisherTimer.setCallback(publish);
+    runtimeTimer.setInterval(60000);
+    runtimeTimer.setCallback(checkScheduler);
+    TimerManager::instance().start();
+  }
+ 
 }
 
 void loop()
@@ -194,25 +240,11 @@ void loop()
   if (runtime.getSafeMode() && millis() > 600000)
   {
     ESP.restart();
+  } 
+  if(!runtime.getSafeMode())
+  {
+      TimerManager::instance().update();
+      publisher->update();
   }
 
-  if (!runtime.getSafeMode())
-  {
-    runtime.checkOperationalTime();
-#ifdef HEAPTRACE
-    Serial.printf("B measure: %u/n", ESP.getFreeHeap());
-#endif
-    measurer->measure();
-#ifdef HEAPTRACE
-    Serial.printf("A measure, B publish: %u/n", ESP.getFreeHeap());
-#endif
-    if (!publisher->publish())
-    {
-      indicator.reportFail(2);
-    }
-#ifdef HEAPTRACE
-    Serial.printf("A publish: %u/n", ESP.getFreeHeap());
-#endif
-  }
-  delay(settings.refreshInterval);
 }

@@ -29,6 +29,10 @@ void MqttPublisher::setup()
   mqttClient->setServer(m_settings->mqttServer, m_settings->mqttPort);
 }
 
+void MqttPublisher::update()
+{
+}
+
 MqttPublisher::MqttPublisher(Runtime * runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
 {
     mqttClient = new PubSubClient(*m_connection->getClient());

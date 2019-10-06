@@ -1,5 +1,8 @@
+#ifndef LoraWanConnectionProvider_h
+#define LoraWanConnectionProvider_h
+
 /*
-  MqttPublisher.h - Mqtt Publisher header file
+  LoraWanConnectionProvider.h - LoraWan connection provider
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,27 +21,28 @@
 
 */
 
-#ifndef MqttPublisher_h
-#define MqttPublisher_h
+#include "Log.h"
+#include "Connection.h"
+#include "Settings.h"
 
-
-#include "Publisher.h"
-#include <PubSubClient.h>
-
-
-class MqttPublisher : public Publisher
+class LoraWanConnectionProvider : public ConnectionProvider
 {
-public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup();
-  void update();
-  
-private:
-  PubSubClient *mqttClient;
 
-protected:
-  bool reconnect();
-  bool publishMessage(const char *message);
+public:
+  LoraWanConnectionProvider(Settings *settings);
+  Client *getClient() override;
+  void checkConnect() override;
+  bool setup() override;
+  void shutdown() override;
+  void suspend() override;
+  void resume() override;
+  char getInboundType() { return 0x0;}
+  char getOutboundType() { return 0x4;}
+  const char* getName() { return m_name;}
+private:
+  Settings *m_settings;
+  const char m_name[8] = "LORAWAN";
+
 };
 
 #endif

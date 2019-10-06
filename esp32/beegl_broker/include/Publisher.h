@@ -26,6 +26,7 @@
 #include "Connection.h"
 #include "Runtime.h"
 #include "Service.h"
+#include <Timer.h>
 
 #include <PubSubClient.h>
 
@@ -47,11 +48,11 @@ public:
   virtual void setup();
   bool publish();
   char *storeMessage(JsonObject &jsonObj);
-
+  virtual void update();
 private:
   int32_t backlogCount;
   void webServerBind();
-  
+ 
 protected:
   Connection *m_connection;
   Settings *m_settings;
@@ -66,4 +67,5 @@ protected:
   virtual bool publishMessage(const char *message);
 
 };
+
 #endif

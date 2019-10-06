@@ -28,6 +28,7 @@
 #include "Settings.h"
 #include "Publisher.h"
 
+#define MEASURER_TASK "Measure Task"
 struct MeasureData
 {
     float weight;
@@ -44,7 +45,8 @@ public:
     bool setup();
     long zero();
     char* measure();
-
+    void begin();
+    uint32_t getMeasureInterval();
 private:
     HX711 *m_scale;
     Settings *m_settings;
@@ -53,12 +55,14 @@ private:
     DHTesp *m_dht;
     const char SCALE_DOUT_PIN = 32;
     const char SCALE_SCK_PIN = 33;
-    const int DHT_PIN = 13;
+    const int DHT_PIN = 34;
     bool scaleSetup();
     bool dhtSetup();
     char *storeMessage(MeasureData measureData);
     void webServerBind();
     Service* m_server;
+    static void measureLoop( void * pvParameters );
+    
 };
 
 #endif
