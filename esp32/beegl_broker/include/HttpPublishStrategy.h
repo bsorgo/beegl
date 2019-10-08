@@ -1,5 +1,5 @@
 /*
-  Publisher.h - Http Publisher header file
+  HttpPublishStrategy.h - Http PublishStrategy header file
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -17,21 +17,22 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HttpPublisher_h
-#define HttpPublisher_h
+#ifndef HttpPublishStrategy_h
+#define HttpPublishStrategy_h
 
 
 #include "Publisher.h"
 
-class HttpPublisher : public Publisher
+class HttpPublishStrategy : public PublishStrategy
 {
 public:
-  HttpPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
+  HttpPublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
   void setup();
   void update();
-protected:
   bool reconnect();
   bool publishMessage(const char *message);
+  const char getProtocol() {return 0x2;}
+  int getInterval() { return 60000; }
 };
 
 #endif

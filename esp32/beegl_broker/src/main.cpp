@@ -43,6 +43,7 @@
 #endif
 #ifdef SUPPORTSLORAWAN
 #include "LoraWanConnectionProvider.h"
+#include "LoraWanPublishStrategy.h"
 #endif
 #ifdef SUPPORTSBLE
 #include "BLEConnectionProvider.h"
@@ -51,9 +52,9 @@
 #include "Runtime.h"
 #include "Updater.h"
 #include "Publisher.h"
-#include "HttpPublisher.h"
-#include "MqttPublisher.h"
-#include "LoraPublisher.h"
+#include "HttpPublishStrategy.h"
+#include "MqttPublishStrategy.h"
+
 #include "Measurer.h"
 #include "SettingsManagement.h"
 #include "LogManagement.h"
@@ -67,23 +68,17 @@ static heap_trace_record_t trace_record[HEAP_TRACE_NUM_RECORDS]; // This buffer 
 
 #define SerialMon Serial
 
-Timer publisherTimer;
-Timer runtimeTimer;
-
-WiFiClient wifiClient;
 Indicator indicator = Indicator();
 Settings settings = Settings();
 Service service = Service(&settings);
-WiFiConnectionProvider wifiConnectionProvider(&settings);
 Connection connection = Connection(&settings);
 Runtime runtime = Runtime(&service, &settings, &connection);
 Updater updater = Updater(&runtime, &service, &settings, &connection);
+Publisher publisher = Publisher(&runtime, &settings, &connection, &service);
 SettingsManagement settingsManagement = SettingsManagement(&settings, &connection, &service, &runtime);
 LogManagement logManagement = LogManagement(&settings, &service);
-
-Publisher *publisher;
-Measurer *measurer;
-Broker *broker;
+Measurer measurer = Measurer(&runtime, &service, &settings, &publisher);
+Broker broker = Broker(&service, &settings, &publisher);
 
 void reportStatus()
 {
@@ -108,19 +103,6 @@ bool nvsSetup()
   return true;
 }
 
-void publish()
-{
-  if (!publisher->publish())
-  {
-    indicator.reportFail(2);
-  }
-}
-
-void checkScheduler()
-{
-  runtime.checkOperationalTime();
-}
-
 void setup()
 {
 
@@ -138,15 +120,15 @@ void setup()
   {
     indicator.reportSuccess(1);
   }
-  connection.addConnectionProvider (new WiFiConnectionProvider(&settings));
+  connection.addConnectionProvider(new WiFiConnectionProvider(&settings));
 #ifdef SUPPORTSGSM
-  connection.addConnectionProvider( new TinyGsmConnectionProvider(&settings));
+  connection.addConnectionProvider(new TinyGsmConnectionProvider(&settings));
 #endif
 #ifdef SUPPORTSLORAWAN
-  connection.addConnectionProvider( new LoraWanConnectionProvider(&settings));
+  connection.addConnectionProvider(new LoraWanConnectionProvider(&settings));
 #endif
 #ifdef SUPPORTSBLE
-  connection.addConnectionProvider( new BLEConnectionProvider(&settings));
+  connection.addConnectionProvider(new BLEConnectionProvider(&settings));
 #endif
   runtime.initialize();
   runtime.setSafeModeOnRestart(1);
@@ -198,53 +180,30 @@ void setup()
   service.setup();
   settingsManagement.syncTimeAndSettings();
   updater.checkFirmware();
-
-  if (settings.protocol & 0x2)
-  {
-    publisher = new HttpPublisher(&runtime, &settings, &connection, &service);
-  }
-  else if (settings.protocol & 0x1)
-  {
-    publisher = new MqttPublisher(&runtime, &settings, &connection, &service);
-  }
-  else if (settings.protocol & 0x4)
-  {
-    publisher = new LoraPublisher(&runtime, &settings, &connection, &service);
-  }
-  publisher->setup();
-  measurer = new Measurer(&runtime, &service, &settings, publisher);
-  measurer->setup();
-  broker = new Broker(&service, &settings, publisher);
-  broker->setup();
+  publisher.addPublishStrategy(new MqttPublishStrategy(&runtime, &settings, &connection, &service));
+  publisher.addPublishStrategy(new HttpPublishStrategy(&runtime, &settings, &connection, &service));
+#ifdef SUPPORTSLORAWAN
+  publisher.addPublishStrategy(new LoraPublishStrategy(&runtime, &settings, &connection, &service));
+#endif
+  publisher.setup();
+  measurer.setup();
+  broker.setup();
 
   runtime.setSafeModeOnRestart(0);
   settingsManagement.storeLastGood();
   indicator.reportSuccess(4);
   connection.suspend();
   delay(2000);
-  if(!runtime.getSafeMode())
+  if (!runtime.getSafeMode())
   {
-    measurer->begin();
-    publisherTimer.setInterval(5000);
-    publisherTimer.setCallback(publish);
-    runtimeTimer.setInterval(60000);
-    runtimeTimer.setCallback(checkScheduler);
-    TimerManager::instance().start();
+    measurer.begin();
+    publisher.publish();
   }
- 
 }
 
 void loop()
 {
   reportStatus();
-  if (runtime.getSafeMode() && millis() > 600000)
-  {
-    ESP.restart();
-  } 
-  if(!runtime.getSafeMode())
-  {
-      TimerManager::instance().update();
-      publisher->update();
-  }
-
+  runtime.update();
+  publisher.update();
 }

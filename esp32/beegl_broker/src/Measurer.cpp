@@ -181,8 +181,8 @@ void Measurer::measureLoop( void * pvParameters )
    Measurer* measurer = (Measurer*) pvParameters;
    for( ;; )
    {
-        delay(measurer->getMeasureInterval());
         measurer->measure();
+        delay(measurer->getMeasureInterval());
    }
 }
 
@@ -190,6 +190,7 @@ void Measurer::measureLoop( void * pvParameters )
 
 void Measurer::begin() 
 {
+   measure();
    // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
    // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
    // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time

@@ -27,13 +27,42 @@
 
 #include "Runtime.h"
 
+void check_scheduler()
+{
+  Runtime::getInstance()->checkOperationalTime();
+}
+
+Runtime *Runtime::p_instance = NULL;
+Timer Runtime::p_schedulerTimer = Timer();
+
 Runtime::Runtime(Service *server, Settings *settings, Connection *connection)
 {
+  p_instance = this;
   m_settings = settings;
   m_connection = connection;
   m_server = server;
 
   webServerBind();
+  p_schedulerTimer.setInterval(60000);
+  p_schedulerTimer.setCallback(check_scheduler);
+  p_schedulerTimer.start();
+}
+
+Runtime *Runtime::getInstance()
+{
+  return p_instance;
+}
+
+void Runtime::update()
+{
+  if (!getSafeMode())
+  {
+    p_schedulerTimer.update();
+  }
+  if (getSafeMode() && millis() > 600000)
+  {
+    ESP.restart();
+  }
 }
 
 void Runtime::initialize()
@@ -59,7 +88,7 @@ void Runtime::checkOperationalTime()
   uint32_t sleepTime = 0;
   if (millis() > 600000 && !getSafeMode())
   {
-    
+
     time_t t = m_settings->getTimezone()->toLocal(now());
     // in seconds
 
@@ -73,16 +102,16 @@ void Runtime::checkOperationalTime()
       int nextTimeFrom = m_settings->schEntries[nextEntry].schedulerHourFrom * 60 + m_settings->schEntries[nextEntry].schedulerMinFrom;
 
       blog_d("[SCHEDULER] Entries:%u, Entry: %u;%u:%u,%u:%u  Next entry: %u;%u:%u,%u:%u", m_settings->schEntriesLength, i,
-            m_settings->schEntries[i].schedulerHourFrom,
-            m_settings->schEntries[i].schedulerMinFrom,
-            m_settings->schEntries[i].schedulerHourTo,
-            m_settings->schEntries[i].schedulerMinTo,
+             m_settings->schEntries[i].schedulerHourFrom,
+             m_settings->schEntries[i].schedulerMinFrom,
+             m_settings->schEntries[i].schedulerHourTo,
+             m_settings->schEntries[i].schedulerMinTo,
 
-            nextEntry,
-            m_settings->schEntries[nextEntry].schedulerHourFrom,
-            m_settings->schEntries[nextEntry].schedulerMinFrom,
-            m_settings->schEntries[nextEntry].schedulerHourTo,
-            m_settings->schEntries[nextEntry].schedulerMinTo);
+             nextEntry,
+             m_settings->schEntries[nextEntry].schedulerHourFrom,
+             m_settings->schEntries[nextEntry].schedulerMinFrom,
+             m_settings->schEntries[nextEntry].schedulerHourTo,
+             m_settings->schEntries[nextEntry].schedulerMinTo);
 
       blog_d("[SCHEDULER] Calculated time: %u, iFrom:%u, iTo:%u, nextFrom:%u", time, iTimeFrom, iTimeTo, nextTimeFrom);
       if ((iTimeFrom > 0 || iTimeTo > 0) && ((i == 0 && time < iTimeFrom) || (time > iTimeTo)) &&

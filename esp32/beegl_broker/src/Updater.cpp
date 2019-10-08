@@ -66,7 +66,7 @@ void Updater::checkFirmware()
   SchEntryType schEntry = m_settings->getCurrentSchedulerEntry();
   
   // is this operational time entry for updates?
-  if(schEntry.updateFromServer) {
+  if(m_connection->getClient()!=nullptr && schEntry.updateFromServer) {
      // firmware
     if (strcmp(m_runtime->FIRMWAREVERSION, m_settings->firmwareVersion) < 0)
     {

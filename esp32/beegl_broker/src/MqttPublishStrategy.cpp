@@ -1,5 +1,5 @@
 /*
-  MqttPublisher.cpp - Provides Temporary storage and publishes messages to central server over Mqtt
+  MqttPublishStrategy.cpp - Provides Temporary storage and publishes messages to central server over Mqtt
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,9 +18,9 @@
 
 */
 
-#include "MqttPublisher.h"
+#include "MqttPublishStrategy.h"
 
-void MqttPublisher::setup()
+void MqttPublishStrategy::setup()
 {
   blog_i("[MQTT] Setup");
   mqttClient->setClient(*m_connection->getClient());
@@ -29,16 +29,16 @@ void MqttPublisher::setup()
   mqttClient->setServer(m_settings->mqttServer, m_settings->mqttPort);
 }
 
-void MqttPublisher::update()
+void MqttPublishStrategy::update()
 {
 }
 
-MqttPublisher::MqttPublisher(Runtime * runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
+MqttPublishStrategy::MqttPublishStrategy(Runtime * runtime, Settings *settings, Connection *connection, Service *service) : PublishStrategy(runtime, settings, connection, service)
 {
     mqttClient = new PubSubClient(*m_connection->getClient());
 }
 
-bool MqttPublisher::publishMessage(const char *message)
+bool MqttPublishStrategy::publishMessage(const char *message)
 {
 
     blog_d( "[MQTTPUBLISHER] %s", m_settings->sensorTopic);
@@ -48,15 +48,12 @@ bool MqttPublisher::publishMessage(const char *message)
         blog_d( "[MQTTPUBLISHER] Publish OK");
         return true;
     }
-    else
-    {
-        blog_e( "[MQTTPUBLISHER] Publish NOK");
-        return false;
-    }
+    blog_e( "[MQTTPUBLISHER] Publish NOK");
+    return false;
 }
 
 
-bool MqttPublisher::reconnect()
+bool MqttPublishStrategy::reconnect()
 {
     if (!mqttClient->connected())
     {

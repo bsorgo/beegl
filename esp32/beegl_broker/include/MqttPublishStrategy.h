@@ -1,5 +1,5 @@
 /*
-  MqttPublisher.h - Mqtt Publisher header file
+  MqttPublishStrategy.h - Mqtt PublishStrategy header file
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,27 +18,29 @@
 
 */
 
-#ifndef MqttPublisher_h
-#define MqttPublisher_h
+#ifndef MqttPublishStrategy_h
+#define MqttPublishStrategy_h
 
 
 #include "Publisher.h"
 #include <PubSubClient.h>
 
 
-class MqttPublisher : public Publisher
+class MqttPublishStrategy : public PublishStrategy
 {
 public:
-  MqttPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup();
-  void update();
-  
+  MqttPublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
+  void setup() override;
+  void update() override;
+  bool reconnect() override;
+  bool publishMessage(const char *message) override;
+  const char getProtocol() {return 0x1;}
+  int getInterval() { return 60000; }
 private:
   PubSubClient *mqttClient;
 
 protected:
-  bool reconnect();
-  bool publishMessage(const char *message);
+  
 };
 
 #endif

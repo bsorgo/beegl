@@ -27,7 +27,7 @@
 #include "Service.h"
 
 #include <ArduinoNvs.h>
-
+#include <Timer.h>
 
 class Runtime
 {
@@ -35,6 +35,7 @@ class Runtime
 public:
     Runtime(Service* server, Settings* settings, Connection* connection);
     void checkOperationalTime();
+    void update();
     void deepSleep(uint32_t timeToSleep);
     void deepSleep();
     void printWakeupReason();
@@ -43,17 +44,21 @@ public:
     int8_t getSafeMode();
     void setSafeMode(int8_t value);
     void initialize();
+    static Runtime* getInstance();
     #ifdef VER
     const char* FIRMWAREVERSION = VER;
     #else
     const char* FIRMWAREVERSION = "1.5.0";
     #endif
 private:
+    static Runtime* p_instance;
+    static Timer p_schedulerTimer;
     Settings *m_settings;
     Connection *m_connection;
     Service* m_server;
     int8_t m_safeMode;
     void webServerBind();
+    
     
 };
 

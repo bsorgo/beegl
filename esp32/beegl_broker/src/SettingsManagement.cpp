@@ -226,7 +226,7 @@ bool SettingsManagement::writeConfig(JsonObject &input)
     if (input[STR_SCHSETTINGS])
     {
         m_settings->schEntriesLength = input[STR_SCHSETTINGS].size();
-        for (JsonObject &schEntryInput : input[STR_SCHSETTINGS].asArray())
+        for (JsonObject &schEntryInput : input[STR_SCHSETTINGS].as<JsonArray>())
         {
             JsonObject &schEntry = schSettings.createNestedObject();
             merge(schEntry, schEntryInput);
@@ -525,6 +525,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
         }
     }
     httpClient->stop();
+    return true;
 }
 
 bool SettingsManagement::copyFile(const char *source, const char *destination)

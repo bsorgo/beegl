@@ -21,16 +21,44 @@
 
 #include "Publisher.h"
 
+void publish_callback()
+{
+  Publisher::getInstance()->publish();
+}
+
+Publisher* Publisher::p_instance = NULL;
+Timer Publisher::p_publisherTimer = Timer();
+
 void Publisher::setup()
 {
+    getSelectedStrategy();
 }
 
 void Publisher::update()
 {
+    if(!m_runtime->getSafeMode())
+    {
+        PublishStrategy *strategy = getSelectedStrategy();
+        if (strategy == nullptr)
+        {
+            return;
+        }
+        strategy->update();
+        p_publisherTimer.update();
+    }
+}
+
+PublishStrategy::PublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service)
+{
+    m_connection = connection;
+    m_settings = settings;
+    m_runtime = runtime;
+    m_service = service;
 }
 
 Publisher::Publisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service)
 {
+    p_instance = this;
     m_connection = connection;
     m_settings = settings;
     m_runtime = runtime;
@@ -40,6 +68,43 @@ Publisher::Publisher(Runtime *runtime, Settings *settings, Connection *connectio
         FILESYSTEM.mkdir(BACKLOG_DIR);
     }
     webServerBind();
+    p_publisherTimer.setCallback(publish_callback);
+}
+
+Publisher* Publisher::getInstance() {
+    return p_instance;
+}
+
+void Publisher::addPublishStrategy(PublishStrategy *publishStrategy)
+{
+    if(publishStrategy!=nullptr)
+    {
+        blog_d("[PUBLISHER] Add publish strategy: %u", publishStrategy->getProtocol());
+        m_publishStrategies[publishStrategyCount] = publishStrategy;
+        publishStrategyCount++;
+    }
+}
+
+PublishStrategy *Publisher::getSelectedStrategy()
+{
+    if (m_selectedStrategy == nullptr || m_selectedStrategy->getProtocol() != m_settings->protocol)
+    {
+        for (int i = 0; i < publishStrategyCount; i++)
+        {
+            if (m_publishStrategies[i]->getProtocol() == m_settings->protocol)
+            {
+                blog_d("[PUBLISHER] Selected publish strategy: %u", m_publishStrategies[i]->getProtocol());
+                m_selectedStrategy = m_publishStrategies[i];
+                m_selectedStrategy->setup();
+                p_publisherTimer.stop();
+                p_publisherTimer.setInterval(m_selectedStrategy->getInterval());
+                p_publisherTimer.start();
+                
+                break;
+            }
+        }
+    }
+    return m_selectedStrategy;
 }
 
 void Publisher::webServerBind()
@@ -66,18 +131,11 @@ int Publisher::getIndex()
     {
         storageIndex = 0;
     }
-
     if (storageIndex == publishIndex)
     {
         publishIndex = -1;
     }
-
     return storageIndex;
-}
-
-bool Publisher::reconnect()
-{
-    return true;
 }
 
 char *Publisher::storeMessage(JsonObject &jsonObj)
@@ -89,15 +147,15 @@ char *Publisher::storeMessage(JsonObject &jsonObj)
     return ret;
 }
 
-bool Publisher::publishMessage(const char *message)
-{
-    return false;
-}
-
 bool Publisher::publish()
 {
     if (!m_runtime->getSafeMode())
     {
+        PublishStrategy *strategy = getSelectedStrategy();
+        if (strategy == nullptr)
+        {
+            return false;
+        }
         if (publishIndex != storageIndex || backlogCount > 0)
         {
             m_connection->resume();
@@ -106,7 +164,7 @@ bool Publisher::publish()
             int retries = 0;
             while (!connected)
             {
-                connected = reconnect();
+                connected = strategy->reconnect();
                 retries++;
                 if (!connected)
                 {
@@ -135,7 +193,7 @@ bool Publisher::publish()
                     String backlogMessage = backlogFile.readString();
                     blog_d("[PUBLISHER] Backlog: %s", backlogMessage.c_str());
                     backlogFile.close();
-                    if (publishMessage(backlogMessage.c_str()))
+                    if (strategy->publishMessage(backlogMessage.c_str()))
                     {
                         if (!FILESYSTEM.remove(backlogFilename))
                         {
@@ -161,7 +219,7 @@ bool Publisher::publish()
             while (publishIndex != storageIndex)
             {
                 blog_d("[PUBLISHER] Message: %s", messageStorage[publishIndex + 1]);
-                if ((!connected || backlogCount > 0 || !publishMessage(messageStorage[publishIndex + 1])) && backlogCount < MAX_BACKLOG)
+                if ((!connected || backlogCount > 0 || !getSelectedStrategy()->publishMessage(messageStorage[publishIndex + 1])) && backlogCount < MAX_BACKLOG)
                 {
                     backlogCount++;
                     // add to backlog

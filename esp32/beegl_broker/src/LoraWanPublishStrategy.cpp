@@ -1,5 +1,5 @@
 /*
-  LoraPublisher.cpp - Publishes messages over Lorawan
+  LoraWanPublishStrategy.cpp - Publishes messages over Lorawan
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,7 +18,7 @@
 
 */
 
-#include "LoraPublisher.h"
+#include "LoraWanPublishStrategy.h"
 
 void from_hex_char(uint8_t *dest, const char *source, const size_t size, bool lsb)
 {
@@ -76,9 +76,6 @@ void MyLoRaWAN::NetSaveSessionInfo(
 {
 }
 
-void MyLoRaWAN::setTxPower()
-{
-}
 
 LoraMessageFormatter::LoraMessageFormatter()
 {
@@ -172,12 +169,12 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     return p;
 }
 
-void LoraPublisher::update()
+void LoraPublishStrategy::update()
 {
     loraWan.loop();
 }
 
-void LoraPublisher::setup()
+void LoraPublishStrategy::setup()
 {
 
     blog_i("[LORAWAN] Begin");
@@ -190,15 +187,14 @@ void LoraPublisher::setup()
     loraWan.setProvisioningInfo(&m_provisioningInfo);
     loraWan.begin(loraDevicePinMap);
     loraWan.SetLinkCheckMode(0);
-    loraWan.setTxPower();
     blog_i("[LORAWAN] Is provisioned: %s", loraWan.IsProvisioned() ? "Yes" : "No");
 }
 
-LoraPublisher::LoraPublisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
+LoraPublishStrategy::LoraPublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : PublishStrategy(runtime, settings, connection, service)
 {
 }
 
-bool LoraPublisher::publishMessage(const char *message)
+bool LoraPublishStrategy::publishMessage(const char *message)
 {
     uint8_t *outputMessage = (uint8_t *)malloc(51);
     int len = m_formatter.formatMessage(outputMessage, message);
@@ -214,7 +210,7 @@ bool LoraPublisher::publishMessage(const char *message)
     free(outputMessage);
 }
 
-bool LoraPublisher::reconnect()
+bool LoraPublishStrategy::reconnect()
 {
     return true;
 }

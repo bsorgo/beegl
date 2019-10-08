@@ -1,5 +1,5 @@
 /*
-  HttpPublisher.cpp - Provides Temporary storage and publishes messages to central server using Http client
+  HttpPublishStrategy.cpp - Provides Temporary storage and publishes messages to central server using Http client
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,26 +18,26 @@
 
 */
 
-#include "HttpPublisher.h"
+#include "HttpPublishStrategy.h"
 
 #define MESSAGE "{test:\"test\"}"
 #define CONTENTTYPEJSON "application/json"
 #define CONTENTTYPE "Content-Type"
 #define CONTENTLENGTH "Content-Length"
 
-void HttpPublisher::setup()
+void HttpPublishStrategy::setup()
 {
 }
 
-void HttpPublisher::update()
+void HttpPublishStrategy::update()
 {
 }
 
-HttpPublisher::HttpPublisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : Publisher(runtime, settings, connection, service)
+HttpPublishStrategy::HttpPublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : PublishStrategy(runtime, settings, connection, service)
 {
 }
 
-bool HttpPublisher::publishMessage(const char *message)
+bool HttpPublishStrategy::publishMessage(const char *message)
 {
 
   char *hostname = m_settings->getSettingsHostname();
@@ -73,7 +73,7 @@ bool HttpPublisher::publishMessage(const char *message)
   }
 }
 
-bool HttpPublisher::reconnect()
+bool HttpPublishStrategy::reconnect()
 {
   delay(5000);
   return true;

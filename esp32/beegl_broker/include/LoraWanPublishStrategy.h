@@ -1,5 +1,5 @@
 /*
-  LoraPublisher.h - Mqtt Publisher header file
+  LoraWanPublishStrategy.h - Mqtt PublishStrategy header file
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,8 +18,8 @@
 
 */
 
-#ifndef LoraPublisher_h
-#define LoraPublisher_h
+#ifndef LoraWanPublishStrategy_h
+#define LoraWanPublishStrategy_h
 
 #include "Publisher.h"
 #include <Arduino_LoRaWAN_ttn.h>
@@ -41,7 +41,6 @@ public:
   {
     m_provisioningInfo = provisioningInfo;
   }
-  void setTxPower();
 
 protected:
   // you'll need to provide implementations for each of the following.
@@ -69,13 +68,16 @@ protected:
   int formatMessageFromJson(uint8_t *targetLoraMessage, JsonObject *source) override;
 };
 
-class LoraPublisher : public Publisher
+class LoraPublishStrategy : public PublishStrategy
 {
 public:
-  LoraPublisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup();
-  void update();
-
+  LoraPublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
+  void setup() override;
+  void update() override;
+  bool reconnect() override;
+  bool publishMessage(const char *message) override;
+  const char getProtocol() {return 0x4;}
+  int getInterval() { return 420000; }
 private:
   MyLoRaWAN loraWan{};
   LoraMeasurementMessageFormatter m_formatter{};
@@ -91,8 +93,7 @@ private:
   };
 
 protected:
-  bool reconnect();
-  bool publishMessage(const char *message);
+  
 };
 
 #endif

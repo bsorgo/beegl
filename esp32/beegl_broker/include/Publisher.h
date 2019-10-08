@@ -21,7 +21,6 @@
 #ifndef Publisher_h
 #define Publisher_h
 
-
 #include "Settings.h"
 #include "Connection.h"
 #include "Runtime.h"
@@ -32,40 +31,61 @@
 
 #define STORAGE_SIZE 30
 #define BACKLOG_NVS "backlog"
-#define BACKLOG_DIR  "/backlog"
-#define BACKLOG_DIR_PREFIX  BACKLOG_DIR "/"
+#define BACKLOG_DIR "/backlog"
+#define BACKLOG_DIR_PREFIX BACKLOG_DIR "/"
 #define BACKLOG_EXTENSION ".json"
-#ifndef MAX_BACKLOG 
-  #define MAX_BACKLOG 200
+#ifndef MAX_BACKLOG
+#define MAX_BACKLOG 200
 #endif
+
+class PublishStrategy
+{
+public:
+  PublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
+  virtual void setup() {};
+  virtual bool reconnect() { return true;};
+  virtual bool publishMessage(const char *message) {return true;};
+  virtual void update() {};
+  virtual const char getProtocol() {return 0x0;}
+  virtual int getInterval() { return 60000; }
+protected:
+  Connection *m_connection;
+  Settings *m_settings;
+  Runtime *m_runtime;
+  Service *m_service;
+  
+};
 
 class Publisher
 {
 
 public:
   Publisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setSettings(Settings *settings);
   virtual void setup();
+  virtual void update();
   bool publish();
   char *storeMessage(JsonObject &jsonObj);
-  virtual void update();
+  void addPublishStrategy(PublishStrategy* publishStrategy);
+  static Publisher* getInstance();
 private:
+  static Publisher* p_instance;
+  static Timer p_publisherTimer;
   int32_t backlogCount;
-  void webServerBind();
- 
-protected:
+  
+  PublishStrategy* m_publishStrategies[5];
+  PublishStrategy* m_selectedStrategy = nullptr;
+  int publishStrategyCount = 0;
+  int storageIndex = -1;
+  int publishIndex = -1;
   Connection *m_connection;
   Settings *m_settings;
   Runtime *m_runtime;
   Service *m_service;
   char messageStorage[STORAGE_SIZE][350];
-  int storageIndex = -1;
-  int publishIndex = -1;
+  PublishStrategy* getSelectedStrategy();
   
+  void webServerBind();
   int getIndex();
-  virtual bool reconnect();
-  virtual bool publishMessage(const char *message);
-
 };
 
 #endif
