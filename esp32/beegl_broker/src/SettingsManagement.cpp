@@ -423,7 +423,8 @@ bool SettingsManagement::writeSettingsToServer()
 
 void SettingsManagement::syncTimeAndSettings()
 {
-    if(m_settings->outboundMode & 0x3) 
+    Client* client = m_connection->getClient();
+    if(client!=nullptr ) 
     {
         // GPRS || WiFi
         blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
@@ -497,6 +498,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
                 blog_d("[SETTINGS] Time fractions: %04d-%02d-%02dT%02d:%02d:%02d.000Z", years, months, days, hours, minutes, seconds);
 
                 setTime(hours, minutes, seconds, days, months, years);
+                m_settings->absoluteTime = true;
             }
         }
     }

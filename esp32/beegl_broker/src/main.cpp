@@ -68,6 +68,8 @@ static heap_trace_record_t trace_record[HEAP_TRACE_NUM_RECORDS]; // This buffer 
 
 #define SerialMon Serial
 
+
+
 Indicator indicator = Indicator();
 Settings settings = Settings();
 Service service = Service(&settings);
@@ -206,4 +208,5 @@ void loop()
   reportStatus();
   runtime.update();
   publisher.update();
+  delay(10);
 }

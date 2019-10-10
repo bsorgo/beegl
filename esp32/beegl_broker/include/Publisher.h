@@ -25,7 +25,8 @@
 #include "Connection.h"
 #include "Runtime.h"
 #include "Service.h"
-#include <Timer.h>
+#include <timer.h>
+#include <timerManager.h>
 
 #include <PubSubClient.h>
 
@@ -42,6 +43,7 @@ class PublishStrategy
 {
 public:
   PublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
+ 
   virtual void setup() {};
   virtual bool reconnect() { return true;};
   virtual bool publishMessage(const char *message) {return true;};
@@ -66,7 +68,9 @@ public:
   bool publish();
   char *storeMessage(JsonObject &jsonObj);
   void addPublishStrategy(PublishStrategy* publishStrategy);
+  int getInterval();
   static Publisher* getInstance();
+  static void publishCallback();
 private:
   static Publisher* p_instance;
   static Timer p_publisherTimer;

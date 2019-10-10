@@ -24,6 +24,30 @@
 #include "Log.h"
 #include "Connection.h"
 #include "Settings.h"
+#include <Arduino_LoRaWAN_ttn.h>
+#include <arduino_lmic_hal_boards.h>
+#include <Arduino_LoRaWAN_lmic.h>
+#include <mcciadk_baselib.h>
+#include <hal/hal.h>
+
+class MyLoRaWAN : public Arduino_LoRaWAN_ttn
+{
+private:
+  Arduino_LoRaWAN::OtaaProvisioningInfo *m_provisioningInfo;
+
+public:
+  void setProvisioningInfo(Arduino_LoRaWAN::OtaaProvisioningInfo *provisioningInfo)
+  {
+    m_provisioningInfo = provisioningInfo;
+  }
+
+protected:
+  // you'll need to provide implementations for each of the following.
+  virtual bool GetOtaaProvisioningInfo(Arduino_LoRaWAN::OtaaProvisioningInfo *) override;
+  virtual void NetSaveFCntUp(uint32_t uFCntUp) override;
+  virtual void NetSaveFCntDown(uint32_t uFCntDown) override;
+  virtual void NetSaveSessionInfo(const SessionInfo &Info, const uint8_t *pExtraInfo, size_t nExtraInfo) override;
+};
 
 class LoraWanConnectionProvider : public ConnectionProvider
 {
@@ -36,13 +60,24 @@ public:
   void shutdown() override;
   void suspend() override;
   void resume() override;
-  char getInboundType() { return 0x0;}
-  char getOutboundType() { return 0x4;}
-  const char* getName() { return m_name;}
-private:
-  Settings *m_settings;
-  const char m_name[8] = "LORAWAN";
+  char getInboundType() { return 0x0; }
+  char getOutboundType() { return 0x4; }
+  const char *getName() { return m_name; }
 
+private:
+  MyLoRaWAN loraWan{};
+
+  Arduino_LoRaWAN::OtaaProvisioningInfo m_provisioningInfo;
+  const MyLoRaWAN::lmic_pinmap loraDevicePinMap = {
+      .nss = 5,
+      .rxtx = MyLoRaWAN::lmic_pinmap::LMIC_UNUSED_PIN,
+      .rst = 15,
+      .dio = {14, 12, MyLoRaWAN::lmic_pinmap::LMIC_UNUSED_PIN},
+      .rxtx_rx_active = 0,
+      .rssi_cal = 8,
+      .spi_freq = 8000000,
+  };
+  const char m_name[8] = "LORAWAN";
 };
 
 #endif

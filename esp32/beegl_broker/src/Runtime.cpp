@@ -27,13 +27,14 @@
 
 #include "Runtime.h"
 
-void check_scheduler()
+
+Timer Runtime::p_schedulerTimer;
+Runtime* Runtime::p_instance = NULL;
+
+void Runtime::checkScheduler()
 {
   Runtime::getInstance()->checkOperationalTime();
 }
-
-Runtime *Runtime::p_instance = NULL;
-Timer Runtime::p_schedulerTimer = Timer();
 
 Runtime::Runtime(Service *server, Settings *settings, Connection *connection)
 {
@@ -43,9 +44,7 @@ Runtime::Runtime(Service *server, Settings *settings, Connection *connection)
   m_server = server;
 
   webServerBind();
-  p_schedulerTimer.setInterval(60000);
-  p_schedulerTimer.setCallback(check_scheduler);
-  p_schedulerTimer.start();
+  
 }
 
 Runtime *Runtime::getInstance()
@@ -55,9 +54,9 @@ Runtime *Runtime::getInstance()
 
 void Runtime::update()
 {
-  if (!getSafeMode())
+  if(!getSafeMode())
   {
-    p_schedulerTimer.update();
+    Runtime::p_schedulerTimer.update();
   }
   if (getSafeMode() && millis() > 600000)
   {
@@ -69,6 +68,9 @@ void Runtime::initialize()
 {
   blog_i("[ESP] Firmware version %s", FIRMWAREVERSION);
   m_safeMode = getSafeModeOnRestart();
+  p_schedulerTimer.setInterval(60000);
+  p_schedulerTimer.setCallback(Runtime::checkScheduler);
+  p_schedulerTimer.start();
 }
 
 void Runtime::webServerBind()

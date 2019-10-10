@@ -20,65 +20,15 @@
 
 #include "LoraWanPublishStrategy.h"
 
-void from_hex_char(uint8_t *dest, const char *source, const size_t size, bool lsb)
-{
-    for (int i = lsb ? (size / 2) - 1 : 0, j = 0; j < size; lsb ? --i : ++i, j += 2)
-    {
-        int val[1];
-        sscanf(source + j, "%2x", val);
-        dest[i] = val[0];
-    }
-}
-
-void print_hex(uint8_t *s, size_t len)
-{
-    for (int i = 0; i < len; i++)
-    {
-        Serial.printf("%02x, ", s[i]);
-    }
-    Serial.printf("\n");
-}
-
 void callback(
     void *pClientData,
     bool fSuccess)
 {
 }
 
-// this method is called when the LMIC needs OTAA info.
-// return false to indicate "no provisioning", otherwise
-// fill in the data and return true.
-bool MyLoRaWAN::GetOtaaProvisioningInfo(OtaaProvisioningInfo *pInfo)
+LoraMessageFormatter::LoraMessageFormatter(Settings *settings)
 {
-    if (pInfo)
-    {
-        memcpy(pInfo->AppEUI, m_provisioningInfo->AppEUI, sizeof(m_provisioningInfo->AppEUI));
-        memcpy(pInfo->DevEUI, m_provisioningInfo->DevEUI, sizeof(m_provisioningInfo->DevEUI));
-        memcpy(pInfo->AppKey, m_provisioningInfo->AppKey, sizeof(m_provisioningInfo->AppKey));
-    }
-    return true;
-}
-
-void MyLoRaWAN::NetSaveFCntDown(uint32_t uFCntDown)
-{
-    // save uFcntDown somwwhere
-}
-
-void MyLoRaWAN::NetSaveFCntUp(uint32_t uFCntUp)
-{
-    // save uFCntUp somewhere
-}
-
-void MyLoRaWAN::NetSaveSessionInfo(
-    const SessionInfo &Info,
-    const uint8_t *pExtraInfo,
-    size_t nExtraInfo)
-{
-}
-
-
-LoraMessageFormatter::LoraMessageFormatter()
-{
+    m_settings = settings;
 }
 
 int LoraMessageFormatter::formatMessage(uint8_t *targetLoraMessage, const char *sourceJsonMessage)
@@ -94,6 +44,10 @@ int LoraMessageFormatter::formatMessage(uint8_t *targetLoraMessage, const char *
     {
         return 0;
     }
+}
+
+LoraMeasurementMessageFormatter::LoraMeasurementMessageFormatter(Settings *settings) : LoraMessageFormatter(settings)
+{
 }
 
 int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMessage, JsonObject *source)
@@ -116,10 +70,21 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     // epoch time
     if (sourceRef.containsKey(STR_EPOCHTIME))
     {
-        char time[11];
-        strlcpy(time, sourceRef[STR_EPOCHTIME], 10);
-        memccpy(targetLoraMessage + p, time, 0, 10);
-        p += 10;
+        if (m_settings->absoluteTime)
+        {
+            char time[11];
+            strlcpy(time, sourceRef[STR_EPOCHTIME], 10);
+            memccpy(targetLoraMessage + p, time, 0, 10);
+            p += 10;
+        }
+        else
+        {
+            char time[11];
+            long value = sourceRef.get<long>(STR_EPOCHTIME) + now();
+            sprintf(time, "%lu", value);
+            memccpy(targetLoraMessage + p, time, 0, 10);
+            p += 10;
+        }
     }
     // time (old time)
     if (sourceRef.containsKey(STR_TIME))
@@ -164,34 +129,22 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
         p += 3;
     }
     blog_d("[LORA] Message size: %u", p);
-    print_hex(targetLoraMessage, p);
 
     return p;
 }
 
 void LoraPublishStrategy::update()
 {
-    loraWan.loop();
+    MyLoRaWAN::GetInstance()->loop();
 }
 
 void LoraPublishStrategy::setup()
 {
-
-    blog_i("[LORAWAN] Begin");
-    blog_i("[LORAWAN] App EUI: %s", m_settings->loraAppEUI);
-    blog_i("[LORAWAN] Dev EUI: %s", m_settings->loraDeviceEUI);
-    blog_d("[LORAWAN] App Key: %s", m_settings->loraAppKey);
-    from_hex_char(m_provisioningInfo.AppKey, m_settings->loraAppKey, 32, false);
-    from_hex_char(m_provisioningInfo.DevEUI, m_settings->loraDeviceEUI, 16, true);
-    from_hex_char(m_provisioningInfo.AppEUI, m_settings->loraAppEUI, 16, true);
-    loraWan.setProvisioningInfo(&m_provisioningInfo);
-    loraWan.begin(loraDevicePinMap);
-    loraWan.SetLinkCheckMode(0);
-    blog_i("[LORAWAN] Is provisioned: %s", loraWan.IsProvisioned() ? "Yes" : "No");
 }
 
 LoraPublishStrategy::LoraPublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : PublishStrategy(runtime, settings, connection, service)
 {
+    m_formatter = LoraMeasurementMessageFormatter(m_settings);
 }
 
 bool LoraPublishStrategy::publishMessage(const char *message)
@@ -200,7 +153,7 @@ bool LoraPublishStrategy::publishMessage(const char *message)
     int len = m_formatter.formatMessage(outputMessage, message);
     if (len > 0)
     {
-        return loraWan.SendBuffer(outputMessage, len);
+        return MyLoRaWAN::GetInstance()->SendBuffer(outputMessage, len);
     }
     else
     {

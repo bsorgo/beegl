@@ -21,16 +21,18 @@
 
 #include "Publisher.h"
 
-void publish_callback()
+void Publisher::publishCallback()
 {
   Publisher::getInstance()->publish();
 }
 
+Timer Publisher::p_publisherTimer ;
 Publisher* Publisher::p_instance = NULL;
-Timer Publisher::p_publisherTimer = Timer();
+
 
 void Publisher::setup()
 {
+    p_publisherTimer.setCallback(Publisher::publishCallback);
     getSelectedStrategy();
 }
 
@@ -44,7 +46,7 @@ void Publisher::update()
             return;
         }
         strategy->update();
-        p_publisherTimer.update();
+        Publisher::p_publisherTimer.update();
     }
 }
 
@@ -68,7 +70,7 @@ Publisher::Publisher(Runtime *runtime, Settings *settings, Connection *connectio
         FILESYSTEM.mkdir(BACKLOG_DIR);
     }
     webServerBind();
-    p_publisherTimer.setCallback(publish_callback);
+    
 }
 
 Publisher* Publisher::getInstance() {
@@ -93,7 +95,7 @@ PublishStrategy *Publisher::getSelectedStrategy()
         {
             if (m_publishStrategies[i]->getProtocol() == m_settings->protocol)
             {
-                blog_d("[PUBLISHER] Selected publish strategy: %u", m_publishStrategies[i]->getProtocol());
+                blog_i("[PUBLISHER] Selected publish strategy: %u with publish interval: %lu", m_publishStrategies[i]->getProtocol(), m_publishStrategies[i]->getInterval());
                 m_selectedStrategy = m_publishStrategies[i];
                 m_selectedStrategy->setup();
                 p_publisherTimer.stop();
@@ -105,6 +107,19 @@ PublishStrategy *Publisher::getSelectedStrategy()
         }
     }
     return m_selectedStrategy;
+}
+
+int Publisher::getInterval()
+{
+    PublishStrategy* strategy = getSelectedStrategy();
+    if(strategy!=nullptr)
+    {
+        return getSelectedStrategy()->getInterval();
+    }
+    else
+    {
+        return 60000;
+    }  
 }
 
 void Publisher::webServerBind()
@@ -219,7 +234,13 @@ bool Publisher::publish()
             while (publishIndex != storageIndex)
             {
                 blog_d("[PUBLISHER] Message: %s", messageStorage[publishIndex + 1]);
-                if ((!connected || backlogCount > 0 || !getSelectedStrategy()->publishMessage(messageStorage[publishIndex + 1])) && backlogCount < MAX_BACKLOG)
+                if (
+                    (
+                    !connected || 
+                    backlogCount > 0 || 
+                    !getSelectedStrategy()->publishMessage(messageStorage[publishIndex + 1])
+                    ) 
+                    && backlogCount < MAX_BACKLOG)
                 {
                     backlogCount++;
                     // add to backlog

@@ -82,6 +82,7 @@
 #define STR_TIMEFORMAT "%04d-%02d-%02dT%02d:%02d:%02d%s"
 #define STR_TIME "time"
 #define STR_EPOCHTIME "etime"
+#define STR_DIFFEPOCHTIME "detime"
 #define STR_TIMESETTINGS "timeS"
 #define STR_TIMESZONE "sZone"
 #define STR_TIMEZONE "zone"
@@ -151,7 +152,8 @@ public:
 
 
     */
-   char deviceName[17] = "BEE000";
+    
+    char deviceName[17] = "BEE000";
     int restartInterval = 3600;
     char outboundMode = 0x1;
     char inboundMode = 0x0;
@@ -290,6 +292,8 @@ public:
     */
     struct SchEntryType schEntries[10] = {{0, 0, 23, 59, true}};
     int schEntriesLength = 1;
+
+    bool absoluteTime = false;
     Settings();
 
     

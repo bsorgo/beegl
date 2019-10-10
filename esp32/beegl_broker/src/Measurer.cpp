@@ -20,8 +20,6 @@
 
 #include "Measurer.h"
 
-
-
 Measurer::Measurer(Runtime *runtime, Service *server, Settings *settings, Publisher *publisher)
 {
 
@@ -40,8 +38,10 @@ Measurer::Measurer(Runtime *runtime, Service *server, Settings *settings, Publis
 void Measurer::webServerBind()
 {
     m_server->getWebServer()->on("/rest/measure", HTTP_GET, [&](AsyncWebServerRequest *request) {
-        if(request->hasParam("scaleFactor")) m_settings->scaleFactor = atof(request->getParam("scaleFactor", false,false)->value().c_str());
-        if(request->hasParam("scaleOffset")) m_settings->scaleOffset = atoi(request->getParam("scaleOffset", false,false)->value().c_str());
+        if (request->hasParam("scaleFactor"))
+            m_settings->scaleFactor = atof(request->getParam("scaleFactor", false, false)->value().c_str());
+        if (request->hasParam("scaleOffset"))
+            m_settings->scaleOffset = atoi(request->getParam("scaleOffset", false, false)->value().c_str());
         blog_d("Scale factor: %f, offset: %u", m_settings->scaleFactor, m_settings->scaleOffset);
         char *message = measure();
         if (message)
@@ -58,13 +58,13 @@ void Measurer::webServerBind()
     m_server->getWebServer()->on("/rest/scale/tare", HTTP_POST,
                                  [&](AsyncWebServerRequest *request) {
                                      long tareValue = zero();
-                                    
+
                                      String strValue = String(tareValue);
                                      request->send(200, "text/plain", strValue);
                                  });
 }
 
-uint32_t Measurer::getMeasureInterval() 
+uint32_t Measurer::getMeasureInterval()
 {
     return m_settings->refreshInterval;
 }
@@ -153,7 +153,7 @@ char *Measurer::storeMessage(MeasureData measureData)
     JsonObject &root = jsonBuffer.createObject();
     root[STR_DEVICEID] = m_settings->deviceName;
     //root[STR_TIME] = m_settings->getDateTimeString(now());
-    root[STR_EPOCHTIME] =  static_cast<long int> (now());
+    root[STR_EPOCHTIME] = static_cast<long int>(now());
     root[STR_VER] = m_runtime->FIRMWAREVERSION;
     if (m_settings->measureWeight && measureData.weight == measureData.weight)
     {
@@ -176,27 +176,26 @@ char *Measurer::storeMessage(MeasureData measureData)
     return m_publisher->storeMessage(root);
 }
 
-void Measurer::measureLoop( void * pvParameters )
+void Measurer::measureLoop(void *pvParameters)
 {
-   Measurer* measurer = (Measurer*) pvParameters;
-   for( ;; )
-   {
+    Measurer *measurer = (Measurer *)pvParameters;
+
+    for (;;)
+    {
+        int publisherInterval = Publisher::getInstance()->getInterval();
+        int measurerInterval = measurer->getMeasureInterval();
         measurer->measure();
-        delay(measurer->getMeasureInterval());
-   }
+        delay(publisherInterval>measurerInterval ? publisherInterval : measurerInterval);
+    }
 }
 
-
-
-void Measurer::begin() 
+void Measurer::begin()
 {
-   measure();
-   // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
-   // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
-   // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
-   // the new task attempts to access it.
+    measure();
+    // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
+    // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
+    // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
+    // the new task attempts to access it.
     blog_d("[MEASURER] Creating measurer task.");
-    xTaskCreate(measureLoop, MEASURER_TASK, 4096, this, tskIDLE_PRIORITY, NULL );
+    xTaskCreate(measureLoop, MEASURER_TASK, 4096, this, tskIDLE_PRIORITY, NULL);
 }
-
-
