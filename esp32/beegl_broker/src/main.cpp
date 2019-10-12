@@ -73,7 +73,7 @@ static heap_trace_record_t trace_record[HEAP_TRACE_NUM_RECORDS]; // This buffer 
 Indicator indicator = Indicator();
 Settings settings = Settings();
 Service service = Service(&settings);
-Connection connection = Connection(&settings);
+Connection connection = Connection(&service, &settings);
 Runtime runtime = Runtime(&service, &settings, &connection);
 Updater updater = Updater(&runtime, &service, &settings, &connection);
 Publisher publisher = Publisher(&runtime, &settings, &connection, &service);
@@ -191,11 +191,12 @@ void setup()
   measurer.setup();
   broker.setup();
 
-  runtime.setSafeModeOnRestart(0);
+  
   settingsManagement.storeLastGood();
   indicator.reportSuccess(4);
   connection.suspend();
   delay(2000);
+  runtime.setSafeModeOnRestart(0);
   if (!runtime.getSafeMode())
   {
     measurer.begin();

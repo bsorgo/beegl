@@ -93,7 +93,7 @@ PublishStrategy *Publisher::getSelectedStrategy()
     {
         for (int i = 0; i < publishStrategyCount; i++)
         {
-            if (m_publishStrategies[i]->getProtocol() == m_settings->protocol)
+            if (m_publishStrategies[i]->getProtocol() == m_settings->protocol && m_publishStrategies[i]->getSupportedOutboundTypes() & m_settings->outboundMode)
             {
                 blog_i("[PUBLISHER] Selected publish strategy: %u with publish interval: %lu", m_publishStrategies[i]->getProtocol(), m_publishStrategies[i]->getInterval());
                 m_selectedStrategy = m_publishStrategies[i];
@@ -109,12 +109,28 @@ PublishStrategy *Publisher::getSelectedStrategy()
     return m_selectedStrategy;
 }
 
+int Publisher::getStrategies(PublishStrategy** strategies, char outboundType)
+{
+    int j = 0;
+    for(int i=0;i<publishStrategyCount;i++)
+    {
+        PublishStrategy* strategy = m_publishStrategies[i];
+        if(strategy->getSupportedOutboundTypes() & outboundType)
+        {
+            strategies[j] = strategy;
+            j++;
+        }
+    }
+
+    return j;
+}
+
 int Publisher::getInterval()
 {
     PublishStrategy* strategy = getSelectedStrategy();
     if(strategy!=nullptr)
     {
-        return getSelectedStrategy()->getInterval();
+        return strategy->getInterval();
     }
     else
     {
@@ -133,6 +149,28 @@ void Publisher::webServerBind()
         JsonObject &backlog = root.createNestedObject("backlog");
         backlog["count"] = backlogCount;
 
+        root.printTo(*response);
+        jsonBuffer.clear();
+        request->send(response);
+    });
+
+    m_service->getWebServer()->on("/rest/protocols", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        const String outboundTypeStr = request->getParam(STR_OUTBOUNDMODE, false)->value();
+        
+        char outboundType = (char)outboundTypeStr.toInt();        
+        StaticJsonBuffer<256> jsonBuffer;
+        JsonObject &root = jsonBuffer.createObject();
+        JsonArray &array = root.createNestedArray("protocols");
+        
+        PublishStrategy* strategies[5];
+        int count = this->getStrategies(strategies, outboundType);
+        for(int i=0;i<count;i++)
+        {
+            JsonObject & proto = array.createNestedObject();
+            proto[STR_PUBLISHERPROTOCOL] =  (int) strategies[i]->getProtocol();
+            proto["name"] = strategies[i]->getProtocolName();
+        }
         root.printTo(*response);
         jsonBuffer.clear();
         request->send(response);
@@ -167,6 +205,10 @@ bool Publisher::publish()
     if (!m_runtime->getSafeMode())
     {
         PublishStrategy *strategy = getSelectedStrategy();
+        if(strategy==nullptr)
+        {
+            return false;
+        }
         if (strategy == nullptr)
         {
             return false;
@@ -238,28 +280,33 @@ bool Publisher::publish()
                     (
                     !connected || 
                     backlogCount > 0 || 
-                    !getSelectedStrategy()->publishMessage(messageStorage[publishIndex + 1])
+                    !getSelectedStrategy()->publishMessage(messageStorage[publishIndex + 1])            
                     ) 
                     && backlogCount < MAX_BACKLOG)
                 {
-                    backlogCount++;
-                    // add to backlog
-                    String backlogFilename = String(BACKLOG_DIR_PREFIX);
-                    backlogFilename += backlogCount;
-                    backlogFilename += BACKLOG_EXTENSION;
-                    File backlogFile = FILESYSTEM.open(backlogFilename, FILE_WRITE);
-                    if (backlogFile)
+                    // write to backlog only if absolute time- it makes sense
+                    if(m_settings->absoluteTime)
                     {
-                        blog_i("[PUBLISHER] Writing to measurement backlog file %s:", backlogFilename.c_str());
-                        int len = strlen(messageStorage[publishIndex + 1]);
-                        backlogFile.write((uint8_t *)messageStorage[publishIndex + 1], len);
-                        backlogFile.close();
+                         backlogCount++;
+                        // add to backlog
+                        String backlogFilename = String(BACKLOG_DIR_PREFIX);
+                        backlogFilename += backlogCount;
+                        backlogFilename += BACKLOG_EXTENSION;
+                        File backlogFile = FILESYSTEM.open(backlogFilename, FILE_WRITE);
+                        if (backlogFile)
+                        {
+                            blog_i("[PUBLISHER] Writing to measurement backlog file %s:", backlogFilename.c_str());
+                            int len = strlen(messageStorage[publishIndex + 1]);
+                            backlogFile.write((uint8_t *)messageStorage[publishIndex + 1], len);
+                            backlogFile.close();
+                        }
+                        else
+                        {
+                            blog_e("[PUBLISHER] Failed to create measurement backlog file: %s", backlogFilename.c_str());
+                        }
+                        NVS.setInt(BACKLOG_NVS, backlogCount);
                     }
-                    else
-                    {
-                        blog_e("[PUBLISHER] Failed to create measurement backlog file: %s", backlogFilename.c_str());
-                    }
-                    NVS.setInt(BACKLOG_NVS, backlogCount);
+                   
                 }
                 if (backlogCount <= MAX_BACKLOG)
                 {

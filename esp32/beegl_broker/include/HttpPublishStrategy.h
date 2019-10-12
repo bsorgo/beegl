@@ -32,7 +32,9 @@ public:
   bool reconnect();
   bool publishMessage(const char *message);
   const char getProtocol() {return 0x2;}
+  const char* getProtocolName() { return "HTTP";}
   int getInterval() { return 60000; }
+  const char getSupportedOutboundTypes() { return 0x3;}
 };
 
 #endif

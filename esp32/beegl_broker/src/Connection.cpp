@@ -25,9 +25,10 @@
 
 
 
-Connection::Connection(Settings *settings)
+Connection::Connection(Service *service, Settings *settings)
 {
     m_settings = settings;
+    m_service = service;
 }
 
 void Connection::addConnectionProvider(ConnectionProvider *connection)
@@ -35,6 +36,46 @@ void Connection::addConnectionProvider(ConnectionProvider *connection)
     blog_d("[CONNECTION] Adding connection provider: %s, inbound: %u, outbound: %u", connection->getName(), connection->getInboundType(), connection->getOutboundType());
     m_connection[connectionSize] = connection;
     connectionSize++;
+}
+
+int Connection::getOutboundConnectionProviders(ConnectionProvider** providers,char outboundTypeMask)
+{
+    int j = 0;
+    for(int i=0;i<connectionSize;i++)
+    {
+        if( (m_connection[i]->getOutboundType() & outboundTypeMask))
+        {
+            providers[j] = m_connection[i];
+            j++;
+        }
+    }
+
+    return j;
+}
+
+void Connection::webServerBind()
+{
+    m_service->getWebServer()->on("/rest/connections/outbound", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+       
+        StaticJsonBuffer<256> jsonBuffer;
+        JsonObject &root = jsonBuffer.createObject();
+        JsonArray &array = root.createNestedArray("conn");
+        
+        ConnectionProvider* providers[5];
+        int count = this->getOutboundConnectionProviders(providers, 0xFF);
+        for(int i=0;i<count;i++)
+        {
+            
+            JsonObject & proto = array.createNestedObject();
+            proto["name"] =  providers[i]->getName();
+            proto[STR_OUTBOUNDMODE] = (int) providers[i]->getOutboundType();
+            proto[STR_INBOUNDMODE] = (int) providers[i]->getInboundType();
+        }
+        root.printTo(*response);
+        jsonBuffer.clear();
+        request->send(response);
+    });
 }
 
 void Connection::suspend()
@@ -94,6 +135,7 @@ bool Connection::setup()
             connection->shutdown();
         }
     }
+    webServerBind();
     return ret;
 }
 

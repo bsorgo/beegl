@@ -23,8 +23,8 @@
 
 #include "Log.h"
 #include "Settings.h"
+#include "Service.h"
 
-#include <WiFiClient.h>
 
 class ConnectionProvider
 {
@@ -36,22 +36,21 @@ public:
   virtual void shutdown() {};
   virtual void suspend() {};
   virtual void resume() {};
-  virtual char getInboundType() { return 0x00;}; 
-  virtual char getOutboundType() {return 0x00;};
-  virtual const char* getName() { return EMPTY;};
+  virtual const char getInboundType() { return 0xFF;}; 
+  virtual const char getOutboundType() { return 0xFF;};
+  virtual const char* getName() { return {0x00};};
+
 
 protected:
   Settings *m_settings;
-private:
-  const char EMPTY[1] = ""; 
-
+  
 };
 
 class Connection
 {
 
 public:
-  Connection(Settings *settings);
+  Connection(Service* service, Settings *settings);
   Client *getClient();
   void checkConnect();
   bool setup();
@@ -60,10 +59,15 @@ public:
   void resume();
   void addConnectionProvider(ConnectionProvider *connection);
   
+
 private:
+  int getOutboundConnectionProviders(ConnectionProvider** providers, char outboundTypeMask=0xFF);
   Settings *m_settings;
+  Service *m_service;
   ConnectionProvider* m_connection[5];
   int connectionSize = 0;
+
+  void webServerBind();
 };
 
 

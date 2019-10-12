@@ -35,7 +35,10 @@ public:
   bool reconnect() override;
   bool publishMessage(const char *message) override;
   const char getProtocol() {return 0x1;}
+  const char* getProtocolName() { return "MQTT";}
   int getInterval() { return 60000; }
+  const char getSupportedOutboundTypes() { return 0x3;}
+  
 private:
   PubSubClient *mqttClient;
 

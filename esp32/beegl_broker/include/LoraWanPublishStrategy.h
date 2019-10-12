@@ -56,8 +56,9 @@ public:
   bool reconnect() override;
   bool publishMessage(const char *message) override;
   const char getProtocol() { return 0x4; }
+  const char* getProtocolName() { return "LoraWan";}
   int getInterval() { return 60000; }
-
+  const char getSupportedOutboundTypes() { return 0x4;}
 private:
   LoraMeasurementMessageFormatter m_formatter = NULL;
 };

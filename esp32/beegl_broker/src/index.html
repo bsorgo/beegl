@@ -162,6 +162,7 @@
             flex-flow: column;
             height: 100%;
         }
+
         .box .header {
             flex: 0 1 auto;
         }
@@ -172,6 +173,53 @@
     </style>
     <script type="text/javascript">
         var schedulerHeader = new Array();
+
+        function request(url, method) {
+            return new Promise(function (resolve, reject) {
+                const xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function (e) {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            resolve(xhr.responseText);
+                        } else {
+                            reject(xhr.status);
+                        }
+                    }
+                }
+                xhr.ontimeout = function () {
+                    reject('timeout')
+                }
+                xhr.open(method, url, true);
+                xhr.send();
+            })
+        }
+        function requestJson(url, method, body) {
+            return new Promise(function (resolve, reject) {
+                const xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function (e) {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            var json = JSON.parse(xhr.responseText);
+                            resolve(json);
+                        } else {
+                            reject(xhr.status);
+                        }
+                    }
+                }
+                xhr.ontimeout = function () {
+                    reject('timeout');
+                }
+                xhr.open(method, url, true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.send(body);
+            })
+        }
+
+        function displayMessage(message) {
+            window.location.replace("#popup1");
+            document.getElementById("messageContent").innerText = message;
+        }
+
 
         function openPage(pageName, elmnt, color, foregrounColor) {
             // Hide all elements with class="tabcontent" by default */
@@ -184,7 +232,7 @@
             // Remove the background color of all tablinks/buttons
             tablinks = document.getElementsByClassName("tablink");
             for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].style.backgroundColor = "";
+                tablinks[i].style.background = "";
                 tablinks[i].style.color = "white";
             }
 
@@ -192,7 +240,7 @@
             document.getElementById(pageName).style.display = "block";
 
             // Add the specific color to the button used to open the tab content
-            elmnt.style.backgroundColor = color;
+            elmnt.style.background= color;
             elmnt.style.color = "black";
         }
 
@@ -277,272 +325,272 @@
             empTab.deleteRow(oButton.parentNode.parentNode.rowIndex);
         }
 
-        function measure() {
-            var xhr = new XMLHttpRequest();
-            var url = "/rest/measure?scaleFactor=" + document.getElementById("scaleFactor").value + "&scaleOffset=" + document.getElementById("scaleOffset").value;
-            xhr.open("GET", url, true);
+        async function measure() {
+            const url = "/rest/measure?scaleFactor=" + document.getElementById("scaleFactor").value + "&scaleOffset=" + document.getElementById("scaleOffset").value;
+            try {
+                const json = await requestJson(url, "GET");
+                document.getElementById("weight").value = json.whtS.w;
+            } catch (error) {
+                displayMessage("Error performing measure. Error: " + error);
+            }
+        }
 
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    var json = JSON.parse(xhr.responseText);
-                    document.getElementById("weight").value = json.whtS.w
-                } else if (xhr.readyState === 4) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Error performing measure.";
+        async function tare() {
+            const url = "/rest/scale/tare";
+            try {
+                const response = await request(url, "POST");
+                document.getElementById("scaleOffset").value = response;
+            } catch (error) {
+                displayMessage("Error performing scale tare. Error: " + error);
+            }
+        }
+
+        async function reboot() {
+            const url = "/rest/reboot";
+            try {
+                const json = await requestJson(url, "POST");
+                displayMessage("Device is rebooting, reload page after some time.");
+            } catch (error) {
+                displayMessage("Error performing measure. Error: " + error);
+            }
+        }
+
+        async function getOutboundModes() {
+            const url = "/rest/connections/outbound"
+            try {
+                const json = await requestJson(url, "GET");
+                var sel = document.getElementById("outboundMode");
+                for (i = 0; i < json.conn.length; i++) {
+                    var k = json.conn[i];
+                    var opt = document.createElement("option");
+                    opt.value = k.outM;
+                    opt.text = k.name;
+                    sel.add(opt);
                 }
-            };
-            xhr.send();
+            } catch (error) {
+                displayMessage("Error getting outbound connections. Error: " + error);
+            }
         }
 
-        function tare() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "/rest/scale/tare", true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    document.getElementById("scaleOffset").value = xhr.responseText;
-                } else if (xhr.readyState === 4) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Error performing scale tare.";
+        async function getPublisherProtocols(outM) {
+            const url = "/rest/protocols?outM=" + outM;
+            try {
+                const json = await requestJson(url, "GET");
+                var sel = document.getElementById("publisherProtocol");
+                var value = sel.value;
+                sel.options.length = 0;
+                for (i = 0; i < json.protocols.length; i++) {
+                    var k = json.protocols[i];
+                    var opt = document.createElement("option");
+                    opt.value = k.proto;
+                    opt.text = k.name;
+                    sel.add(opt);
                 }
-            };
-            xhr.send();
-        }
-
-        function reboot() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "/rest/reboot", true);
-            xhr.send();
-        }
-
-        function init() {
-            getInfo();
-            fillForm();
-            fillLogs();
-            openPage('Settings', this, 'white')
-        }
-
-        function getInfo() {
-            var xhr = new XMLHttpRequest();
-            var url = "/info";
-            xhr.open("GET", url, true);
-
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    document.getElementById("version").innerText = xhr.responseText;
-                } else if (xhr.readyState === 4) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Error obtaining info.";
+                sel.value = value;
+                if (sel.selectedIndex == -1) {
+                    sel.selectedIndex = 0;
                 }
-            };
-            xhr.send();
+                invalidateSettingsVisibility();
+            } catch (error) {
+                displayMessage("Error getting protocols. Error: " + error);
+            }
         }
 
-        function sendModemAT() {
-            var xhr = new XMLHttpRequest();
-            var formData = new FormData();
-            formData.append('at', document.getElementById("modemAtCommand").value);
-            var url = "/modem";
-            xhr.open("POST", url, true);
-            xhr.onreadystatechange = function () {
-                window.location.replace("#popup1");
-                document.getElementById("messageContent").innerText = xhr.responseText;
-            };
-            xhr.send(formData);
+        async function getInfo() {
+            const url = "/info";
+            try {
+                const response = await request(url, "GET");
+                document.getElementById("version").innerText = response;
+            } catch (error) {
+                displayMessage("Error obtaining info. Error: " + error);
+            }
         }
 
-
-        function submitForm() {
-
+        async function submitForm() {
+            const url = "/rest/settings";
             var form = document.getElementById('settings');
             var isValidForm = form.checkValidity()
 
             if (isValidForm) {
+                
+                try {
+                        var json =
+                        {
+                            "id": document.getElementById("deviceName").value,
+                            "inM": document.getElementById("inboundMode").value,
+                            "outM": document.getElementById("outboundMode").value,
+                            "refresh": document.getElementById("refresh").value,
+                            "setUrl": document.getElementById("setUrl").value,
+                            "setUser": document.getElementById("setUsername").value,
+                            "setPwd": document.getElementById("setPassword").value,
+                            "pubS":
+                            {
+                                "proto": document.getElementById("publisherProtocol").value
+                            },
+                            "mesS":
+                            {
+                                "mesW": document.getElementById("measurerMeasureWeight").value,
+                                "mesTh": document.getElementById("measurerMeasureTempAndHumidity").value
+                            },
+                            "scaleS":
+                            {
+                                "f": document.getElementById("scaleFactor").value,
+                                "u": document.getElementById("scaleUnit").value,
+                                "off": document.getElementById("scaleOffset").value,
 
-                var xhr = new XMLHttpRequest();
-                xhr.open("POST", "/rest/settings", true);
-                xhr.setRequestHeader("Content-Type", "application/json");
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        window.location.replace("#popup1");
-                        document.getElementById("messageContent").innerText = "Settings saved.";
-                    } else if (xhr.readyState === 4) {
-                        window.location.replace("#popup1");
-                        document.getElementById("messageContent").innerText = "Error saving settings.";
+                            },
+                            "wifiS":
+                            {
+                                "ssid": document.getElementById("wifiSSID").value,
+                                "pwd": document.getElementById("wifiPassword").value,
+                                "cip": document.getElementById("wifiCustomIp").value,
+                                "ip": document.getElementById("wifiIp").value,
+                                "gw": document.getElementById("wifiGateway").value,
+                                "nmsk": document.getElementById("wifiNetmask").value
+                            },
+                            "apS":
+                            {
+                                "pwd": document.getElementById("apPassword").value,
+                                "ip": document.getElementById("apIp").value,
+                                "gw": document.getElementById("apGateway").value,
+                                "nmsk": document.getElementById("apNetmask").value
+                            },
+                            "gprsS":
+                            {
+                                "apn": document.getElementById("gprsAPN").value,
+                                "user": document.getElementById("gprsUsername").value,
+                                "pwd": document.getElementById("gprsPassword").value
+                            },
+                            "timeS":
+                            {
+                                "zone": document.getElementById("timeZone").value,
+                                "sZone": document.getElementById("timeSZone").value
+                            },
+                            "mqttS":
+                            {
+                                "server": document.getElementById("mqttServer").value,
+                                "port": document.getElementById("mqttPort").value,
+                                "user": document.getElementById("mqttUsername").value,
+                                "pwd": document.getElementById("mqttPassword").value,
+                                "topic": document.getElementById("mqttTopic").value
+                            },
+                            "loraS":
+                            {
+                                "deui": document.getElementById("loraDeviceEUI").value,
+                                "aeui": document.getElementById("loraAppEUI").value,
+                                "akey": document.getElementById("loraAppKey").value
+                            },
+                            "schS": []
+                        };
+                        var unsortedSchS = [];
+                        var schedulerTable = document.getElementById('schedulerTable');
+                        for (i = 1; i < schedulerTable.rows.length; i++) {
+
+                            var row = schedulerTable.rows.item(i);
+                            if (row !== null) {
+                                var fromArr = row.cells.item(1).children.item(0).value.split(':');
+                                var toArr = row.cells.item(2).children.item(0).value.split(':');
+                                var upd = row.cells.item(3).children.item(0).value;
+                                unsortedSchS.push({ hf: fromArr[0], mf: fromArr[1], ht: toArr[0], mt: toArr[1], upd: upd });
+                            }
+                        }
+                        json.schS = unsortedSchS.sort(function (a, b) {
+                            var afrom = a.hf + a.mf * 60;
+                            var bfrom = b.hf + b.mf * 60;
+                            if (afrom < bfrom) {
+                                return -1;
+                            } else {
+                                return 1;
+                            }
+                        });
+
+                        var data = JSON.stringify(json);
+                        await requestJson(url, "POST", data);
+                        displayMessage("Settings saved.");
+                    } catch (error) {
+                        displayMessage("Error saving settings. Error: " + error);
                     }
-                };
-                var json =
-
-                {
-                    "id": document.getElementById("deviceName").value,
-                    "inM": document.getElementById("inboundMode").value,
-                    "outM": document.getElementById("outboundMode").value,
-                    "refresh": document.getElementById("refresh").value,
-                    "setUrl": document.getElementById("setUrl").value,
-                    "setUser": document.getElementById("setUsername").value,
-                    "setPwd": document.getElementById("setPassword").value,
-                    "pubS":
-                    {
-                        "proto": document.getElementById("publisherProtocol").value
-                    },
-                    "mesS":
-                    {
-                        "mesW": document.getElementById("measurerMeasureWeight").value,
-                        "mesTh": document.getElementById("measurerMeasureTempAndHumidity").value
-                    },
-                    "scaleS":
-                    {
-                        "f": document.getElementById("scaleFactor").value,
-                        "u": document.getElementById("scaleUnit").value,
-                        "off": document.getElementById("scaleOffset").value,
-
-                    },
-                    "wifiS":
-                    {
-                        "ssid": document.getElementById("wifiSSID").value,
-                        "pwd": document.getElementById("wifiPassword").value,
-                        "cip": document.getElementById("wifiCustomIp").value,
-                        "ip": document.getElementById("wifiIp").value,
-                        "gw": document.getElementById("wifiGateway").value,
-                        "nmsk": document.getElementById("wifiNetmask").value
-                    },
-                    "apS":
-                    {
-                        "pwd": document.getElementById("apPassword").value,
-                        "ip": document.getElementById("apIp").value,
-                        "gw": document.getElementById("apGateway").value,
-                        "nmsk": document.getElementById("apNetmask").value
-                    },
-                    "gprsS":
-                    {
-                        "apn": document.getElementById("gprsAPN").value,
-                        "user": document.getElementById("gprsUsername").value,
-                        "pwd": document.getElementById("gprsPassword").value
-                    },
-                    "timeS":
-                    {
-                        "zone": document.getElementById("timeZone").value,
-                        "sZone": document.getElementById("timeSZone").value
-                    },
-                    "mqttS":
-                    {
-                        "server": document.getElementById("mqttServer").value,
-                        "port": document.getElementById("mqttPort").value,
-                        "user": document.getElementById("mqttUsername").value,
-                        "pwd": document.getElementById("mqttPassword").value,
-                        "topic": document.getElementById("mqttTopic").value
-                    },
-                    "loraS":
-                    {
-                        "deui": document.getElementById("loraDeviceEUI").value,
-                        "aeui" : document.getElementById("loraAppEUI").value,
-                        "akey": document.getElementById("loraAppKey").value
-                    },
-                    "schS": []
-                };
-                var unsortedSchS = [];
-                var schedulerTable = document.getElementById('schedulerTable');
-                for (i = 1; i < schedulerTable.rows.length; i++) {
-
-                    var row = schedulerTable.rows.item(i);
-                    if (row !== null) {
-                        var fromArr = row.cells.item(1).children.item(0).value.split(':');
-                        var toArr = row.cells.item(2).children.item(0).value.split(':');
-                        var upd = row.cells.item(3).children.item(0).value;
-                        unsortedSchS.push({ hf: fromArr[0], mf: fromArr[1], ht: toArr[0], mt: toArr[1], upd: upd });
-                    }
-                }
-                json.schS = unsortedSchS.sort(function (a, b) {
-                    var afrom = a.hf + a.mf * 60;
-                    var bfrom = b.hf + b.mf * 60;
-                    if (afrom < bfrom) {
-                        return -1;
-                    } else {
-                        return 1;
-                    }
-                });
-
-                var data = JSON.stringify(json);
-                console.log(data);
-                xhr.send(data);
+                    console.log(data);
             } else {
                 window.location.replace("#popup1");
-                document.getElementById("messageContent").innerText = "Settings are not valid.";
+                document.getElementById("messageContent").innerText = "Settings invalid.";
             }
         }
 
-        function fillForm() {
+        async function fillForm() {
+            const url = "/rest/settings";
             initializeSchedulerTable();
-            var xhr = new XMLHttpRequest();
-            var url = "/rest/settings";
-            xhr.open("GET", url, true);
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    var json = JSON.parse(xhr.responseText);
-                    document.getElementById("deviceName").value = json.id;
-                    document.getElementById("inboundMode").value = json.inM;
-                    document.getElementById("outboundMode").value = json.outM;
-                    document.getElementById("refresh").value = json.refresh;
+            try {
+                const json = await requestJson(url, "GET");
+                await getPublisherProtocols(json.outM);
+                document.getElementById("deviceName").value = json.id;
+                document.getElementById("inboundMode").value = json.inM;
+                document.getElementById("outboundMode").value = json.outM;
+                document.getElementById("refresh").value = json.refresh;
 
-                    document.getElementById("setUrl").value = json.setUrl;
-                    document.getElementById("setUsername").value = json.setUser;
-                    document.getElementById("setPassword").value = json.setPwd;
+                document.getElementById("setUrl").value = json.setUrl;
+                document.getElementById("setUsername").value = json.setUser;
+                document.getElementById("setPassword").value = json.setPwd;
 
-                    document.getElementById("publisherProtocol").value = json.pubS.proto;
+                document.getElementById("publisherProtocol").value = json.pubS.proto;
 
-                    document.getElementById("scaleFactor").value = json.scaleS.f;
-                    document.getElementById("scaleOffset").value = json.scaleS.off;
-                    document.getElementById("scaleUnit").value = json.scaleS.u;
+                document.getElementById("scaleFactor").value = json.scaleS.f;
+                document.getElementById("scaleOffset").value = json.scaleS.off;
+                document.getElementById("scaleUnit").value = json.scaleS.u;
 
-                    document.getElementById("measurerMeasureWeight").value = json.mesS.mesW;
-                    document.getElementById("measurerMeasureTempAndHumidity").value = json.mesS.mesTh;
+                document.getElementById("measurerMeasureWeight").value = json.mesS.mesW;
+                document.getElementById("measurerMeasureTempAndHumidity").value = json.mesS.mesTh;
 
-                    document.getElementById("wifiSSID").value = json.wifiS.ssid;
-                    document.getElementById("wifiPassword").value = json.wifiS.pwd;
-                    document.getElementById("wifiCustomIp").value = json.wifiS.cip;
-                    document.getElementById("wifiIp").value = json.wifiS.ip
-                    document.getElementById("wifiGateway").value = json.wifiS.gw;
-                    document.getElementById("wifiNetmask").value = json.wifiS.nmsk;
+                document.getElementById("wifiSSID").value = json.wifiS.ssid;
+                document.getElementById("wifiPassword").value = json.wifiS.pwd;
+                document.getElementById("wifiCustomIp").value = json.wifiS.cip;
+                document.getElementById("wifiIp").value = json.wifiS.ip
+                document.getElementById("wifiGateway").value = json.wifiS.gw;
+                document.getElementById("wifiNetmask").value = json.wifiS.nmsk;
 
-                    document.getElementById("apPassword").value = json.apS.pwd;
-                    document.getElementById("apIp").value = json.apS.ip;
-                    document.getElementById("apGateway").value = json.apS.gw;
-                    document.getElementById("apNetmask").value = json.apS.nmsk;
+                document.getElementById("apPassword").value = json.apS.pwd;
+                document.getElementById("apIp").value = json.apS.ip;
+                document.getElementById("apGateway").value = json.apS.gw;
+                document.getElementById("apNetmask").value = json.apS.nmsk;
 
-                    document.getElementById("gprsAPN").value = json.gprsS.apn;
-                    document.getElementById("gprsUsername").value = json.gprsS.user;
-                    document.getElementById("gprsPassword").value = json.gprsS.pwd;
+                document.getElementById("gprsAPN").value = json.gprsS.apn;
+                document.getElementById("gprsUsername").value = json.gprsS.user;
+                document.getElementById("gprsPassword").value = json.gprsS.pwd;
 
-                    document.getElementById("timeZone").value = json.timeS.zone;
-                    document.getElementById("timeSZone").value = json.timeS.sZone;
+                document.getElementById("timeZone").value = json.timeS.zone;
+                document.getElementById("timeSZone").value = json.timeS.sZone;
 
-                    document.getElementById("mqttServer").value = json.mqttS.server;
-                    document.getElementById("mqttPort").value = json.mqttS.port;
-                    document.getElementById("mqttUsername").value = json.mqttS.user;
-                    document.getElementById("mqttPassword").value = json.mqttS.pwd;
-                    document.getElementById("mqttTopic").value = json.mqttS.topic;
+                document.getElementById("mqttServer").value = json.mqttS.server;
+                document.getElementById("mqttPort").value = json.mqttS.port;
+                document.getElementById("mqttUsername").value = json.mqttS.user;
+                document.getElementById("mqttPassword").value = json.mqttS.pwd;
+                document.getElementById("mqttTopic").value = json.mqttS.topic;
 
-                    document.getElementById("loraDeviceEUI").value = json.loraS.deui;
-                    document.getElementById("loraAppEUI").value = json.loraS.aeui;
-                    document.getElementById("loraAppKey").value = json.loraS.akey;
+                document.getElementById("loraDeviceEUI").value = json.loraS.deui;
+                document.getElementById("loraAppEUI").value = json.loraS.aeui;
+                document.getElementById("loraAppKey").value = json.loraS.akey;
 
-                    for (i = 0; i < json.schS.length; i++) {
-                        var k = json.schS[i];
-                        var entry = { from: "" + pad(k.hf, 2) + ":" + pad(k.mf, 2), to: "" + pad(k.ht, 2) + ":" + pad(k.mt, 2) };
-                        if (typeof k.upd !== 'undefined') {
-                            entry.upd = k.upd;
-                        }
-                        addSchedulerRow(entry);
+                for (i = 0; i < json.schS.length; i++) {
+                    var k = json.schS[i];
+                    var entry = { from: "" + pad(k.hf, 2) + ":" + pad(k.mf, 2), to: "" + pad(k.ht, 2) + ":" + pad(k.mt, 2) };
+                    if (typeof k.upd !== 'undefined') {
+                        entry.upd = k.upd;
                     }
-                } else if (xhr.readyState === 4) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Error obtaining settings.";
+                    addSchedulerRow(entry);
                 }
-            };
-            xhr.send();
+                invalidateSettingsVisibility();
+            } catch (error) {
+                displayMessage("Error obtaining settings. Error: " + error);
+            }
         }
 
-
+        async function init() {
+            await getInfo();
+            await getOutboundModes();
+            await fillForm();
+            await fillLogs();
+            openPage('Settings', this, 'white')
+        }
 
         function pad(num, size) {
             var s = num + "";
@@ -550,32 +598,14 @@
             return s;
         }
 
-        function syncSettings() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "/rest/settings/sync", true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Settings synced to server.";
-                } else if (xhr.readyState === 4) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Error syncing settings."
-                }
-
-            }
-            xhr.send();
-        }
-
-        function fillLogs() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/rest/logs", true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    var logs = document.getElementById("logs");
+        async function fillLogs() {
+            const url  = "/rest/logs";
+            try {
+                const json = await requestJson(url, "GET");
+                var logs = document.getElementById("logs");
                     while (logs.firstChild) {
                         logs.removeChild(logs.firstChild);
                     }
-                    var json = JSON.parse(xhr.responseText);
                     for (i = 0; i < json.logs.length; i++) {
                         var log = json.logs[i];
                         var logEntry = document.createElement('option');
@@ -587,31 +617,63 @@
                         }
                     }
                     loadLog();
-
-                } else if (xhr.readyState === 4) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Error obtaining log entries. Status: " + xhr.status;
-                }
-
+            } catch (error) {
+                displayMessage("Error obtaining log entries. Error: " + error);
             }
-            xhr.send();
         }
 
-        function loadLog() {
-            var logs = document.getElementById("logs");
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", logs.options[logs.selectedIndex].value, true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    var log = document.getElementById("log");
-                    log.innerText = xhr.responseText;
-                } else if (xhr.readyState === 4) {
-                    window.location.replace("#popup1");
-                    document.getElementById("messageContent").innerText = "Error obtaining log. Status: " + xhr.status;
-                }
-
+        async function loadLog() {
+            const url = logs.options[logs.selectedIndex].value;
+            try {
+                const response = await request(url, "GET");
+                var log = document.getElementById("log");
+                log.innerText = response;
+            } catch (error) {
+                displayMessage("Error obtaining log. Error: " + error);
             }
-            xhr.send();
+        }
+
+        async function connectionChange() {
+
+            await getPublisherProtocols(document.getElementById("outboundMode").value);
+        }
+
+        function invalidateSettingsVisibility() {
+            switch (document.getElementById("inboundMode").value) {
+                case "1":
+                    document.getElementById("wifiSettings").style.display = "block";
+                    document.getElementById("gprsSettings").style.display = "none";
+                    document.getElementById("loraSettings").style.display = "none";
+                    break;
+                case "2":
+                    document.getElementById("wifiSettings").style.display = "none";
+                    document.getElementById("gprsSettings").style.display = "block";
+                    document.getElementById("loraSettings").style.display = "none";
+                    break;
+                case "4":
+                    document.getElementById("wifiSettings").style.display = "none";
+                    document.getElementById("gprsSettings").style.display = "none";
+                    document.getElementById("loraSettings").style.display = "block";
+                    break;
+                default:
+                    document.getElementById("wifiSettings").style.display = "none";
+                    document.getElementById("gprsSettings").style.display = "none";
+                    document.getElementById("loraSettings").style.display = "none";
+            }
+            switch (document.getElementById("publisherProtocol").value) {
+                case "1":
+                    document.getElementById("mqttSettings").style.display = "block";
+                    break;
+                case "2":
+                    document.getElementById("mqttSettings").style.display = "none";
+                    break;
+                case "4":
+                    document.getElementById("mqttSettings").style.display = "none";
+                    break;
+                default:
+                    document.getElementById("mqttSettings").style.display = "none";
+                    break;
+            }
         }
 
     </script>
@@ -645,15 +707,13 @@
                         <label for="deviceName">Name</label>
                         <input type="text" id="deviceName" placeholder="Device name">
                         <label for="outboundMode">Outbound mode</label>
-                        <select id="outboundMode">
-                            <option value="1">WiFi</option>
-                            <option value="2">GPRS</option>
-                            <option value="4">LoraWan</option>
+                        <select id="outboundMode" onchange="connectionChange();">
+
                         </select>
 
 
                         <label for="inboundMode">Inbound mode</label>
-                        <select id="inboundMode">
+                        <select id="inboundMode" onchange="invalidateSettingsVisibility();">
                             <option value="0">No inbound</option>
                             <option value="1">WiFi</option>
                             <option value="2">Bluetooth(BLE)</option>
@@ -743,7 +803,7 @@
                         </select>
                     </fieldset>
 
-                    <fieldset>
+                    <fieldset id="wifiSettings">
                         <legend>Outbound WiFi Settings</legend>
                         <label for="wifiSSID">SSID</label><input type="text" id="wifiSSID" maxlength="32">
                         <label for="wifiPassword">Password</label><input type="password" id="wifiPassword"
@@ -763,7 +823,7 @@
                             pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
                     </fieldset>
 
-                    <fieldset>
+                    <fieldset id="apSettings">
                         <legend>Inbound (AP) WiFi Settings </legend>
                         <label for="apPassword">Password</label><input type="password" id="apPassword" maxlength="16">
                         <label for="apIp">IP</label><input type="text" id="apIp" minlength="7" maxlength="15" size="15"
@@ -776,12 +836,22 @@
                             pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$">
                     </fieldset>
 
-                    <fieldset>
+                    <fieldset id="gprsSettings">
                         <legend>Outbound GSM/GPRS Settings</legend>
                         <label for="gprsAPN">APN</label><input type="text" maxlength="32" id="gprsAPN">
                         <label for="gprsUsername">Username</label><input type="text" maxlength="16" id="gprsUsername">
                         <label for="gprsPassword">Password</label><input type="password" maxlength="16"
                             id="gprsPassword">
+                    </fieldset>
+
+                    <fieldset id="loraSettings">
+                        <legend>LoraWan Settings</legend>
+                        <label for="loraDeviceEUI">Device EUI</label><input type="text" id="loraDeviceEUI"
+                            maxLength="16">
+                        <label for="loraAppEUI">Application EUI</label><input type="text" id="loraAppEUI"
+                            maxLength="16">
+                        <label for="loraAppKey">Application key</label><input type="password" id="loraAppKey"
+                            maxLength="32">
                     </fieldset>
 
                     <fieldset>
@@ -814,14 +884,12 @@
                     <fieldset>
                         <legend>Publisher Settings</legend>
                         <label for="publisherProtocol">Publish protocol</label>
-                        <select id="publisherProtocol">
-                            <option value="1">MQTT</option>
-                            <option value="2">HTTP</option>
-                            <option value="4">LoraWan</option>
+                        <select id="publisherProtocol" onchange="invalidateSettingsVisibility()">
+
                         </select>
                     </fieldset>
 
-                    <fieldset>
+                    <fieldset id="mqttSettings">
                         <legend>MQTT Settings</legend>
                         <label for="mqttServer">Server address</label><input type="text" id="mqttServer" maxLength="32">
                         <label for="mqttPort">Port</label><input type="number" min="1" max="65536" id="mqttPort">
@@ -832,12 +900,7 @@
                             maxLength="32">
 
                     </fieldset>
-                    <fieldset>
-                        <legend>LoraWan Settings</legend>
-                        <label for="loraDeviceEUI">Device EUI</label><input type="text" id="loraDeviceEUI" maxLength="16">
-                        <label for="loraAppEUI">Application EUI</label><input type="text" id="loraAppEUI" maxLength="16">
-                        <label for="loraAppKey">Application key</label><input type="password" id="loraAppKey" maxLength="32">
-                    </fieldset>
+
                     <fieldset>
                         <legend>Operational Time Intervals</legend>
                         <button onclick="addSchedulerRow(undefined)" type="button"
@@ -883,14 +946,6 @@
                         <input type="Submit" value="Update firmware" class="button-error pure-button">
                     </fieldset>
                 </form>
-                <form>
-                    <fieldset>
-                        <legend>Modem</legend>
-                        <label for="modemAtCommand"></label>Send AT Command</label><input type="text"" maxlength="16" id="modemAtCommand">
-                    </fieldset>
-                    <button type="button" class="button-success pure-button" onclick="sendModemAT()">Send AT command</button>
-                </form>
-                
             </div>
         </div>
     </div>
@@ -905,4 +960,4 @@
     </div>
 </body>
 
-</html> 
+</html>                  

@@ -60,9 +60,10 @@ public:
   void shutdown() override;
   void suspend() override;
   void resume() override;
-  char getInboundType() { return 0x0; }
-  char getOutboundType() { return 0x4; }
-  const char *getName() { return m_name; }
+  const char getInboundType() { return 0x0; }
+  const char getOutboundType() { return 0x4; }
+  const char *getName() { return "LoraWan"; }
+
 
 private:
   MyLoRaWAN loraWan{};
@@ -77,7 +78,6 @@ private:
       .rssi_cal = 8,
       .spi_freq = 8000000,
   };
-  const char m_name[8] = "LORAWAN";
 };
 
 #endif

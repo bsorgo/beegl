@@ -36,9 +36,10 @@ public:
   void shutdown() override;
   void suspend() override;
   void resume() override;
-  char getInboundType() { return 0x1;}
-  char getOutboundType() { return 0x1;}
-  const char* getName() { return m_name;}
+  const char getInboundType() { return 0x1;}
+  const char getOutboundType() { return 0x1;}
+  const char* getName() { return "WIFI";}
+
 private:
   bool wifiSetup();
   WiFiClient *wifiClient;

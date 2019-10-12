@@ -36,13 +36,13 @@ public:
   void shutdown() override;
   void suspend() override;
   void resume() override;
-  char getInboundType() { return 0x2;};
-  char getOutboundType() { return 0x0;};
-  const char* getName() { return m_name;}
+  const char getInboundType() { return 0x2;};
+  const char getOutboundType() { return 0x0;};
+  const char* getName() { return "BLE";}
+  
 private:
   bool bleSetup();
   void btOff();
-  const char m_name[4] = "BLE";
 };
 
 #endif

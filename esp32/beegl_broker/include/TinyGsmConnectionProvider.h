@@ -43,9 +43,10 @@ public:
   void suspend() override;
   void resume() override;
   void modemPowerup();
-  char getInboundType() { return 0x0;}
-  char getOutboundType() { return 0x2;}
-  const char* getName() { return m_name;}
+  const char getInboundType() { return 0x0;}
+  const char getOutboundType() { return 0x2;}
+  const char* getName() { return "GSM/NB-IOT";}
+
 private:
   const int MODEM_RX_PIN = 15;
   const int MODEM_TX_PIN = 14;
@@ -56,7 +57,6 @@ private:
   TinyGsmClient *gsmClient;
   bool gsmSetup();
   bool gprsSetup();
-  const char m_name[11] = "GSM/NB-IOT";
 };
 
 #endif

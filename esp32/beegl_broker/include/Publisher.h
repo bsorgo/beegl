@@ -43,19 +43,21 @@ class PublishStrategy
 {
 public:
   PublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
- 
-  virtual void setup() {};
-  virtual bool reconnect() { return true;};
-  virtual bool publishMessage(const char *message) {return true;};
-  virtual void update() {};
-  virtual const char getProtocol() {return 0x0;}
+
+  virtual void setup(){};
+  virtual bool reconnect() { return true; };
+  virtual bool publishMessage(const char *message) { return true; };
+  virtual void update(){};
+  virtual const char getProtocol() { return 0x0; }
+  virtual const char *getProtocolName() { return {0x00}; };
   virtual int getInterval() { return 60000; }
+  virtual const char getSupportedOutboundTypes() { return {0x00}; }
+
 protected:
   Connection *m_connection;
   Settings *m_settings;
   Runtime *m_runtime;
   Service *m_service;
-  
 };
 
 class Publisher
@@ -67,17 +69,19 @@ public:
   virtual void update();
   bool publish();
   char *storeMessage(JsonObject &jsonObj);
-  void addPublishStrategy(PublishStrategy* publishStrategy);
+  void addPublishStrategy(PublishStrategy *publishStrategy);
   int getInterval();
-  static Publisher* getInstance();
+  static Publisher *getInstance();
   static void publishCallback();
+
 private:
-  static Publisher* p_instance;
+  int getStrategies(PublishStrategy **strategies, char outboundType);
+  static Publisher *p_instance;
   static Timer p_publisherTimer;
   int32_t backlogCount;
-  
-  PublishStrategy* m_publishStrategies[5];
-  PublishStrategy* m_selectedStrategy = nullptr;
+
+  PublishStrategy *m_publishStrategies[5];
+  PublishStrategy *m_selectedStrategy = nullptr;
   int publishStrategyCount = 0;
   int storageIndex = -1;
   int publishIndex = -1;
@@ -86,8 +90,7 @@ private:
   Runtime *m_runtime;
   Service *m_service;
   char messageStorage[STORAGE_SIZE][350];
-  PublishStrategy* getSelectedStrategy();
-  
+  PublishStrategy *getSelectedStrategy();
   void webServerBind();
   int getIndex();
 };
