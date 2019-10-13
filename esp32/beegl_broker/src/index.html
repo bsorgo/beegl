@@ -349,9 +349,9 @@
             const url = "/rest/reboot";
             try {
                 const json = await requestJson(url, "POST");
-                displayMessage("Device is rebooting, reload page after some time.");
+                displayMessage("Device is presumably rebooting, reload page after some time.");
             } catch (error) {
-                displayMessage("Error performing measure. Error: " + error);
+                displayMessage("Device is presumably rebooting, reload page after some time.");
             }
         }
 
@@ -396,6 +396,30 @@
             }
         }
 
+        async function getTimeSources(outM) {
+            const url = "/rest/timesources?outM=" + outM;
+            try {
+                const json = await requestJson(url, "GET");
+                var sel = document.getElementById("timeSource");
+                var value = sel.value;
+                sel.options.length = 0;
+                for (i = 0; i < json.timesources.length; i++) {
+                    var k = json.timesources[i];
+                    var opt = document.createElement("option");
+                    opt.value = k.tSrc;
+                    opt.text = k.name;
+                    sel.add(opt);
+                }
+                sel.value = value;
+                if (sel.selectedIndex == -1) {
+                    sel.selectedIndex = 0;
+                }
+                invalidateSettingsVisibility();
+            } catch (error) {
+                displayMessage("Error getting time sources. Error: " + error);
+            }
+        }
+
         async function getInfo() {
             const url = "/info";
             try {
@@ -419,6 +443,7 @@
                             "id": document.getElementById("deviceName").value,
                             "inM": document.getElementById("inboundMode").value,
                             "outM": document.getElementById("outboundMode").value,
+                            "tSrc":  document.getElementById("timeSource").value,
                             "refresh": document.getElementById("refresh").value,
                             "setUrl": document.getElementById("setUrl").value,
                             "setUser": document.getElementById("setUsername").value,
@@ -512,8 +537,7 @@
                     }
                     console.log(data);
             } else {
-                window.location.replace("#popup1");
-                document.getElementById("messageContent").innerText = "Settings invalid.";
+                displayMessage("Settings invalid. ");
             }
         }
 
@@ -523,9 +547,11 @@
             try {
                 const json = await requestJson(url, "GET");
                 await getPublisherProtocols(json.outM);
+                await getTimeSources(json.outM);
                 document.getElementById("deviceName").value = json.id;
                 document.getElementById("inboundMode").value = json.inM;
                 document.getElementById("outboundMode").value = json.outM;
+                document.getElementById("timeSource").value = json.tSrc;
                 document.getElementById("refresh").value = json.refresh;
 
                 document.getElementById("setUrl").value = json.setUrl;
@@ -636,6 +662,7 @@
         async function connectionChange() {
 
             await getPublisherProtocols(document.getElementById("outboundMode").value);
+            await getTimeSources(document.getElementById("outboundMode").value);
         }
 
         function invalidateSettingsVisibility() {
@@ -721,6 +748,10 @@
                         </select>
                         <label for="refresh">Refresh</label>
                         <input type="number" id="refresh" placeholder="Refresh in ms">
+                        <label for="timeSource">Time source</label>
+                        <select id="timeSource" onchange="invalidateSettingsVisibility();">
+ 
+                        </select>
                         <label for="setUrl">Settings URL prefix</label>
                         <input type="text" maxlength="64" id="setUrl"
                             placeholder="Settings URL in format: &lt;hostname&gt;/&lt;resource&gt;/">
@@ -960,4 +991,4 @@
     </div>
 </body>
 
-</html>                  
+</html>                                                          

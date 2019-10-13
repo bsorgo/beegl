@@ -232,6 +232,7 @@ bool Publisher::publish()
                     if (retries % 5 == 0)
                     {
                         break;
+                        
                     }
                 }
             }
@@ -285,7 +286,7 @@ bool Publisher::publish()
                     && backlogCount < MAX_BACKLOG)
                 {
                     // write to backlog only if absolute time- it makes sense
-                    if(m_settings->absoluteTime)
+                    if(TimeManagement::getInstance()->isAbsoluteTime())
                     {
                          backlogCount++;
                         // add to backlog

@@ -70,7 +70,7 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     // epoch time
     if (sourceRef.containsKey(STR_EPOCHTIME))
     {
-        if (m_settings->absoluteTime)
+        if (TimeManagement::getInstance()->isAbsoluteTime())
         {
             char time[11];
             strlcpy(time, sourceRef[STR_EPOCHTIME], 10);

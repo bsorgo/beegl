@@ -27,7 +27,7 @@
 #include "Service.h"
 #include <timer.h>
 #include <timerManager.h>
-
+#include "TimeManagement.h"
 #include <PubSubClient.h>
 
 #define STORAGE_SIZE 30
@@ -41,6 +41,7 @@
 
 class PublishStrategy
 {
+  
 public:
   PublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
 

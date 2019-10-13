@@ -43,8 +43,6 @@ void SettingsManagement::webServerBind()
         request->send_P(200, "text/html", (char *)index_html_start);
     });
 
-   
-
     m_server->getWebServer()->on("/rest/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SPIFFS, CONFIGJSON, String(), false);
     });
@@ -148,6 +146,7 @@ bool SettingsManagement::writeConfig(JsonObject &input)
     root[STR_INBOUNDMODE] = m_settings->inboundMode;
     root[STR_DEVICENAME] = m_settings->deviceName;
     root[STR_RESTARTINTERVAL] = m_settings->restartInterval;
+    root[STR_TIMESOURCE] = m_settings->timeSource;
     root[STR_REFRESH] = m_settings->refreshInterval;
     root[STR_VER] = m_settings->firmwareVersion;
     root[STR_SETTINGSURL] = m_settings->httpTimeAndSettingsPrefix;
@@ -201,7 +200,6 @@ bool SettingsManagement::writeConfig(JsonObject &input)
     gprsSettings[STR_GPRSAPN] = m_settings->apn;
     gprsSettings[STR_GPRSPASSWORD] = m_settings->apnPass;
     gprsSettings[STR_GPRSUSERNAME] = m_settings->apnUser;
-    
 
     merge(gprsSettings, input[STR_GPRSSETTINGS]);
 
@@ -265,8 +263,8 @@ bool SettingsManagement::readAndParseJson(const char *filename, JsonObject **roo
     {
         return false;
     }
-    JsonObject& rootObj= jsonBuffer->parseObject(file);
-    
+    JsonObject &rootObj = jsonBuffer->parseObject(file);
+
     file.close();
     if (!rootObj.success())
     {
@@ -281,7 +279,7 @@ bool SettingsManagement::readAndParseJson(const char *filename, JsonObject **roo
 bool SettingsManagement::readConfig()
 {
     StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
-    JsonObject* rootObj;
+    JsonObject *rootObj;
     if (!readAndParseJson(CONFIGJSON, &rootObj, &jsonBuffer))
     {
         blog_e("[SETTINGS] Failed to open config file for reading.");
@@ -314,6 +312,8 @@ bool SettingsManagement::readConfig()
     m_settings->inboundMode = root.get<char>(STR_INBOUNDMODE);
     m_settings->outboundMode = (root.get<char>(STR_OUTBOUNDMODE) ? root.get<char>(STR_OUTBOUNDMODE) : m_settings->outboundMode);
     m_settings->deviceType = (root.get<char>(STR_DEVICETYPE) ? root.get<char>(STR_DEVICETYPE) : m_settings->deviceType);
+    m_settings->timeSource = (root.get<char>(STR_TIMESOURCE) ? root.get<char>(STR_TIMESOURCE) : m_settings->timeSource);
+
     m_settings->refreshInterval = (root.get<uint32_t>(STR_REFRESH) ? root.get<uint32_t>(STR_REFRESH) : m_settings->refreshInterval);
     strlcpy(m_settings->firmwareVersion, root[STR_VER] | m_settings->firmwareVersion, 9);
     strlcpy(m_settings->httpTimeAndSettingsPrefix, root[STR_SETTINGSURL] | m_settings->httpTimeAndSettingsPrefix, 64);
@@ -421,10 +421,11 @@ bool SettingsManagement::writeSettingsToServer()
     return res;
 }
 
-void SettingsManagement::syncTimeAndSettings()
+void SettingsManagement::syncSettings()
 {
-    Client* client = m_connection->getClient();
-    if(client!=nullptr ) 
+    Client *client = m_connection->getClient();
+    SchEntryType schEntry = m_settings->getCurrentSchedulerEntry();
+    if (schEntry.updateFromServer && client != nullptr)
     {
         // GPRS || WiFi
         blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
@@ -437,6 +438,7 @@ void SettingsManagement::syncTimeAndSettings()
         m_connection->checkConnect();
         HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
         this->readTimeAndSettings(&httpClient, path);
+        client->stop();
         free(hostname);
         free(path);
     }
@@ -444,7 +446,6 @@ void SettingsManagement::syncTimeAndSettings()
 
 bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
 {
-
     httpClient->connectionKeepAlive();
     httpClient->beginRequest();
     int res = httpClient->get(path);
@@ -456,54 +457,10 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
     {
         while (httpClient->headerAvailable())
         {
-            String headerName = httpClient->readHeaderName();
-            if (headerName.equals("Date") || headerName.equals("date"))
-            {
-                String dateStr = httpClient->readHeaderValue();
-
-                blog_i("[SETTINGS] Header date string: %s", dateStr.c_str());
-                char p[32];
-
-                char *token;
-
-                dateStr.toCharArray(p, 32, 0);
-
-                // day of week
-                token = strtok(p, " ");
-
-                // day
-                token = strtok(NULL, " ");
-                int days = atoi(token);
-                // month
-                token = strtok(NULL, " ");
-
-                int months = getMonthFromString(token);
-                // year
-                token = strtok(NULL, " ");
-
-                int years = atoi(token);
-                // hour
-                token = strtok(NULL, " ");
-
-                token = strtok(token, ":");
-
-                int hours = atoi(token);
-                // minute
-                token = strtok(NULL, ":");
-
-                int minutes = atoi(token);
-                // seconds
-                token = strtok(NULL, ": ");
-                int seconds = atoi(token);
-                blog_d("[SETTINGS] Time fractions: %04d-%02d-%02dT%02d:%02d:%02d.000Z", years, months, days, hours, minutes, seconds);
-
-                setTime(hours, minutes, seconds, days, months, years);
-                m_settings->absoluteTime = true;
-            }
         }
     }
-    SchEntryType schEntry = m_settings->getCurrentSchedulerEntry();
-    if (schEntry.updateFromServer && res == 0 && responseCode == 200)
+    
+    if (res == 0 && responseCode == 200)
     {
         String responseBody = httpClient->responseBody();
         if (responseBody.startsWith("{"))
@@ -621,60 +578,6 @@ bool SettingsManagement::writeSettings(HttpClient *httpClient, char *path, char 
         return false;
     }
     return true;
-}
-
-int SettingsManagement::getMonthFromString(char *s)
-{
-    if (strcmp(s, "Jan") == 0)
-    {
-        return 1;
-    }
-    if (strcmp(s, "Feb") == 0)
-    {
-        return 2;
-    }
-    if (strcmp(s, "Mar") == 0)
-    {
-        return 3;
-    }
-    if (strcmp(s, "Apr") == 0)
-    {
-        return 4;
-    }
-    if (strcmp(s, "May") == 0)
-    {
-        return 5;
-    }
-    if (strcmp(s, "Jun") == 0)
-    {
-        return 6;
-    }
-    if (strcmp(s, "Jul") == 0)
-    {
-        return 7;
-    }
-    if (strcmp(s, "Aug") == 0)
-    {
-        return 8;
-    }
-    if (strcmp(s, "Sep") == 0)
-    {
-        return 9;
-    }
-    if (strcmp(s, "Oct") == 0)
-    {
-        return 10;
-    }
-    if (strcmp(s, "Nov") == 0)
-    {
-        return 11;
-    }
-    if (strcmp(s, "Dec") == 0)
-    {
-        return 12;
-    }
-
-    return -1;
 }
 
 String SettingsManagement::getLocalFileMd5(const char *path)

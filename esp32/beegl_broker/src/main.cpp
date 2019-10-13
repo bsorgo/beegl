@@ -26,8 +26,6 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <WiFi.h>
-#include <timer.h>
-#include <timerManager.h>
 #include <ArduinoNvs.h>
 #include <Storage.h>
 #include <EEPROM.h>
@@ -38,6 +36,8 @@
 #include "Service.h"
 #include "Settings.h"
 #include "Connection.h"
+#include "TimeManagement.h"
+#include "HttpTimeProviderStrategy.h"
 #ifdef SUPPORTSGSM
 #include "TinyGsmConnectionProvider.h"
 #endif
@@ -68,12 +68,11 @@ static heap_trace_record_t trace_record[HEAP_TRACE_NUM_RECORDS]; // This buffer 
 
 #define SerialMon Serial
 
-
-
 Indicator indicator = Indicator();
 Settings settings = Settings();
 Service service = Service(&settings);
 Connection connection = Connection(&service, &settings);
+TimeManagement timeManagement = TimeManagement(&service, &settings, &connection);
 Runtime runtime = Runtime(&service, &settings, &connection);
 Updater updater = Updater(&runtime, &service, &settings, &connection);
 Publisher publisher = Publisher(&runtime, &settings, &connection, &service);
@@ -122,7 +121,9 @@ void setup()
   {
     indicator.reportSuccess(1);
   }
+
   connection.addConnectionProvider(new WiFiConnectionProvider(&settings));
+
 #ifdef SUPPORTSGSM
   connection.addConnectionProvider(new TinyGsmConnectionProvider(&settings));
 #endif
@@ -132,6 +133,10 @@ void setup()
 #ifdef SUPPORTSBLE
   connection.addConnectionProvider(new BLEConnectionProvider(&settings));
 #endif
+  // Add default - No Time 
+  timeManagement.addTimeProviderStrategy(new TimeProviderStrategy(&settings, &connection));
+  timeManagement.addTimeProviderStrategy(new HttpTimeProviderStrategy(&settings, &connection));
+
   runtime.initialize();
   runtime.setSafeModeOnRestart(1);
 
@@ -180,7 +185,9 @@ void setup()
   }
 
   service.setup();
-  settingsManagement.syncTimeAndSettings();
+  timeManagement.setup();
+  timeManagement.syncTime();
+  settingsManagement.syncSettings();
   updater.checkFirmware();
   publisher.addPublishStrategy(new MqttPublishStrategy(&runtime, &settings, &connection, &service));
   publisher.addPublishStrategy(new HttpPublishStrategy(&runtime, &settings, &connection, &service));
@@ -191,7 +198,6 @@ void setup()
   measurer.setup();
   broker.setup();
 
-  
   settingsManagement.storeLastGood();
   indicator.reportSuccess(4);
   connection.suspend();

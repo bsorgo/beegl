@@ -94,6 +94,7 @@
 #define STR_MEASURERTEMPHUM "mesTh"
 #define STR_PUBLISHERSETTINGS "pubS"
 #define STR_PUBLISHERPROTOCOL "proto"
+#define STR_TIMESOURCE "tSrc"
 #define STR_VER "ver"
 #define STR_FW_PREFIX "fwUrl"
 #define CONFIG_JSON "/config.json"
@@ -158,6 +159,7 @@ public:
     char outboundMode = 0x1;
     char inboundMode = 0x0;
     char deviceType = 0x1;
+    char timeSource = 0x1;
     char httpTimeAndSettingsPrefix[65] = "www.example.com/beegl/";
     char httpTimeAndSettingUsername[17] = "user";
     char httpTimeAndSettingPassword[17] = "password";
@@ -290,10 +292,8 @@ public:
         updateFromServer:
         Perform upate from server (firmware, settings, resources) in this time interval
     */
-    struct SchEntryType schEntries[10] = {{0, 0, 23, 59, true}};
+    struct SchEntryType schEntries[10] = {{0, 0, 23, 59, false}};
     int schEntriesLength = 1;
-
-    bool absoluteTime = false;
     Settings();
 
     

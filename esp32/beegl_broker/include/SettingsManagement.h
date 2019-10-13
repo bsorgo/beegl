@@ -45,7 +45,7 @@ public:
     bool writeConfig();
     bool readConfig();
     bool writeSettingsToServer();
-    void syncTimeAndSettings();
+    void syncSettings();
     void storeLastGood();
 
 private:
@@ -59,7 +59,6 @@ private:
     void merge(JsonObject &dest, JsonObject &src);
     bool writeSettings(HttpClient *httpClient, char *path, char *username, char *password);
     bool writeConfigToFS(const char *filename, JsonObject &root);
-    int getMonthFromString(char *s);
     String getLocalFileMd5(const char *filename);
     bool readAndParseJson(const char *filename, JsonObject **root, StaticJsonBuffer<CONFIG_BUFFER> *jsonBuffer);
 };
