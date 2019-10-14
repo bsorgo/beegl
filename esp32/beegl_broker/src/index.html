@@ -193,7 +193,7 @@
                 xhr.send();
             })
         }
-        function requestJson(url, method, body) {
+        function requestJson(url, method) {
             return new Promise(function (resolve, reject) {
                 const xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function (e) {
@@ -211,8 +211,36 @@
                 }
                 xhr.open(method, url, true);
                 xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.send();
+            })
+        }
+
+        function postJson(url, method, body) {
+            return new Promise(function (resolve, reject) {
+                const xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function (e) {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+
+                            var response = xhr.responseText;
+                            resolve(response);
+                        } else {
+                            reject(xhr.status);
+                        }
+                    }
+                }
+                xhr.ontimeout = function () {
+                    reject('timeout');
+                }
+                xhr.open(method, url, true);
+                xhr.setRequestHeader("Content-Type", "application/json");
                 xhr.send(body);
             })
+        }
+        function pad(num, size) {
+            var s = num + "";
+            while (s.length < size) s = "0" + s;
+            return s;
         }
 
         function displayMessage(message) {
@@ -240,7 +268,7 @@
             document.getElementById(pageName).style.display = "block";
 
             // Add the specific color to the button used to open the tab content
-            elmnt.style.background= color;
+            elmnt.style.background = color;
             elmnt.style.color = "black";
         }
 
@@ -348,7 +376,7 @@
         async function reboot() {
             const url = "/rest/reboot";
             try {
-                const json = await requestJson(url, "POST");
+                const json = await request(url, "POST");
                 displayMessage("Device is presumably rebooting, reload page after some time.");
             } catch (error) {
                 displayMessage("Device is presumably rebooting, reload page after some time.");
@@ -397,7 +425,7 @@
         }
 
         async function getTimeSources(outM) {
-            const url = "/rest/timesources?outM=" + outM;
+            const url = "/rest/time/sources?outM=" + outM;
             try {
                 const json = await requestJson(url, "GET");
                 var sel = document.getElementById("timeSource");
@@ -429,6 +457,41 @@
                 displayMessage("Error obtaining info. Error: " + error);
             }
         }
+        async function getTime() {
+            const url = "/rest/time";
+            try {
+                const json = await requestJson(url, "GET");
+                const hour = pad(json.hour,2);
+                const minute = pad(json.minute,2);
+                const second = pad(json.second,2);
+                const month = pad(json.month,2);
+                const day = pad(json.day,2);
+                document.getElementById("setTime").value = `${hour}:${minute}:${second}`;
+                document.getElementById("setDate").value = `${json.year}-${month}-${day}`;
+            } catch (error) {
+                displayMessage("Error obtaining time. Error: " + error);
+            }
+        }
+        function setTimeValue() {
+            const url = "/rest/time";
+            const time = document.getElementById("setTime").value;
+            const date = document.getElementById("setDate").value;
+            const timeSplit = time.split(":");
+            const dateSplit = date.split("-");
+            data = {
+                year: dateSplit[0],
+                month: dateSplit[1],
+                day: dateSplit[2],
+                hour: timeSplit[0],
+                minute: timeSplit[1],
+                seconds: 0
+            }
+            postJson(url, "POST", JSON.stringify(data)).then(res => {
+                displayMessage("Time set.");
+            }).catch(error => {
+                displayMessage("Error setting time. Error: " + error);
+            });
+        }
 
         async function submitForm() {
             const url = "/rest/settings";
@@ -436,106 +499,108 @@
             var isValidForm = form.checkValidity()
 
             if (isValidForm) {
-                
-                try {
-                        var json =
-                        {
-                            "id": document.getElementById("deviceName").value,
-                            "inM": document.getElementById("inboundMode").value,
-                            "outM": document.getElementById("outboundMode").value,
-                            "tSrc":  document.getElementById("timeSource").value,
-                            "refresh": document.getElementById("refresh").value,
-                            "setUrl": document.getElementById("setUrl").value,
-                            "setUser": document.getElementById("setUsername").value,
-                            "setPwd": document.getElementById("setPassword").value,
-                            "pubS":
-                            {
-                                "proto": document.getElementById("publisherProtocol").value
-                            },
-                            "mesS":
-                            {
-                                "mesW": document.getElementById("measurerMeasureWeight").value,
-                                "mesTh": document.getElementById("measurerMeasureTempAndHumidity").value
-                            },
-                            "scaleS":
-                            {
-                                "f": document.getElementById("scaleFactor").value,
-                                "u": document.getElementById("scaleUnit").value,
-                                "off": document.getElementById("scaleOffset").value,
 
-                            },
-                            "wifiS":
-                            {
-                                "ssid": document.getElementById("wifiSSID").value,
-                                "pwd": document.getElementById("wifiPassword").value,
-                                "cip": document.getElementById("wifiCustomIp").value,
-                                "ip": document.getElementById("wifiIp").value,
-                                "gw": document.getElementById("wifiGateway").value,
-                                "nmsk": document.getElementById("wifiNetmask").value
-                            },
-                            "apS":
-                            {
-                                "pwd": document.getElementById("apPassword").value,
-                                "ip": document.getElementById("apIp").value,
-                                "gw": document.getElementById("apGateway").value,
-                                "nmsk": document.getElementById("apNetmask").value
-                            },
-                            "gprsS":
-                            {
-                                "apn": document.getElementById("gprsAPN").value,
-                                "user": document.getElementById("gprsUsername").value,
-                                "pwd": document.getElementById("gprsPassword").value
-                            },
-                            "timeS":
-                            {
-                                "zone": document.getElementById("timeZone").value,
-                                "sZone": document.getElementById("timeSZone").value
-                            },
-                            "mqttS":
-                            {
-                                "server": document.getElementById("mqttServer").value,
-                                "port": document.getElementById("mqttPort").value,
-                                "user": document.getElementById("mqttUsername").value,
-                                "pwd": document.getElementById("mqttPassword").value,
-                                "topic": document.getElementById("mqttTopic").value
-                            },
-                            "loraS":
-                            {
-                                "deui": document.getElementById("loraDeviceEUI").value,
-                                "aeui": document.getElementById("loraAppEUI").value,
-                                "akey": document.getElementById("loraAppKey").value
-                            },
-                            "schS": []
-                        };
-                        var unsortedSchS = [];
-                        var schedulerTable = document.getElementById('schedulerTable');
-                        for (i = 1; i < schedulerTable.rows.length; i++) {
 
-                            var row = schedulerTable.rows.item(i);
-                            if (row !== null) {
-                                var fromArr = row.cells.item(1).children.item(0).value.split(':');
-                                var toArr = row.cells.item(2).children.item(0).value.split(':');
-                                var upd = row.cells.item(3).children.item(0).value;
-                                unsortedSchS.push({ hf: fromArr[0], mf: fromArr[1], ht: toArr[0], mt: toArr[1], upd: upd });
-                            }
-                        }
-                        json.schS = unsortedSchS.sort(function (a, b) {
-                            var afrom = a.hf + a.mf * 60;
-                            var bfrom = b.hf + b.mf * 60;
-                            if (afrom < bfrom) {
-                                return -1;
-                            } else {
-                                return 1;
-                            }
-                        });
+                var json =
+                {
+                    "id": document.getElementById("deviceName").value,
+                    "inM": document.getElementById("inboundMode").value,
+                    "outM": document.getElementById("outboundMode").value,
+                    "tSrc": document.getElementById("timeSource").value,
+                    "refresh": document.getElementById("refresh").value,
+                    "setUrl": document.getElementById("setUrl").value,
+                    "setUser": document.getElementById("setUsername").value,
+                    "setPwd": document.getElementById("setPassword").value,
+                    "pubS":
+                    {
+                        "proto": document.getElementById("publisherProtocol").value
+                    },
+                    "mesS":
+                    {
+                        "mesW": document.getElementById("measurerMeasureWeight").value,
+                        "mesTh": document.getElementById("measurerMeasureTempAndHumidity").value
+                    },
+                    "scaleS":
+                    {
+                        "f": document.getElementById("scaleFactor").value,
+                        "u": document.getElementById("scaleUnit").value,
+                        "off": document.getElementById("scaleOffset").value,
 
-                        var data = JSON.stringify(json);
-                        await requestJson(url, "POST", data);
-                        displayMessage("Settings saved.");
-                    } catch (error) {
-                        displayMessage("Error saving settings. Error: " + error);
+                    },
+                    "wifiS":
+                    {
+                        "ssid": document.getElementById("wifiSSID").value,
+                        "pwd": document.getElementById("wifiPassword").value,
+                        "cip": document.getElementById("wifiCustomIp").value,
+                        "ip": document.getElementById("wifiIp").value,
+                        "gw": document.getElementById("wifiGateway").value,
+                        "nmsk": document.getElementById("wifiNetmask").value
+                    },
+                    "apS":
+                    {
+                        "pwd": document.getElementById("apPassword").value,
+                        "ip": document.getElementById("apIp").value,
+                        "gw": document.getElementById("apGateway").value,
+                        "nmsk": document.getElementById("apNetmask").value
+                    },
+                    "gprsS":
+                    {
+                        "apn": document.getElementById("gprsAPN").value,
+                        "user": document.getElementById("gprsUsername").value,
+                        "pwd": document.getElementById("gprsPassword").value
+                    },
+                    "timeS":
+                    {
+                        "zone": document.getElementById("timeZone").value,
+                        "sZone": document.getElementById("timeSZone").value
+                    },
+                    "mqttS":
+                    {
+                        "server": document.getElementById("mqttServer").value,
+                        "port": document.getElementById("mqttPort").value,
+                        "user": document.getElementById("mqttUsername").value,
+                        "pwd": document.getElementById("mqttPassword").value,
+                        "topic": document.getElementById("mqttTopic").value
+                    },
+                    "loraS":
+                    {
+                        "deui": document.getElementById("loraDeviceEUI").value,
+                        "aeui": document.getElementById("loraAppEUI").value,
+                        "akey": document.getElementById("loraAppKey").value
+                    },
+                    "schS": []
+                };
+                var unsortedSchS = [];
+                var schedulerTable = document.getElementById('schedulerTable');
+                for (i = 1; i < schedulerTable.rows.length; i++) {
+
+                    var row = schedulerTable.rows.item(i);
+                    if (row !== null) {
+                        var fromArr = row.cells.item(1).children.item(0).value.split(':');
+                        var toArr = row.cells.item(2).children.item(0).value.split(':');
+                        var upd = row.cells.item(3).children.item(0).value;
+                        unsortedSchS.push({ hf: fromArr[0], mf: fromArr[1], ht: toArr[0], mt: toArr[1], upd: upd });
                     }
-                    console.log(data);
+                }
+                json.schS = unsortedSchS.sort(function (a, b) {
+                    var afrom = a.hf + a.mf * 60;
+                    var bfrom = b.hf + b.mf * 60;
+                    if (afrom < bfrom) {
+                        return -1;
+                    } else {
+                        return 1;
+                    }
+                });
+
+                var data = JSON.stringify(json);
+                postJson(url, "POST", data).then(res => {
+                    displayMessage("Settings saved.");
+                }).catch(error => {
+                    displayMessage("Error saving settings. Error: " + error);
+                })
+
+
+                console.log(data);
             } else {
                 displayMessage("Settings invalid. ");
             }
@@ -615,6 +680,7 @@
             await getOutboundModes();
             await fillForm();
             await fillLogs();
+            await getTime();
             openPage('Settings', this, 'white')
         }
 
@@ -625,24 +691,24 @@
         }
 
         async function fillLogs() {
-            const url  = "/rest/logs";
+            const url = "/rest/logs";
             try {
                 const json = await requestJson(url, "GET");
                 var logs = document.getElementById("logs");
-                    while (logs.firstChild) {
-                        logs.removeChild(logs.firstChild);
+                while (logs.firstChild) {
+                    logs.removeChild(logs.firstChild);
+                }
+                for (i = 0; i < json.logs.length; i++) {
+                    var log = json.logs[i];
+                    var logEntry = document.createElement('option');
+                    logs.appendChild(logEntry)
+                    logEntry.setAttribute('value', log.filename);
+                    logEntry.innerText = log.filename;
+                    if (i == 0) {
+                        logEntry.setAttribute('selected', 'true');
                     }
-                    for (i = 0; i < json.logs.length; i++) {
-                        var log = json.logs[i];
-                        var logEntry = document.createElement('option');
-                        logs.appendChild(logEntry)
-                        logEntry.setAttribute('value', log.filename);
-                        logEntry.innerText = log.filename;
-                        if (i == 0) {
-                            logEntry.setAttribute('selected', 'true');
-                        }
-                    }
-                    loadLog();
+                }
+                loadLog();
             } catch (error) {
                 displayMessage("Error obtaining log entries. Error: " + error);
             }
@@ -666,7 +732,7 @@
         }
 
         function invalidateSettingsVisibility() {
-            switch (document.getElementById("inboundMode").value) {
+            switch (document.getElementById("outboundMode").value) {
                 case "1":
                     document.getElementById("wifiSettings").style.display = "block";
                     document.getElementById("gprsSettings").style.display = "none";
@@ -748,10 +814,7 @@
                         </select>
                         <label for="refresh">Refresh</label>
                         <input type="number" id="refresh" placeholder="Refresh in ms">
-                        <label for="timeSource">Time source</label>
-                        <select id="timeSource" onchange="invalidateSettingsVisibility();">
- 
-                        </select>
+
                         <label for="setUrl">Settings URL prefix</label>
                         <input type="text" maxlength="64" id="setUrl"
                             placeholder="Settings URL in format: &lt;hostname&gt;/&lt;resource&gt;/">
@@ -765,6 +828,16 @@
 
                     <fieldset>
                         <legend>Time Settings</legend>
+                        <label for="timeSource">Time source</label>
+                        <select id="timeSource" onchange="invalidateSettingsVisibility();">
+
+                        </select>
+                        <label for="setTime">Set time</label>
+
+                        <input type="time" id="setTime">
+                        <input type="date" id="setDate">
+                        <button onclick="setTimeValue();" type="button" class="button-secondary pure-button">Set
+                            time</button>
                         <label for="timeZone">Standard time zone</label><select id="timeZone">
                             <option value="-720">(GMT -12:000)</option>
                             <option value="-660">(GMT -11:000)</option>
@@ -991,4 +1064,4 @@
     </div>
 </body>
 
-</html>                                                          
+</html>                                                                                                                     

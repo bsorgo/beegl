@@ -153,7 +153,7 @@ char *Measurer::storeMessage(MeasureData measureData)
     JsonObject &root = jsonBuffer.createObject();
     root[STR_DEVICEID] = m_settings->deviceName;
     //root[STR_TIME] = m_settings->getDateTimeString(now());
-    root[STR_EPOCHTIME] = static_cast<long int>(now());
+    root[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
     root[STR_VER] = m_runtime->FIRMWAREVERSION;
     if (m_settings->measureWeight && measureData.weight == measureData.weight)
     {

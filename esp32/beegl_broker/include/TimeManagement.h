@@ -33,7 +33,7 @@ public:
     virtual time_t getUTCTime() { return now();}
     virtual bool syncTime(){ return false;};
     virtual bool syncTimeFrom(TimeProviderStrategy *sourceStrategy) { return false;};
-    virtual void setUTCTime(int hours, int minutes, int seconds, int days, int months, int years) { setTime(hours, minutes, seconds, days, months, years);};
+    virtual void setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds,uint8_t days, uint8_t months, uint8_t years) { setTime(hours, minutes, seconds, days, months, years);};
     virtual void setUTCTime(time_t time) { setTime(time);};
     virtual const char getType() { return 0x01; };
     virtual const char *getName() { return "No time"; };
@@ -43,7 +43,6 @@ public:
 protected:
     Settings *m_settings;
     Connection *m_connection;
-    
     bool synced = false;
 };
 

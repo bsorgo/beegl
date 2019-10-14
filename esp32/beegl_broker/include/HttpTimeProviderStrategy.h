@@ -31,7 +31,7 @@ public:
     time_t getUTCTime();
     bool syncTime();
     bool syncTimeFrom(TimeProviderStrategy *sourceStrategy);
-    void setUTCTime(int hours, int minutes, int seconds, int days, int months, int years);
+    void setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds,uint8_t days, uint8_t months, uint8_t years);
     void setUTCTime(time_t time);
     const char getType() { return 0x02; };
     const char *getName() { return "HTTP"; }

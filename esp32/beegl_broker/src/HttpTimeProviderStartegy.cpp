@@ -152,7 +152,7 @@ bool HttpTimeProviderStrategy::syncTime()
     }
     return false;
 }
-void HttpTimeProviderStrategy::setUTCTime(int hours, int minutes, int seconds, int days, int months, int years)
+void HttpTimeProviderStrategy::setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds,uint8_t days, uint8_t months, uint8_t years)
 {
     setTime(hours, minutes, seconds, days, months, years);
 }

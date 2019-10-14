@@ -48,6 +48,9 @@
 #ifdef SUPPORTSBLE
 #include "BLEConnectionProvider.h"
 #endif
+#ifdef SUPPORTSRTC
+#include "RTCTimeProviderStrategy.h"
+#endif
 #include "WiFiConnectionProvider.h"
 #include "Runtime.h"
 #include "Updater.h"
@@ -133,10 +136,12 @@ void setup()
 #ifdef SUPPORTSBLE
   connection.addConnectionProvider(new BLEConnectionProvider(&settings));
 #endif
-  // Add default - No Time 
+  // Add default - No Time
   timeManagement.addTimeProviderStrategy(new TimeProviderStrategy(&settings, &connection));
   timeManagement.addTimeProviderStrategy(new HttpTimeProviderStrategy(&settings, &connection));
-
+#ifdef SUPPORTSRTC
+  timeManagement.addTimeProviderStrategy(new RTCTimeProviderStrategy(&settings, &connection));
+#endif
   runtime.initialize();
   runtime.setSafeModeOnRestart(1);
 

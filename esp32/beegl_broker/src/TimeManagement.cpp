@@ -7,7 +7,7 @@ TimeProviderStrategy::TimeProviderStrategy(Settings *settings, Connection *conne
     m_connection = connection;
 }
 
-TimeManagement::TimeManagement(Service * service, Settings *settings, Connection *connection)
+TimeManagement::TimeManagement(Service *service, Settings *settings, Connection *connection)
 {
     m_settings = settings;
     m_connection = connection;
@@ -35,29 +35,61 @@ bool TimeManagement::setup()
 void TimeManagement::webServerBind()
 {
 
-    m_service->getWebServer()->on("/rest/timesources", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    m_service->getWebServer()->on("/rest/time/sources", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         const String outboundTypeStr = request->getParam(STR_OUTBOUNDMODE, false)->value();
-        
-        char outboundType = (char)outboundTypeStr.toInt();        
+
+        char outboundType = (char)outboundTypeStr.toInt();
         StaticJsonBuffer<256> jsonBuffer;
         JsonObject &root = jsonBuffer.createObject();
         JsonArray &array = root.createNestedArray("timesources");
-        
-        TimeProviderStrategy* strategies[5];
+
+        TimeProviderStrategy *strategies[5];
         int count = this->getTimeProviderStrategies(strategies, outboundType);
-        for(int i=0;i<count;i++)
+        for (int i = 0; i < count; i++)
         {
-            JsonObject & proto = array.createNestedObject();
-            proto[STR_TIMESOURCE] =  (int) strategies[i]->getType();
+            JsonObject &proto = array.createNestedObject();
+            proto[STR_TIMESOURCE] = (int)strategies[i]->getType();
             proto["name"] = strategies[i]->getName();
         }
         root.printTo(*response);
         jsonBuffer.clear();
         request->send(response);
     });
-}
 
+    m_service->getWebServer()->addHandler(new AsyncCallbackJsonWebHandler("/rest/time", [this](AsyncWebServerRequest *request, JsonVariant &json) {
+         AsyncResponseStream *response = request->beginResponseStream("application/json");
+        JsonObject &jsonObj = json.as<JsonObject>();
+        tmElements_t tm;
+        tm.Year= (uint8_t) (jsonObj.get<int>("year")-1970);
+        tm.Month= jsonObj.get<uint8_t>("month");
+        tm.Day = jsonObj.get<uint8_t>("day");
+        tm.Hour = jsonObj.get<uint8_t>("hour");
+        tm.Minute = jsonObj.get<uint8_t>("minute");
+        tm.Second= jsonObj.get<uint8_t>("second");
+        time_t utcTime = m_settings->getTimezone()->toUTC(makeTime(tm));
+        this->getSelectedTimeProviderStrategy()->setUTCTime(utcTime);
+        response->setCode(200);
+        request->send(response);
+    }));
+
+     m_service->getWebServer()->on("/rest/time", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+        StaticJsonBuffer<256> jsonBuffer;
+        JsonObject &root = jsonBuffer.createObject();
+        time_t t = getLocalTime();
+        
+        root["year"] = year(t);
+        root["month"] = month(t);
+        root["day"] = day(t);
+        root["hour"] = hour(t);
+        root["minute"] = minute(t);
+        root["second"] = second(t);
+        root.printTo(*response);
+        jsonBuffer.clear();
+        request->send(response);
+    });
+}
 
 TimeProviderStrategy *TimeManagement::getSelectedTimeProviderStrategy()
 {
@@ -67,7 +99,6 @@ int TimeManagement::addTimeProviderStrategy(TimeProviderStrategy *source)
 {
     m_providers[providerCount] = source;
     return providerCount++;
-    
 }
 time_t TimeManagement::getUTCTime()
 {
@@ -115,7 +146,7 @@ int TimeManagement::getTimeProviderStrategies(TimeProviderStrategy **providers, 
     {
         for (int i = 0; i < providerCount; i++)
         {
-            if(m_providers[i]->getSupportedConnectionOutboundTypes() & outboundType)
+            if (m_providers[i]->getSupportedConnectionOutboundTypes() & outboundType)
             {
                 providers[j] = m_providers[i];
                 j++;
