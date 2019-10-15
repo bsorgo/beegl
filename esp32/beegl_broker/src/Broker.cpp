@@ -34,7 +34,7 @@ void Broker::webServerBind()
     if (m_settings->inboundMode & 0x1)
     {
         sensorsHandler = new AsyncCallbackJsonWebHandler("/beegl/v1/measurements", [&](AsyncWebServerRequest *request, JsonVariant &json) {
-            JsonObject &jsonObj = json.as<JsonObject>();
+            JsonObject jsonObj = json.as<JsonObject>();
             jsonObj[STR_TIME] = m_settings->getDateTimeString(now());
             m_publisher->storeMessage(jsonObj);
             request->send(200, "text/plain", "");
@@ -95,7 +95,7 @@ bool Broker::bleBind()
     return true;
 }
 
-char *Broker::storeMessage(JsonObject &jsonObj)
+char *Broker::storeMessage(JsonObject jsonObj)
 {
     return m_publisher->storeMessage(jsonObj);
 }

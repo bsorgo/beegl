@@ -33,11 +33,13 @@ LoraMessageFormatter::LoraMessageFormatter(Settings *settings)
 
 int LoraMessageFormatter::formatMessage(uint8_t *targetLoraMessage, const char *sourceJsonMessage)
 {
-    StaticJsonBuffer<LORA_MESSAGE_BUFFER> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(sourceJsonMessage);
-    JsonObject *ptrRoot = &root;
-    if (root.success() && targetLoraMessage)
+    StaticJsonDocument<LORA_MESSAGE_BUFFER> jsonBuffer;
+    auto error = deserializeJson(jsonBuffer, sourceJsonMessage);
+    
+    if (!error && targetLoraMessage)
     {
+        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonObject *ptrRoot = &root;
         return formatMessageFromJson(targetLoraMessage, ptrRoot);
     }
     else
@@ -55,7 +57,7 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     int p = 0;
     const uint8_t delimiter[1] = {LORA_DELIMITER};
     const uint8_t messageType[1] = {LORA_MEASUREMENT_MESSAGE_TYPE};
-    JsonObject &sourceRef = *source;
+    JsonObject sourceRef = *source;
     // message type
     memcpy(targetLoraMessage + p, messageType, 1);
     p += 1;
@@ -80,7 +82,7 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
         else
         {
             char time[11];
-            long value = sourceRef.get<long>(STR_EPOCHTIME) + now();
+            long value = sourceRef[STR_EPOCHTIME] + now();
             sprintf(time, "%lu", value);
             memccpy(targetLoraMessage + p, time, 0, 10);
             p += 10;

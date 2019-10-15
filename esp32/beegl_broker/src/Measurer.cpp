@@ -149,8 +149,8 @@ char *Measurer::measure()
 
 char *Measurer::storeMessage(MeasureData measureData)
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
+    StaticJsonDocument<512> jsonBuffer;
+    JsonObject root = jsonBuffer.as<JsonObject>();
     root[STR_DEVICEID] = m_settings->deviceName;
     //root[STR_TIME] = m_settings->getDateTimeString(now());
     root[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
@@ -158,18 +158,18 @@ char *Measurer::storeMessage(MeasureData measureData)
     if (m_settings->measureWeight && measureData.weight == measureData.weight)
     {
 
-        JsonObject &weightSensor = root.createNestedObject(STR_WEIGHTSENSOR);
+        JsonObject weightSensor = root.createNestedObject(STR_WEIGHTSENSOR);
         weightSensor[STR_WEIGHT] = measureData.weight;
         weightSensor[STR_WEIGHTUNIT] = STR_WEIGHTUNITG;
     }
 
     if (m_settings->measureTempAndHumidity && measureData.temp == measureData.temp)
     {
-        JsonObject &tempSensor = root.createNestedObject(STR_TEMPSENSOR);
+        JsonObject tempSensor = root.createNestedObject(STR_TEMPSENSOR);
         tempSensor[STR_TEMP] = measureData.temp;
         tempSensor[STR_TEMPUNIT] = STR_TEMPUNITC;
 
-        JsonObject &humiditySensor = root.createNestedObject(STR_HUMIDITYSENSOR);
+        JsonObject humiditySensor = root.createNestedObject(STR_HUMIDITYSENSOR);
         humiditySensor[STR_HUMIDITY] = measureData.humidity;
         humiditySensor[STR_HUMIDITYUNIT] = STR_HUMIDITYUNITPERCENT;
     }

@@ -58,21 +58,21 @@ void Connection::webServerBind()
     m_service->getWebServer()->on("/rest/connections/outbound", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
        
-        StaticJsonBuffer<256> jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        JsonArray &array = root.createNestedArray("conn");
+        StaticJsonDocument<256> jsonBuffer;
+        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonArray array = root.createNestedArray("conn");
         
         ConnectionProvider* providers[5];
         int count = this->getOutboundConnectionProviders(providers, 0xFF);
         for(int i=0;i<count;i++)
         {
             
-            JsonObject & proto = array.createNestedObject();
+            JsonObject  proto = array.createNestedObject();
             proto["name"] =  providers[i]->getName();
             proto[STR_OUTBOUNDMODE] = (int) providers[i]->getOutboundType();
             proto[STR_INBOUNDMODE] = (int) providers[i]->getInboundType();
         }
-        root.printTo(*response);
+        serializeJson(jsonBuffer, *response);
         jsonBuffer.clear();
         request->send(response);
     });

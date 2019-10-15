@@ -37,9 +37,9 @@ void LogManagement::webServerBind()
 
     m_server->getWebServer()->on("/rest/logs", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
-        StaticJsonBuffer<1024> jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        JsonArray &logs = root.createNestedArray("logs");
+        StaticJsonDocument<1024> jsonBuffer;
+        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonArray logs = root.createNestedArray("logs");
         
         long logNumber = log_number();
         for(int i=logNumber;i>logNumber-MAX_LOG_FILES && i>0;i--)
@@ -51,11 +51,11 @@ void LogManagement::webServerBind()
             log_d("[LOG MANAGEMENT] Filename: %s", filename.c_str());
             if(FILESYSTEM.exists(filename))
             {
-                JsonObject &log = logs.createNestedObject();
+                JsonObject log = logs.createNestedObject();
                 log["filename"] = filename;
             }
         }
-        root.printTo(*response);
+        serializeJson(jsonBuffer, *response);
         jsonBuffer.clear();
         request->send(response);
     });

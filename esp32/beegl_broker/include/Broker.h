@@ -52,17 +52,19 @@ public:
     std::string value = pCharacteristic->getValue();
     if (value.length() > 0)
     {
-      StaticJsonBuffer<512> jsonBuffer;
-      JsonObject &jsonObj = jsonBuffer.parseObject(value.c_str());
-      if (!jsonObj.success())
+      StaticJsonDocument<512> jsonBuffer;
+      auto error = deserializeJson(jsonBuffer, value.c_str());
+      if (error)
       {
+
         log_e( "[BLE] parseObject() failed");
       }
       else
       {
+        JsonObject jsonObj = jsonBuffer.as<JsonObject>();
         if (m_broker)
         {
-        m_broker->storeMessage(jsonObj);
+          m_broker->storeMessage(jsonObj);
         }
       }
     }
@@ -75,7 +77,7 @@ public:
     void setPublisher(Publisher* publisher);
 
     void setup();
-    char* storeMessage(JsonObject &jsonObj);
+    char* storeMessage(JsonObject jsonObj);
 private:
     Service* m_server;
     Settings* m_settings;

@@ -69,7 +69,7 @@ public:
   virtual void setup();
   virtual void update();
   bool publish();
-  char *storeMessage(JsonObject &jsonObj);
+  char *storeMessage(JsonObject jsonObj);
   void addPublishStrategy(PublishStrategy *publishStrategy);
   int getInterval();
   static Publisher *getInstance();

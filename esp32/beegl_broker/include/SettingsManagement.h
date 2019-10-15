@@ -41,7 +41,7 @@ public:
     SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime *runtime);
     void setup();
     void readFromFilesystem(char *path);
-    bool writeConfig(JsonObject &input);
+    bool writeConfig(JsonObject input);
     bool writeConfig();
     bool readConfig();
     bool writeSettingsToServer();
@@ -56,11 +56,11 @@ private:
     bool copyFile(const char *source, const char *destination);
     void webServerBind();
     bool readTimeAndSettings(HttpClient *httpClient, char *path);
-    void merge(JsonObject &dest, JsonObject &src);
+    void merge(JsonObject dest, JsonObject src);
     bool writeSettings(HttpClient *httpClient, char *path, char *username, char *password);
-    bool writeConfigToFS(const char *filename, JsonObject &root);
+    bool writeConfigToFS(const char *filename, JsonObject root);
     String getLocalFileMd5(const char *filename);
-    bool readAndParseJson(const char *filename, JsonObject **root, StaticJsonBuffer<CONFIG_BUFFER> *jsonBuffer);
+    bool readAndParseJson(const char *filename, JsonObject *root, StaticJsonDocument<CONFIG_BUFFER> *jsonBuffer);
 };
 
 #endif
