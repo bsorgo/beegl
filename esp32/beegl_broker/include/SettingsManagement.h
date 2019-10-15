@@ -38,29 +38,29 @@ class SettingsManagement
 {
 
 public:
-    SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime *runtime);
-    void setup();
-    void readFromFilesystem(char *path);
-    bool writeConfig(JsonObject &input);
-    bool writeConfig();
-    bool readConfig();
-    bool writeSettingsToServer();
-    void syncSettings();
-    void storeLastGood();
+  SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime *runtime);
+  void setup();
+  void readFromFilesystem(char *path);
+  bool writeConfig(const JsonObject &input);
+  bool writeConfig();
+  bool readConfig();
+  bool writeSettingsToServer();
+  void syncSettings();
+  void storeLastGood();
 
 private:
-    Settings *m_settings;
-    Service *m_server;
-    Connection *m_connection;
-    Runtime *m_runtime;
-    bool copyFile(const char *source, const char *destination);
-    void webServerBind();
-    bool readTimeAndSettings(HttpClient *httpClient, char *path);
-    void merge(JsonObject &dest, JsonObject &src);
-    bool writeSettings(HttpClient *httpClient, char *path, char *username, char *password);
-    bool writeConfigToFS(const char *filename, JsonObject &root);
-    String getLocalFileMd5(const char *filename);
-    bool readAndParseJson(const char *filename, JsonObject **root, StaticJsonBuffer<CONFIG_BUFFER> *jsonBuffer);
+  Settings *m_settings;
+  Service *m_server;
+  Connection *m_connection;
+  Runtime *m_runtime;
+  bool copyFile(const char *source, const char *destination);
+  void webServerBind();
+  bool readTimeAndSettings(HttpClient *httpClient, char *path);
+  void merge(JsonObject &dest, const JsonObject &src);
+  bool writeSettings(HttpClient *httpClient, char *path, char *username, char *password);
+  bool writeConfigToFS(const char *filename, const JsonObject &root);
+  String getLocalFileMd5(const char *filename);
+  bool readAndParseJson(const char *filename, StaticJsonDocument<CONFIG_BUFFER> *jsonBuffer);
 };
 
 #endif

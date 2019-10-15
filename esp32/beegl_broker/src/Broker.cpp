@@ -34,22 +34,16 @@ void Broker::webServerBind()
     if (m_settings->inboundMode & 0x1)
     {
         sensorsHandler = new AsyncCallbackJsonWebHandler("/beegl/v1/measurements", [&](AsyncWebServerRequest *request, JsonVariant &json) {
-            JsonObject &jsonObj = json.as<JsonObject>();
-            jsonObj[STR_TIME] = m_settings->getDateTimeString(now());
-            m_publisher->storeMessage(jsonObj);
+            JsonObject jsonObj = json.as<JsonObject>();
+            jsonObj[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
+            size_t size = measureJson(json);
+            char buffer[size+1];
+            serializeJson(json, buffer, size);
+            m_publisher->storeMessage(buffer);
             request->send(200, "text/plain", "");
         });
         m_server->getWebServer()->addHandler(sensorsHandler);
     }
-}
-
-void Broker::setSettings(Settings *settings)
-{
-    m_settings = settings;
-}
-void Broker::setPublisher(Publisher *publisher)
-{
-    m_publisher = publisher;
 }
 
 void Broker::setup()
@@ -95,7 +89,37 @@ bool Broker::bleBind()
     return true;
 }
 
-char *Broker::storeMessage(JsonObject &jsonObj)
+
+int Broker::storeMessage(const char* buffer)
 {
-    return m_publisher->storeMessage(jsonObj);
+    return m_publisher->storeMessage(buffer);
 }
+
+ void Broker::BLESensorCallback::onWrite(BLECharacteristic *pCharacteristic)
+    {
+      std::string value = pCharacteristic->getValue();
+      if (value.length() > 0)
+      {
+        StaticJsonDocument<512> jsonBuffer;
+        auto error = deserializeJson(jsonBuffer, value.c_str());
+        if (error)
+        {
+
+          log_e("[BLE] parseObject() failed");
+        }
+        else
+        {
+          JsonObject jsonObj = jsonBuffer.as<JsonObject>();
+          jsonObj[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
+          size_t size = measureJson(jsonBuffer);
+          char buffer[size + 1];
+          serializeJson(jsonBuffer, buffer, size);
+
+          if (m_broker)
+          {
+            m_broker->storeMessage(buffer);
+          }
+        }
+      }
+    }
+  

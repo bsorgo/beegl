@@ -73,7 +73,7 @@ void SettingsManagement::webServerBind()
                                  [](AsyncWebServerRequest *request) {},
                                  NULL,
                                  [&](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-                                     StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
+                                     StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
                                      File file;
                                      if (!index)
                                      {
@@ -102,10 +102,13 @@ void SettingsManagement::webServerBind()
                                          file = SPIFFS.open(CONFIGJSONTEMP, FILE_READ);
                                          if (file)
                                          {
-                                             JsonObject &root = jsonBuffer.parse(file);
+                                             auto error = deserializeJson(jsonBuffer, file);
+                                             
+                                             
                                              file.close();
-                                             if (root.success())
+                                             if (!error)
                                              {
+                                                 JsonObject root = jsonBuffer.as<JsonObject>();
                                                  if (writeConfig(root))
                                                  {
                                                      blog_i("[WEB] Writing config\n");
@@ -134,13 +137,13 @@ void SettingsManagement::webServerBind()
 /*
   Writes config to file
  */
-bool SettingsManagement::writeConfig(JsonObject &input)
+bool SettingsManagement::writeConfig(const JsonObject &input)
 {
 
     blog_i("[SETTINGS] Writing settings");
 
-    StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
+    StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
+    JsonObject root = jsonBuffer.to<JsonObject>();
 
     root[STR_OUTBOUNDMODE] = m_settings->outboundMode;
     root[STR_INBOUNDMODE] = m_settings->inboundMode;
@@ -155,7 +158,7 @@ bool SettingsManagement::writeConfig(JsonObject &input)
 
     merge(root, input);
 
-    JsonObject &wifiSettings = root.createNestedObject(STR_WIFISETTINGS);
+    JsonObject wifiSettings = root.createNestedObject(STR_WIFISETTINGS);
     wifiSettings[STR_WIFISSID] = m_settings->wifiSSID;
     wifiSettings[STR_WIFIPASSWORD] = m_settings->wifiPassword;
     wifiSettings[STR_WIFICUSTOMIP] = m_settings->wifiCustomIp;
@@ -165,14 +168,14 @@ bool SettingsManagement::writeConfig(JsonObject &input)
 
     merge(wifiSettings, input[STR_WIFISETTINGS]);
 
-    JsonObject &scaleSettings = root.createNestedObject(STR_SCALESETTINGS);
+    JsonObject scaleSettings = root.createNestedObject(STR_SCALESETTINGS);
     scaleSettings[STR_SCALEFACTOR] = m_settings->scaleFactor;
     scaleSettings[STR_SCALEOFFSET] = m_settings->scaleOffset;
     scaleSettings[STR_SCALEUNIT] = m_settings->scaleUnit;
 
     merge(scaleSettings, input[STR_SCALESETTINGS]);
 
-    JsonObject &apSettings = root.createNestedObject(STR_APSETTINGS);
+    JsonObject apSettings = root.createNestedObject(STR_APSETTINGS);
     apSettings[STR_APPASSWORD] = m_settings->apPassword;
     apSettings[STR_APIP] = m_settings->apIp.toString();
     apSettings[STR_APGATEWAY] = m_settings->apGateway.toString();
@@ -180,7 +183,7 @@ bool SettingsManagement::writeConfig(JsonObject &input)
 
     merge(apSettings, input[STR_APSETTINGS]);
 
-    JsonObject &mqttSettings = root.createNestedObject(STR_MQTTSETTINGS);
+    JsonObject mqttSettings = root.createNestedObject(STR_MQTTSETTINGS);
     mqttSettings[STR_MQTTSERVER] = m_settings->mqttServer;
     mqttSettings[STR_MQTTPORT] = m_settings->mqttPort;
     mqttSettings[STR_MQTTUSERNAME] = m_settings->mqttUsername;
@@ -189,44 +192,44 @@ bool SettingsManagement::writeConfig(JsonObject &input)
 
     merge(mqttSettings, input[STR_MQTTSETTINGS]);
 
-    JsonObject &loraSettings = root.createNestedObject(STR_LORASETTINGS);
+    JsonObject loraSettings = root.createNestedObject(STR_LORASETTINGS);
     loraSettings[STR_LORAAPPEUI] = m_settings->loraAppEUI;
     loraSettings[STR_LORADEVEUI] = m_settings->loraDeviceEUI;
     loraSettings[STR_LORAAPPKEY] = m_settings->loraAppKey;
 
     merge(loraSettings, input[STR_LORASETTINGS]);
 
-    JsonObject &gprsSettings = root.createNestedObject(STR_GPRSSETTINGS);
+    JsonObject gprsSettings = root.createNestedObject(STR_GPRSSETTINGS);
     gprsSettings[STR_GPRSAPN] = m_settings->apn;
     gprsSettings[STR_GPRSPASSWORD] = m_settings->apnPass;
     gprsSettings[STR_GPRSUSERNAME] = m_settings->apnUser;
 
     merge(gprsSettings, input[STR_GPRSSETTINGS]);
 
-    JsonObject &timeSettings = root.createNestedObject(STR_TIMESETTINGS);
+    JsonObject timeSettings = root.createNestedObject(STR_TIMESETTINGS);
     timeSettings[STR_TIMESZONE] = m_settings->summerTimeZone;
     timeSettings[STR_TIMEZONE] = m_settings->standardTimeZone;
 
     merge(timeSettings, input[STR_TIMESETTINGS]);
 
-    JsonObject &measurerSettings = root.createNestedObject(STR_MEASURERSETTINGS);
+    JsonObject measurerSettings = root.createNestedObject(STR_MEASURERSETTINGS);
     measurerSettings[STR_MEASURERWEIGHT] = m_settings->measureWeight;
     measurerSettings[STR_MEASURERTEMPHUM] = m_settings->measureTempAndHumidity;
 
     merge(measurerSettings, input[STR_MEASURERSETTINGS]);
 
-    JsonObject &publisherSettings = root.createNestedObject(STR_PUBLISHERSETTINGS);
+    JsonObject publisherSettings = root.createNestedObject(STR_PUBLISHERSETTINGS);
     publisherSettings[STR_PUBLISHERPROTOCOL] = m_settings->protocol;
 
     merge(publisherSettings, input[STR_PUBLISHERSETTINGS]);
 
-    JsonArray &schSettings = root.createNestedArray(STR_SCHSETTINGS);
+    JsonArray schSettings = root.createNestedArray(STR_SCHSETTINGS);
     if (input[STR_SCHSETTINGS])
     {
         m_settings->schEntriesLength = input[STR_SCHSETTINGS].size();
-        for (JsonObject &schEntryInput : input[STR_SCHSETTINGS].as<JsonArray>())
+        for (JsonObject schEntryInput : input[STR_SCHSETTINGS].as<JsonArray>())
         {
-            JsonObject &schEntry = schSettings.createNestedObject();
+            JsonObject schEntry = schSettings.createNestedObject();
             merge(schEntry, schEntryInput);
         }
     }
@@ -234,7 +237,7 @@ bool SettingsManagement::writeConfig(JsonObject &input)
     {
         for (int i = 0; i < m_settings->schEntriesLength; i++)
         {
-            JsonObject &schEntry = schSettings.createNestedObject();
+            JsonObject schEntry = schSettings.createNestedObject();
             schEntry[STR_SCHHOURFROM] = m_settings->schEntries[i].schedulerHourFrom;
             schEntry[STR_SCHMINFROM] = m_settings->schEntries[i].schedulerMinFrom;
             schEntry[STR_SCHHOURTO] = m_settings->schEntries[i].schedulerHourTo;
@@ -251,26 +254,25 @@ Writes config to file
  */
 bool SettingsManagement::writeConfig()
 {
-    StaticJsonBuffer<100> jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
+    StaticJsonDocument<100> jsonBuffer;
+    JsonObject root = jsonBuffer.to<JsonObject>();
     return this->writeConfig(root);
 }
 
-bool SettingsManagement::readAndParseJson(const char *filename, JsonObject **root, StaticJsonBuffer<CONFIG_BUFFER> *jsonBuffer)
+bool SettingsManagement::readAndParseJson(const char *filename, StaticJsonDocument<CONFIG_BUFFER> *jsonBuffer)
 {
     File file = SPIFFS.open(filename);
     if (!file)
     {
         return false;
     }
-    JsonObject &rootObj = jsonBuffer->parseObject(file);
-
-    file.close();
-    if (!rootObj.success())
+    auto error = deserializeJson(*jsonBuffer, file);
+    if(error)
     {
+        file.close();
         return false;
     }
-    *root = &rootObj;
+    file.close();
     return true;
 }
 
@@ -278,26 +280,26 @@ bool SettingsManagement::readAndParseJson(const char *filename, JsonObject **roo
  */
 bool SettingsManagement::readConfig()
 {
-    StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
-    JsonObject *rootObj;
-    if (!readAndParseJson(CONFIGJSON, &rootObj, &jsonBuffer))
+    StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
+    
+    if (!readAndParseJson(CONFIGJSON, &jsonBuffer))
     {
         blog_e("[SETTINGS] Failed to open config file for reading.");
         blog_i("[SETTINGS] Trying last good config.");
-        if (!readAndParseJson(CONFIGJSONLASTGOOD, &rootObj, &jsonBuffer))
+        if (!readAndParseJson(CONFIGJSONLASTGOOD,  &jsonBuffer))
         {
             blog_e("[SETTINGS] Failed to open last good config file for reading.");
             blog_i("[SETTINGS] Trying backup config.");
-            if (!readAndParseJson(CONFIGJSONBACKUP, &rootObj, &jsonBuffer))
+            if (!readAndParseJson(CONFIGJSONBACKUP,  &jsonBuffer))
             {
                 blog_e("[SETTINGS] Failed to open backup config file for reading.");
                 blog_i("[SETTINGS] Trying default minimalistic config.");
-                if (!readAndParseJson(CONFIGJSONDEFAULT, &rootObj, &jsonBuffer))
+                if (!readAndParseJson(CONFIGJSONDEFAULT,  &jsonBuffer))
                 {
                     blog_e("[SETTINGS] Failed to open default config file for reading.");
                     blog_i("[SETTINGS] Creating config from defaults.");
                     writeConfig();
-                    if (!readAndParseJson(CONFIGJSON, &rootObj, &jsonBuffer))
+                    if (!readAndParseJson(CONFIGJSON, &jsonBuffer))
                     {
                         blog_e("[SETTINGS] Failed even to open config from defaults. Returning");
                         return false;
@@ -306,15 +308,15 @@ bool SettingsManagement::readConfig()
             }
         }
     }
-    JsonObject &root = *rootObj;
+    JsonObject root = jsonBuffer.as<JsonObject>();
 
     strlcpy(m_settings->deviceName, root[STR_DEVICENAME] | m_settings->deviceName, 17);
-    m_settings->inboundMode = root.get<char>(STR_INBOUNDMODE);
-    m_settings->outboundMode = (root.get<char>(STR_OUTBOUNDMODE) ? root.get<char>(STR_OUTBOUNDMODE) : m_settings->outboundMode);
-    m_settings->deviceType = (root.get<char>(STR_DEVICETYPE) ? root.get<char>(STR_DEVICETYPE) : m_settings->deviceType);
-    m_settings->timeSource = (root.get<char>(STR_TIMESOURCE) ? root.get<char>(STR_TIMESOURCE) : m_settings->timeSource);
+    m_settings->inboundMode = root[STR_INBOUNDMODE];
+    m_settings->outboundMode = (root[STR_OUTBOUNDMODE] ? root[STR_OUTBOUNDMODE] : m_settings->outboundMode);
+    m_settings->deviceType = (root[STR_DEVICETYPE] ? root[STR_DEVICETYPE] : m_settings->deviceType);
+    m_settings->timeSource = (root[STR_TIMESOURCE] ? root[STR_TIMESOURCE] : m_settings->timeSource);
 
-    m_settings->refreshInterval = (root.get<uint32_t>(STR_REFRESH) ? root.get<uint32_t>(STR_REFRESH) : m_settings->refreshInterval);
+    m_settings->refreshInterval = (root[STR_REFRESH] ? root[STR_REFRESH] : m_settings->refreshInterval);
     strlcpy(m_settings->firmwareVersion, root[STR_VER] | m_settings->firmwareVersion, 9);
     strlcpy(m_settings->httpTimeAndSettingsPrefix, root[STR_SETTINGSURL] | m_settings->httpTimeAndSettingsPrefix, 64);
     strlcpy(m_settings->httpTimeAndSettingUsername, root[STR_SETTINGSUSERNAME] | m_settings->httpTimeAndSettingUsername, 17);
@@ -322,83 +324,83 @@ bool SettingsManagement::readConfig()
 
     // wifi settings
 
-    JsonObject &wifiSettings = root[STR_WIFISETTINGS];
+    JsonObject wifiSettings = root[STR_WIFISETTINGS];
     strlcpy(m_settings->wifiSSID, wifiSettings[STR_WIFISSID] | m_settings->wifiSSID, 33);
     strlcpy(m_settings->wifiPassword, wifiSettings[STR_WIFIPASSWORD] | m_settings->wifiPassword, 33);
-    m_settings->wifiCustomIp = wifiSettings.get<int>(STR_WIFICUSTOMIP) ? wifiSettings.get<int>(STR_WIFICUSTOMIP) : m_settings->wifiCustomIp;
+    m_settings->wifiCustomIp = wifiSettings[STR_WIFICUSTOMIP] ? wifiSettings[STR_WIFICUSTOMIP] : m_settings->wifiCustomIp;
     m_settings->wifiIp.fromString(wifiSettings[STR_WIFIIP] | "192.168.0.155");
     m_settings->wifiGateway.fromString(wifiSettings[STR_WIFIGATEWAY] | "192.168.0.1");
     m_settings->wifiSubnet.fromString(wifiSettings[STR_WIFINETMASK] | "255.255.255.0");
     // scale settings
 
-    JsonObject &scaleSettings = root[STR_SCALESETTINGS];
-    if (scaleSettings[STR_SCALEFACTOR].success())
+    JsonObject scaleSettings = root[STR_SCALESETTINGS];
+    if (!scaleSettings[STR_SCALEFACTOR].isNull())
     {
-        m_settings->scaleFactor = scaleSettings.get<float>(STR_SCALEFACTOR);
+        m_settings->scaleFactor = scaleSettings[STR_SCALEFACTOR];
     }
-    m_settings->scaleOffset = scaleSettings.get<long>(STR_SCALEOFFSET) | 0;
+    m_settings->scaleOffset = scaleSettings[STR_SCALEOFFSET] | 0;
     strlcpy(m_settings->scaleUnit, scaleSettings[STR_SCALEUNIT] | m_settings->scaleUnit, 6);
 
     // wifi ap settings
 
-    JsonObject &apSettings = root[STR_APSETTINGS];
+    JsonObject apSettings = root[STR_APSETTINGS];
     strlcpy(m_settings->apPassword, apSettings[STR_APPASSWORD] | m_settings->apPassword, 17);
     m_settings->apIp.fromString(apSettings[STR_APIP] | "192.168.4.1");
     m_settings->apGateway.fromString(apSettings[STR_APGATEWAY] | "192.168.4.1");
     m_settings->apSubnet.fromString(apSettings[STR_APNETMASK] | "255.255.255.0");
     // mqtt settings
 
-    JsonObject &mqttSettings = root[STR_MQTTSETTINGS];
+    JsonObject mqttSettings = root[STR_MQTTSETTINGS];
     strlcpy(m_settings->mqttServer, mqttSettings[STR_MQTTSERVER] | m_settings->mqttServer, 33);
-    m_settings->mqttPort = mqttSettings.get<int>(STR_MQTTPORT) | 1883;
+    m_settings->mqttPort = mqttSettings[STR_MQTTPORT] | 1883;
     strlcpy(m_settings->mqttUsername, mqttSettings[STR_MQTTUSERNAME] | m_settings->mqttUsername, 17);
     strlcpy(m_settings->mqttPassword, mqttSettings[STR_MQTTPASSWORD] | m_settings->mqttPassword, 17);
     strlcpy(m_settings->sensorTopic, mqttSettings[STR_MQTTTOPIC] | m_settings->sensorTopic, 65);
 
     //lorawan settings
 
-    JsonObject &loraSettings = root[STR_LORASETTINGS];
+    JsonObject loraSettings = root[STR_LORASETTINGS];
     strlcpy(m_settings->loraAppEUI, loraSettings[STR_LORAAPPEUI] | m_settings->loraAppEUI, 17);
     strlcpy(m_settings->loraDeviceEUI, loraSettings[STR_LORADEVEUI] | m_settings->loraDeviceEUI, 17);
     strlcpy(m_settings->loraAppKey, loraSettings[STR_LORAAPPKEY] | m_settings->loraAppKey, 33);
 
     // gprs settings
 
-    JsonObject &gprsSettings = root[STR_GPRSSETTINGS];
+    JsonObject gprsSettings = root[STR_GPRSSETTINGS];
     strlcpy(m_settings->apn, gprsSettings[STR_GPRSAPN] | m_settings->apn, 32);
     strlcpy(m_settings->apnUser, gprsSettings[STR_GPRSUSERNAME] | m_settings->apnUser, 16);
     strlcpy(m_settings->apnPass, gprsSettings[STR_GPRSPASSWORD] | m_settings->apnPass, 16);
 
     // time settings
 
-    JsonObject &timeSettings = root[STR_TIMESETTINGS];
-    m_settings->standardTimeZone = timeSettings.get<int>(STR_TIMEZONE) ? timeSettings.get<int>(STR_TIMEZONE) : m_settings->standardTimeZone;
-    m_settings->summerTimeZone = timeSettings.get<int>(STR_TIMESZONE) ? timeSettings.get<int>(STR_TIMESZONE) : m_settings->summerTimeZone;
+    JsonObject timeSettings = root[STR_TIMESETTINGS];
+    m_settings->standardTimeZone = timeSettings[STR_TIMEZONE] ? timeSettings[STR_TIMEZONE] : m_settings->standardTimeZone;
+    m_settings->summerTimeZone = timeSettings[STR_TIMESZONE] ? timeSettings[STR_TIMESZONE] : m_settings->summerTimeZone;
 
     m_settings->setTimezone();
 
     // measurer settings
 
-    JsonObject &measurerSettings = root[STR_MEASURERSETTINGS];
-    m_settings->measureWeight = measurerSettings.get<bool>(STR_MEASURERWEIGHT) ? measurerSettings.get<bool>(STR_MEASURERWEIGHT) : m_settings->measureWeight;
-    m_settings->measureTempAndHumidity = measurerSettings.get<bool>(STR_MEASURERTEMPHUM) ? measurerSettings.get<bool>(STR_MEASURERTEMPHUM) : m_settings->measureTempAndHumidity;
+    JsonObject measurerSettings = root[STR_MEASURERSETTINGS];
+    m_settings->measureWeight = measurerSettings[STR_MEASURERWEIGHT] ? measurerSettings[STR_MEASURERWEIGHT] : m_settings->measureWeight;
+    m_settings->measureTempAndHumidity = measurerSettings[STR_MEASURERTEMPHUM] ? measurerSettings[STR_MEASURERTEMPHUM] : m_settings->measureTempAndHumidity;
 
     // publisher settings
 
-    JsonObject &publisherSettings = root[STR_PUBLISHERSETTINGS];
-    m_settings->protocol = publisherSettings.get<char>(STR_PUBLISHERPROTOCOL);
+    JsonObject publisherSettings = root[STR_PUBLISHERSETTINGS];
+    m_settings->protocol = publisherSettings[STR_PUBLISHERPROTOCOL];
 
     // scheduler settings
-    JsonArray &schSettings = root[STR_SCHSETTINGS];
+    JsonArray schSettings = root[STR_SCHSETTINGS];
     m_settings->schEntriesLength = schSettings.size();
     int i = 0;
-    for (JsonObject &schEntryInput : schSettings)
+    for (JsonObject schEntryInput : schSettings)
     {
-        m_settings->schEntries[i].schedulerHourFrom = schEntryInput.get<int>(STR_SCHHOURFROM);
-        m_settings->schEntries[i].schedulerMinFrom = schEntryInput.get<int>(STR_SCHMINFROM);
-        m_settings->schEntries[i].schedulerHourTo = schEntryInput.get<int>(STR_SCHHOURTO);
-        m_settings->schEntries[i].schedulerMinTo = schEntryInput.get<int>(STR_SCHMINTO);
-        m_settings->schEntries[i].updateFromServer = schEntryInput.get<bool>(STR_SCHUPDATE);
+        m_settings->schEntries[i].schedulerHourFrom = schEntryInput[STR_SCHHOURFROM];
+        m_settings->schEntries[i].schedulerMinFrom = schEntryInput[STR_SCHMINFROM];
+        m_settings->schEntries[i].schedulerHourTo = schEntryInput[STR_SCHHOURTO];
+        m_settings->schEntries[i].schedulerMinTo = schEntryInput[STR_SCHMINTO];
+        m_settings->schEntries[i].updateFromServer = schEntryInput[STR_SCHUPDATE];
         i++;
     }
     jsonBuffer.clear();
@@ -465,11 +467,13 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
         String responseBody = httpClient->responseBody();
         if (responseBody.startsWith("{"))
         {
-            StaticJsonBuffer<CONFIG_BUFFER> jsonBuffer;
-            JsonObject &root = jsonBuffer.parseObject(responseBody.c_str());
+            StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
+            auto error = deserializeJson(jsonBuffer, responseBody.c_str());
 
-            if (root.success())
+            
+            if (!error)
             {
+                JsonObject root = jsonBuffer.as<JsonObject>();
                 String preMD5 = getLocalFileMd5(CONFIG_JSON);
 
                 writeConfig(root);
@@ -513,20 +517,20 @@ void SettingsManagement::storeLastGood()
 /**
  * Merges json objects from src -> dest
  */
-void SettingsManagement::merge(JsonObject &dest, JsonObject &src)
+void SettingsManagement::merge(JsonObject &dest, const JsonObject &src)
 {
-    if (src.success())
+    if (!src.isNull())
     {
         for (auto kvp : src)
         {
-            dest[kvp.key] = kvp.value;
+            dest[kvp.key()] = kvp.value();
         }
     }
 }
 /**
  *  Writes json to SPIFFS file
  */
-bool SettingsManagement::writeConfigToFS(const char *filename, JsonObject &root)
+bool SettingsManagement::writeConfigToFS(const char *filename, const JsonObject &root)
 {
 
     SPIFFS.rename(CONFIGJSON, CONFIGJSONBACKUP);
@@ -538,7 +542,7 @@ bool SettingsManagement::writeConfigToFS(const char *filename, JsonObject &root)
         Serial.println(filename);
         return false;
     }
-    if (root.printTo(file) == 0)
+    if (serializeJson(root, file) == 0)
     {
         blog_e("[SPIFFS] Failed to write to file %s", filename);
         return false;

@@ -144,12 +144,12 @@ void Publisher::webServerBind()
 
     m_service->getWebServer()->on("/rest/backlogs", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
-        StaticJsonBuffer<128> jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        JsonObject &backlog = root.createNestedObject("backlog");
+        StaticJsonDocument<128> jsonBuffer;
+        JsonObject root = jsonBuffer.to<JsonObject>();
+        JsonObject backlog = root.createNestedObject("backlog");
         backlog["count"] = backlogCount;
 
-        root.printTo(*response);
+        serializeJson(jsonBuffer, *response);
         jsonBuffer.clear();
         request->send(response);
     });
@@ -159,19 +159,19 @@ void Publisher::webServerBind()
         const String outboundTypeStr = request->getParam(STR_OUTBOUNDMODE, false)->value();
         
         char outboundType = (char)outboundTypeStr.toInt();        
-        StaticJsonBuffer<256> jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        JsonArray &array = root.createNestedArray("protocols");
+        StaticJsonDocument<256> jsonBuffer;
+        JsonObject root = jsonBuffer.to<JsonObject>();
+        JsonArray array = root.createNestedArray("protocols");
         
         PublishStrategy* strategies[5];
         int count = this->getStrategies(strategies, outboundType);
         for(int i=0;i<count;i++)
         {
-            JsonObject & proto = array.createNestedObject();
+            JsonObject  proto = array.createNestedObject();
             proto[STR_PUBLISHERPROTOCOL] =  (int) strategies[i]->getProtocol();
             proto["name"] = strategies[i]->getProtocolName();
         }
-        root.printTo(*response);
+        serializeJson(root, *response);
         jsonBuffer.clear();
         request->send(response);
     });
@@ -191,13 +191,17 @@ int Publisher::getIndex()
     return storageIndex;
 }
 
-char *Publisher::storeMessage(JsonObject &jsonObj)
+int Publisher::storeMessage(const char* buffer)
 {
     int i = getIndex();
-    jsonObj.printTo(messageStorage[i], jsonObj.measureLength() + 1);
-    blog_d("[STORE] Message");
-    char *ret = messageStorage[i];
-    return ret;
+    strcpy(messageStorage[i], buffer);
+    blog_d("[STORE] Message: %s",messageStorage[i]);
+    return i;
+}
+
+void Publisher::getMessage(char* buffer, const int index) 
+{
+    strcpy(buffer, messageStorage[index]);
 }
 
 bool Publisher::publish()

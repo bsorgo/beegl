@@ -40,33 +40,34 @@ void TimeManagement::webServerBind()
         const String outboundTypeStr = request->getParam(STR_OUTBOUNDMODE, false)->value();
 
         char outboundType = (char)outboundTypeStr.toInt();
-        StaticJsonBuffer<256> jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
-        JsonArray &array = root.createNestedArray("timesources");
+        StaticJsonDocument<256> jsonBuffer;
+        JsonObject root = jsonBuffer.to<JsonObject>();
+        JsonArray array = root.createNestedArray("timesources");
 
         TimeProviderStrategy *strategies[5];
         int count = this->getTimeProviderStrategies(strategies, outboundType);
         for (int i = 0; i < count; i++)
         {
-            JsonObject &proto = array.createNestedObject();
+            JsonObject proto = array.createNestedObject();
             proto[STR_TIMESOURCE] = (int)strategies[i]->getType();
             proto["name"] = strategies[i]->getName();
         }
-        root.printTo(*response);
+        serializeJson(jsonBuffer, *response);
         jsonBuffer.clear();
         request->send(response);
     });
 
     m_service->getWebServer()->addHandler(new AsyncCallbackJsonWebHandler("/rest/time", [this](AsyncWebServerRequest *request, JsonVariant &json) {
          AsyncResponseStream *response = request->beginResponseStream("application/json");
-        JsonObject &jsonObj = json.as<JsonObject>();
+        JsonObject jsonObj = json.as<JsonObject>();
         tmElements_t tm;
-        tm.Year= (uint8_t) (jsonObj.get<int>("year")-1970);
-        tm.Month= jsonObj.get<uint8_t>("month");
-        tm.Day = jsonObj.get<uint8_t>("day");
-        tm.Hour = jsonObj.get<uint8_t>("hour");
-        tm.Minute = jsonObj.get<uint8_t>("minute");
-        tm.Second= jsonObj.get<uint8_t>("second");
+        int year = jsonObj["year"];
+        tm.Year= (uint8_t) (year-1970);
+        tm.Month= jsonObj["month"];
+        tm.Day = jsonObj["day"];
+        tm.Hour = jsonObj["hour"];
+        tm.Minute = jsonObj["minute"];
+        tm.Second= jsonObj["second"];
         time_t utcTime = m_settings->getTimezone()->toUTC(makeTime(tm));
         this->getSelectedTimeProviderStrategy()->setUTCTime(utcTime);
         response->setCode(200);
@@ -75,8 +76,8 @@ void TimeManagement::webServerBind()
 
      m_service->getWebServer()->on("/rest/time", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
-        StaticJsonBuffer<256> jsonBuffer;
-        JsonObject &root = jsonBuffer.createObject();
+        StaticJsonDocument<256> jsonBuffer;
+        JsonObject root = jsonBuffer.to<JsonObject>();
         time_t t = getLocalTime();
         
         root["year"] = year(t);
@@ -85,7 +86,7 @@ void TimeManagement::webServerBind()
         root["hour"] = hour(t);
         root["minute"] = minute(t);
         root["second"] = second(t);
-        root.printTo(*response);
+        serializeJson(jsonBuffer, *response);
         jsonBuffer.clear();
         request->send(response);
     });
