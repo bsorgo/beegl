@@ -24,7 +24,6 @@
 #include "Publisher.h"
 #include "LoraWanConnectionProvider.h"
 
-
 #define LORA_MESSAGE_BUFFER 512
 #define LORA_MEASUREMENT_MESSAGE_TYPE 0x30
 #define LORA_DELIMITER 0x7C
@@ -32,20 +31,21 @@
 class LoraMessageFormatter
 {
 public:
-  LoraMessageFormatter(Settings* settings);
+  LoraMessageFormatter(Settings *settings);
   int formatMessage(uint8_t *targetLoraMessage, const char *sourceJsonMessage);
 
 protected:
-  virtual int formatMessageFromJson(uint8_t *targetLoraMessage, JsonObject *source);
-  Settings* m_settings;
+  virtual int formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject &source);
+  Settings *m_settings;
 };
 
 class LoraMeasurementMessageFormatter : public LoraMessageFormatter
 {
 public:
-  LoraMeasurementMessageFormatter(Settings* settings);
+  LoraMeasurementMessageFormatter(Settings *settings);
+
 protected:
-  int formatMessageFromJson(uint8_t *targetLoraMessage, JsonObject *source) override;
+  int formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject &source) override;
 };
 
 class LoraPublishStrategy : public PublishStrategy
@@ -57,9 +57,10 @@ public:
   bool reconnect() override;
   bool publishMessage(const char *message) override;
   const char getProtocol() { return 0x4; }
-  const char* getProtocolName() { return "LoraWan";}
+  const char *getProtocolName() { return "LoraWan"; }
   int getInterval() { return 60000; }
-  const char getSupportedOutboundTypes() { return 0x4;}
+  const char getSupportedOutboundTypes() { return 0x4; }
+
 private:
   LoraMeasurementMessageFormatter m_formatter = NULL;
 };

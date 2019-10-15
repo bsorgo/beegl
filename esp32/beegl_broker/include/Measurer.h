@@ -24,11 +24,13 @@
 #include "Log.h"
 #include "DHTesp.h"
 #include <HX711.h>
+
 #include "Service.h"
 #include "Settings.h"
 #include "Publisher.h"
 
 #define MEASURER_TASK "Measure Task"
+
 struct MeasureData
 {
     float weight;
@@ -44,9 +46,10 @@ public:
     Measurer(Runtime* runtime, Service* server, Settings *settings, Publisher *publisher);
     bool setup();
     long zero();
-    char* measure();
+    int measure();
     void begin();
     uint32_t getMeasureInterval();
+    static Measurer* getInstance();
 private:
     HX711 *m_scale;
     Settings *m_settings;
@@ -58,11 +61,12 @@ private:
     const int DHT_PIN = 34;
     bool scaleSetup();
     bool dhtSetup();
-    char *storeMessage(MeasureData measureData);
+    int storeMessage(MeasureData measureData);
     void webServerBind();
     Service* m_server;
     static void measureLoop( void * pvParameters );
-    
+
+    static Measurer* p_instance;
 };
 
 #endif

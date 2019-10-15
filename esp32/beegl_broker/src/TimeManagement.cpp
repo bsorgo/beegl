@@ -41,7 +41,7 @@ void TimeManagement::webServerBind()
 
         char outboundType = (char)outboundTypeStr.toInt();
         StaticJsonDocument<256> jsonBuffer;
-        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonObject root = jsonBuffer.to<JsonObject>();
         JsonArray array = root.createNestedArray("timesources");
 
         TimeProviderStrategy *strategies[5];
@@ -61,7 +61,8 @@ void TimeManagement::webServerBind()
          AsyncResponseStream *response = request->beginResponseStream("application/json");
         JsonObject jsonObj = json.as<JsonObject>();
         tmElements_t tm;
-        tm.Year= (uint8_t) (jsonObj["year"]-1970);
+        int year = jsonObj["year"];
+        tm.Year= (uint8_t) (year-1970);
         tm.Month= jsonObj["month"];
         tm.Day = jsonObj["day"];
         tm.Hour = jsonObj["hour"];
@@ -76,7 +77,7 @@ void TimeManagement::webServerBind()
      m_service->getWebServer()->on("/rest/time", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         StaticJsonDocument<256> jsonBuffer;
-        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonObject root = jsonBuffer.to<JsonObject>();
         time_t t = getLocalTime();
         
         root["year"] = year(t);

@@ -137,13 +137,13 @@ void SettingsManagement::webServerBind()
 /*
   Writes config to file
  */
-bool SettingsManagement::writeConfig(JsonObject input)
+bool SettingsManagement::writeConfig(const JsonObject &input)
 {
 
     blog_i("[SETTINGS] Writing settings");
 
     StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
-    JsonObject root = jsonBuffer.as<JsonObject>();
+    JsonObject root = jsonBuffer.to<JsonObject>();
 
     root[STR_OUTBOUNDMODE] = m_settings->outboundMode;
     root[STR_INBOUNDMODE] = m_settings->inboundMode;
@@ -255,11 +255,11 @@ Writes config to file
 bool SettingsManagement::writeConfig()
 {
     StaticJsonDocument<100> jsonBuffer;
-    JsonObject root = jsonBuffer.as<JsonObject>();
+    JsonObject root = jsonBuffer.to<JsonObject>();
     return this->writeConfig(root);
 }
 
-bool SettingsManagement::readAndParseJson(const char *filename, JsonObject *root, StaticJsonDocument<CONFIG_BUFFER> *jsonBuffer)
+bool SettingsManagement::readAndParseJson(const char *filename, StaticJsonDocument<CONFIG_BUFFER> *jsonBuffer)
 {
     File file = SPIFFS.open(filename);
     if (!file)
@@ -272,10 +272,7 @@ bool SettingsManagement::readAndParseJson(const char *filename, JsonObject *root
         file.close();
         return false;
     }
-    JsonObject rootObj = jsonBuffer->as<JsonObject>();
-
     file.close();
-    *root = rootObj;
     return true;
 }
 
@@ -284,25 +281,25 @@ bool SettingsManagement::readAndParseJson(const char *filename, JsonObject *root
 bool SettingsManagement::readConfig()
 {
     StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
-    JsonObject *rootObj;
-    if (!readAndParseJson(CONFIGJSON, rootObj, &jsonBuffer))
+    
+    if (!readAndParseJson(CONFIGJSON, &jsonBuffer))
     {
         blog_e("[SETTINGS] Failed to open config file for reading.");
         blog_i("[SETTINGS] Trying last good config.");
-        if (!readAndParseJson(CONFIGJSONLASTGOOD, rootObj, &jsonBuffer))
+        if (!readAndParseJson(CONFIGJSONLASTGOOD,  &jsonBuffer))
         {
             blog_e("[SETTINGS] Failed to open last good config file for reading.");
             blog_i("[SETTINGS] Trying backup config.");
-            if (!readAndParseJson(CONFIGJSONBACKUP, rootObj, &jsonBuffer))
+            if (!readAndParseJson(CONFIGJSONBACKUP,  &jsonBuffer))
             {
                 blog_e("[SETTINGS] Failed to open backup config file for reading.");
                 blog_i("[SETTINGS] Trying default minimalistic config.");
-                if (!readAndParseJson(CONFIGJSONDEFAULT, rootObj, &jsonBuffer))
+                if (!readAndParseJson(CONFIGJSONDEFAULT,  &jsonBuffer))
                 {
                     blog_e("[SETTINGS] Failed to open default config file for reading.");
                     blog_i("[SETTINGS] Creating config from defaults.");
                     writeConfig();
-                    if (!readAndParseJson(CONFIGJSON, rootObj, &jsonBuffer))
+                    if (!readAndParseJson(CONFIGJSON, &jsonBuffer))
                     {
                         blog_e("[SETTINGS] Failed even to open config from defaults. Returning");
                         return false;
@@ -311,7 +308,7 @@ bool SettingsManagement::readConfig()
             }
         }
     }
-    JsonObject root = *rootObj;
+    JsonObject root = jsonBuffer.as<JsonObject>();
 
     strlcpy(m_settings->deviceName, root[STR_DEVICENAME] | m_settings->deviceName, 17);
     m_settings->inboundMode = root[STR_INBOUNDMODE];
@@ -520,20 +517,20 @@ void SettingsManagement::storeLastGood()
 /**
  * Merges json objects from src -> dest
  */
-void SettingsManagement::merge(JsonObject dest, JsonObject src)
+void SettingsManagement::merge(JsonObject &dest, const JsonObject &src)
 {
     if (!src.isNull())
     {
         for (auto kvp : src)
         {
-            dest[kvp.key] = kvp.value;
+            dest[kvp.key()] = kvp.value();
         }
     }
 }
 /**
  *  Writes json to SPIFFS file
  */
-bool SettingsManagement::writeConfigToFS(const char *filename, JsonObject root)
+bool SettingsManagement::writeConfigToFS(const char *filename, const JsonObject &root)
 {
 
     SPIFFS.rename(CONFIGJSON, CONFIGJSONBACKUP);

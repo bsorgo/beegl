@@ -59,7 +59,7 @@ void Connection::webServerBind()
         AsyncResponseStream *response = request->beginResponseStream("application/json");
        
         StaticJsonDocument<256> jsonBuffer;
-        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonObject root = jsonBuffer.to<JsonObject>();
         JsonArray array = root.createNestedArray("conn");
         
         ConnectionProvider* providers[5];

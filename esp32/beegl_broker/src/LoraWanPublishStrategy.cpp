@@ -39,8 +39,7 @@ int LoraMessageFormatter::formatMessage(uint8_t *targetLoraMessage, const char *
     if (!error && targetLoraMessage)
     {
         JsonObject root = jsonBuffer.as<JsonObject>();
-        JsonObject *ptrRoot = &root;
-        return formatMessageFromJson(targetLoraMessage, ptrRoot);
+        return formatMessageFromJson(targetLoraMessage, root);
     }
     else
     {
@@ -52,47 +51,47 @@ LoraMeasurementMessageFormatter::LoraMeasurementMessageFormatter(Settings *setti
 {
 }
 
-int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMessage, JsonObject *source)
+int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject& source)
 {
     int p = 0;
     const uint8_t delimiter[1] = {LORA_DELIMITER};
     const uint8_t messageType[1] = {LORA_MEASUREMENT_MESSAGE_TYPE};
-    JsonObject sourceRef = *source;
     // message type
     memcpy(targetLoraMessage + p, messageType, 1);
     p += 1;
     // device id
     char deviceId[9];
-    strcpy(deviceId, sourceRef[STR_DEVICEID]);
+    strcpy(deviceId, source[STR_DEVICEID]);
     memcpy(targetLoraMessage + p, deviceId, 8);
     p += 8;
     // delimiter
     memcpy(targetLoraMessage + p, delimiter, 1);
     p += 1;
     // epoch time
-    if (sourceRef.containsKey(STR_EPOCHTIME))
+    if (source.containsKey(STR_EPOCHTIME))
     {
         if (TimeManagement::getInstance()->isAbsoluteTime())
         {
             char time[11];
-            strlcpy(time, sourceRef[STR_EPOCHTIME], 10);
+            strlcpy(time, source[STR_EPOCHTIME].as<String>().c_str(),10);
             memccpy(targetLoraMessage + p, time, 0, 10);
             p += 10;
         }
         else
         {
             char time[11];
-            long value = sourceRef[STR_EPOCHTIME] + now();
+            long value = source[STR_EPOCHTIME].as<long>();
+            value += now();
             sprintf(time, "%lu", value);
             memccpy(targetLoraMessage + p, time, 0, 10);
             p += 10;
         }
     }
     // time (old time)
-    if (sourceRef.containsKey(STR_TIME))
+    if (source.containsKey(STR_TIME))
     {
         char time[30];
-        strlcpy(time, sourceRef[STR_TIME], 29);
+        strlcpy(time, source[STR_TIME].as<String>().c_str(),29);
         memccpy(targetLoraMessage + p, time, 0, 29);
         p += 29;
     }
@@ -101,10 +100,10 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     p += 1;
     // measurement
     // weight
-    if (sourceRef.containsKey(STR_WEIGHT))
+    if (source.containsKey(STR_WEIGHT))
     {
         char weight[6];
-        strlcpy(weight, sourceRef[STR_WEIGHT], 5);
+        strlcpy(weight, source[STR_WEIGHT].as<String>().c_str(),5);
         memcpy(targetLoraMessage + p, weight, 5);
         p += 5;
     }
@@ -112,10 +111,10 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     memcpy(targetLoraMessage + p, delimiter, 1);
     p += 1;
     // temperature
-    if (sourceRef.containsKey(STR_TEMP))
+    if (source.containsKey(STR_TEMP))
     {
         char temperature[6];
-        strlcpy(temperature, sourceRef[STR_TEMP], 5);
+        strlcpy(temperature, source[STR_TEMP].as<String>().c_str(),5);
         memcpy(targetLoraMessage + p, temperature, 5);
         p += 5;
     }
@@ -123,10 +122,10 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     memcpy(targetLoraMessage + p, delimiter, 1);
     p += 1;
     // humidity
-    if (sourceRef.containsKey(STR_HUMIDITY))
+    if (source.containsKey(STR_HUMIDITY))
     {
         char humidity[4];
-        strlcpy(humidity, sourceRef[STR_HUMIDITY], 3);
+        strcpy(humidity, source[STR_HUMIDITY]);
         memcpy(targetLoraMessage + p, humidity, 3);
         p += 3;
     }

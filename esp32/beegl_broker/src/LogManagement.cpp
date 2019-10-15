@@ -38,7 +38,7 @@ void LogManagement::webServerBind()
     m_server->getWebServer()->on("/rest/logs", HTTP_GET, [](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         StaticJsonDocument<1024> jsonBuffer;
-        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonObject root = jsonBuffer.to<JsonObject>();
         JsonArray logs = root.createNestedArray("logs");
         
         long logNumber = log_number();

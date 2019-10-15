@@ -17,7 +17,6 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef Broker_h
 #define Broker_h
 
@@ -33,66 +32,43 @@
 
 #include <AsyncJson.h>
 
-typedef char* (*jsonFunctionPtr)(JsonObject &jsonObj);
+typedef char *(*jsonFunctionPtr)(JsonObject &jsonObj);
 
-class Broker {
-
-class BLESensorCallback : public BLECharacteristicCallbacks
+class Broker
 {
 
-private:
-  Broker* m_broker;
-public:
-  BLESensorCallback(Broker* broker)
+  class BLESensorCallback : public BLECharacteristicCallbacks
   {
-    m_broker = broker;
-  }
-  void onWrite(BLECharacteristic *pCharacteristic)
-  {
-    std::string value = pCharacteristic->getValue();
-    if (value.length() > 0)
+
+  private:
+    Broker *m_broker;
+
+  public:
+    BLESensorCallback(Broker *broker)
     {
-      StaticJsonDocument<512> jsonBuffer;
-      auto error = deserializeJson(jsonBuffer, value.c_str());
-      if (error)
-      {
-
-        log_e( "[BLE] parseObject() failed");
-      }
-      else
-      {
-        JsonObject jsonObj = jsonBuffer.as<JsonObject>();
-        if (m_broker)
-        {
-          m_broker->storeMessage(jsonObj);
-        }
-      }
+      m_broker = broker;
     }
-  }
-};
-
+    void onWrite(BLECharacteristic *pCharacteristic);
+  };
 public:
-    Broker(Service* server,Settings *settings, Publisher* publisher);
-    void setSettings(Settings *settings);
-    void setPublisher(Publisher* publisher);
+  Broker(Service *server, Settings *settings, Publisher *publisher);
 
-    void setup();
-    char* storeMessage(JsonObject jsonObj);
+  void setup();
+  int storeMessage(const char* buffer);
+
 private:
-    Service* m_server;
-    Settings* m_settings;
-    Publisher* m_publisher;
-    BLESensorCallback* m_bleCallback;
+  Service *m_server;
+  Settings *m_settings;
+  Publisher *m_publisher;
+  BLESensorCallback *m_bleCallback;
 
-    BLEServer *pServer;
-    BLECharacteristic *pCharacteristic;
+  BLEServer *pServer;
+  BLECharacteristic *pCharacteristic;
 
-    AsyncCallbackJsonWebHandler *sensorsHandler;
+  AsyncCallbackJsonWebHandler *sensorsHandler;
 
-    bool bleBind();
-    void webServerBind();
-    
-
+  bool bleBind();
+  void webServerBind();
 };
 
 #endif

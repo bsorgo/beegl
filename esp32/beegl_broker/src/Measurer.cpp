@@ -20,6 +20,8 @@
 
 #include "Measurer.h"
 
+Measurer* Measurer::p_instance = NULL;
+
 Measurer::Measurer(Runtime *runtime, Service *server, Settings *settings, Publisher *publisher)
 {
 
@@ -31,9 +33,14 @@ Measurer::Measurer(Runtime *runtime, Service *server, Settings *settings, Publis
     m_scale = new HX711();
     m_scale->begin(SCALE_DOUT_PIN, SCALE_SCK_PIN);
     m_dht = new DHTesp();
-
+    p_instance = this;
     webServerBind();
 }
+
+Measurer* Measurer::getInstance() {
+    return p_instance;
+}
+
 
 void Measurer::webServerBind()
 {
@@ -43,7 +50,9 @@ void Measurer::webServerBind()
         if (request->hasParam("scaleOffset"))
             m_settings->scaleOffset = atoi(request->getParam("scaleOffset", false, false)->value().c_str());
         blog_d("Scale factor: %f, offset: %u", m_settings->scaleFactor, m_settings->scaleOffset);
-        char *message = measure();
+        int index = measure();
+        char message[350];
+        m_publisher->getMessage(message, index);
         if (message)
         {
             blog_d("Payload: %s", message);
@@ -116,9 +125,8 @@ long Measurer::zero()
     return tareValue;
 }
 
-char *Measurer::measure()
+int Measurer::measure()
 {
-
     MeasureData data;
 
     if (m_settings->measureWeight)
@@ -142,17 +150,14 @@ char *Measurer::measure()
         data.humidity = sensorData.humidity;
         blog_d("[MEASURER] Read temperature and humidity: %.2f C %.2f %% ", data.temp, data.humidity);
     }
-    char *message = storeMessage(data);
-
-    return message;
+    return storeMessage(data);
 }
 
-char *Measurer::storeMessage(MeasureData measureData)
+int Measurer::storeMessage(MeasureData measureData)
 {
     StaticJsonDocument<512> jsonBuffer;
-    JsonObject root = jsonBuffer.as<JsonObject>();
+    JsonObject root = jsonBuffer.to<JsonObject>();
     root[STR_DEVICEID] = m_settings->deviceName;
-    //root[STR_TIME] = m_settings->getDateTimeString(now());
     root[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
     root[STR_VER] = m_runtime->FIRMWAREVERSION;
     if (m_settings->measureWeight && measureData.weight == measureData.weight)
@@ -173,7 +178,10 @@ char *Measurer::storeMessage(MeasureData measureData)
         humiditySensor[STR_HUMIDITY] = measureData.humidity;
         humiditySensor[STR_HUMIDITYUNIT] = STR_HUMIDITYUNITPERCENT;
     }
-    return m_publisher->storeMessage(root);
+    char buffer[350];
+    serializeJson(jsonBuffer, buffer);
+    blog_d("Message: %s", buffer);
+    return m_publisher->storeMessage(buffer);
 }
 
 void Measurer::measureLoop(void *pvParameters)
@@ -185,7 +193,7 @@ void Measurer::measureLoop(void *pvParameters)
         int publisherInterval = Publisher::getInstance()->getInterval();
         int measurerInterval = measurer->getMeasureInterval();
         measurer->measure();
-        delay(publisherInterval>measurerInterval ? publisherInterval : measurerInterval);
+        delay(publisherInterval > measurerInterval ? publisherInterval : measurerInterval);
     }
 }
 
@@ -197,5 +205,6 @@ void Measurer::begin()
     // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
     // the new task attempts to access it.
     blog_d("[MEASURER] Creating measurer task.");
-    xTaskCreate(measureLoop, MEASURER_TASK, 4096, this, tskIDLE_PRIORITY, NULL);
+    xTaskCreate(measureLoop, MEASURER_TASK, 8192, this, tskIDLE_PRIORITY, NULL);
+
 }

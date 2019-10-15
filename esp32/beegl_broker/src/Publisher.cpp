@@ -145,7 +145,7 @@ void Publisher::webServerBind()
     m_service->getWebServer()->on("/rest/backlogs", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         StaticJsonDocument<128> jsonBuffer;
-        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonObject root = jsonBuffer.to<JsonObject>();
         JsonObject backlog = root.createNestedObject("backlog");
         backlog["count"] = backlogCount;
 
@@ -160,7 +160,7 @@ void Publisher::webServerBind()
         
         char outboundType = (char)outboundTypeStr.toInt();        
         StaticJsonDocument<256> jsonBuffer;
-        JsonObject root = jsonBuffer.as<JsonObject>();
+        JsonObject root = jsonBuffer.to<JsonObject>();
         JsonArray array = root.createNestedArray("protocols");
         
         PublishStrategy* strategies[5];
@@ -191,13 +191,17 @@ int Publisher::getIndex()
     return storageIndex;
 }
 
-char *Publisher::storeMessage(JsonObject jsonObj)
+int Publisher::storeMessage(const char* buffer)
 {
     int i = getIndex();
-    serializeJson(jsonObj, messageStorage[i]);
-    blog_d("[STORE] Message");
-    char *ret = messageStorage[i];
-    return ret;
+    strcpy(messageStorage[i], buffer);
+    blog_d("[STORE] Message: %s",messageStorage[i]);
+    return i;
+}
+
+void Publisher::getMessage(char* buffer, const int index) 
+{
+    strcpy(buffer, messageStorage[index]);
 }
 
 bool Publisher::publish()
