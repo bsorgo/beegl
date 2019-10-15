@@ -466,7 +466,7 @@
                 const second = pad(json.second,2);
                 const month = pad(json.month,2);
                 const day = pad(json.day,2);
-                document.getElementById("setTime").value = `${hour}:${minute}:${second}`;
+                document.getElementById("setTime").value = `${hour}:${minute}`;
                 document.getElementById("setDate").value = `${json.year}-${month}-${day}`;
             } catch (error) {
                 displayMessage("Error obtaining time. Error: " + error);
@@ -497,7 +497,6 @@
             const url = "/rest/settings";
             var form = document.getElementById('settings');
             var isValidForm = form.checkValidity()
-
             if (isValidForm) {
 
 
@@ -1064,4 +1063,4 @@
     </div>
 </body>
 
-</html>                                                                                                                     
+</html>                                                                                                                             

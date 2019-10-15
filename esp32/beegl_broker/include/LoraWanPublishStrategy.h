@@ -23,6 +23,7 @@
 
 #include "Publisher.h"
 #include "LoraWanConnectionProvider.h"
+#include "CayenneLPP.h"
 
 #define LORA_MESSAGE_BUFFER 512
 #define LORA_MEASUREMENT_MESSAGE_TYPE 0x30

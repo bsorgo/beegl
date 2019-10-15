@@ -142,6 +142,13 @@ void setup()
 #ifdef SUPPORTSRTC
   timeManagement.addTimeProviderStrategy(new RTCTimeProviderStrategy(&settings, &connection));
 #endif
+
+  publisher.addPublishStrategy(new MqttPublishStrategy(&runtime, &settings, &connection, &service));
+  publisher.addPublishStrategy(new HttpPublishStrategy(&runtime, &settings, &connection, &service));
+#ifdef SUPPORTSLORAWAN
+  publisher.addPublishStrategy(new LoraPublishStrategy(&runtime, &settings, &connection, &service));
+#endif
+
   runtime.initialize();
   runtime.setSafeModeOnRestart(1);
 
@@ -158,6 +165,7 @@ void setup()
     connection.setup();
     service.setup();
     runtime.setSafeModeOnRestart(0);
+    timeManagement.setup();
     log_i("***************************************");
     log_i("******** SAFE/MAINTENANCE MODE ********");
     log_i("***************************************");
@@ -194,11 +202,7 @@ void setup()
   timeManagement.syncTime();
   settingsManagement.syncSettings();
   updater.checkFirmware();
-  publisher.addPublishStrategy(new MqttPublishStrategy(&runtime, &settings, &connection, &service));
-  publisher.addPublishStrategy(new HttpPublishStrategy(&runtime, &settings, &connection, &service));
-#ifdef SUPPORTSLORAWAN
-  publisher.addPublishStrategy(new LoraPublishStrategy(&runtime, &settings, &connection, &service));
-#endif
+  
   publisher.setup();
   measurer.setup();
   broker.setup();

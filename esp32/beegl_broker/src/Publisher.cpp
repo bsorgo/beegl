@@ -239,7 +239,8 @@ bool Publisher::publish()
             backlogCount = NVS.getInt(BACKLOG_NVS);
             blog_d("[PUBLISHER] Backlog count: %u", backlogCount);
             long fileNumber = 0;
-            while (connected && backlogCount > 0)
+            // 
+            while (connected && TimeManagement::getInstance()->isAbsoluteTime() && backlogCount > 0)
             {
                 fileNumber++;
                 String backlogFilename = String(BACKLOG_DIR_PREFIX);
