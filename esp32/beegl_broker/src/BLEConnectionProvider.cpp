@@ -36,12 +36,12 @@ void BLEConnectionProvider::btOff()
 
 void BLEConnectionProvider::suspend()
 {
-
+    // not yet implemented
 }
 
 void BLEConnectionProvider::resume()
 {
-
+    // not yet implemented
 }
 
 void BLEConnectionProvider::shutdown()
@@ -58,11 +58,12 @@ bool BLEConnectionProvider::setup()
 
 void BLEConnectionProvider::checkConnect()
 {
-   
+   // not yet implemented
 }
 
 Client *BLEConnectionProvider::getClient()
 {
+    // not supported
     return nullptr;
 }
 

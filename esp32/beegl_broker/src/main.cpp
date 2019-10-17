@@ -37,7 +37,10 @@
 #include "Settings.h"
 #include "Connection.h"
 #include "TimeManagement.h"
+#include "Broker.h"
+
 #include "HttpTimeProviderStrategy.h"
+
 #ifdef SUPPORTSGSM
 #include "TinyGsmConnectionProvider.h"
 #endif
@@ -47,6 +50,7 @@
 #endif
 #ifdef SUPPORTSBLE
 #include "BLEConnectionProvider.h"
+#include "BLEBrokerInboundStrategy.h"
 #endif
 #ifdef SUPPORTSRTC
 #include "RTCTimeProviderStrategy.h"
@@ -57,12 +61,13 @@
 #include "Publisher.h"
 #include "HttpPublishStrategy.h"
 #include "MqttPublishStrategy.h"
+#include "WiFiBrokerInboundStrategy.h"
+
 
 #include "Measurer.h"
 #include "SettingsManagement.h"
 #include "LogManagement.h"
 
-#include "Broker.h"
 #ifdef HEAPTRACE
 #include "esp_heap_trace.h"
 #define HEAP_TRACE_NUM_RECORDS 100
@@ -149,6 +154,10 @@ void setup()
   publisher.addPublishStrategy(new LoraPublishStrategy(&runtime, &settings, &connection, &service));
 #endif
 
+  broker.registerInboundStrategy(new WiFiBrokerInboundStrategy(&service, &settings));
+#ifdef SUPPORTSBLE
+  broker.registerInboundStrategy(new BLEBrokerInboundStrategy(&service, &settings));
+#endif
   runtime.initialize();
   runtime.setSafeModeOnRestart(1);
 

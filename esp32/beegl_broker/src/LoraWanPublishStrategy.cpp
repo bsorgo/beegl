@@ -169,7 +169,7 @@ int LoraMeasurementCayenneLPPMessageFormatter::formatMessageFromJson(uint8_t *ta
         lpp.addPercentage(5, source[STR_HUMIDITY].as<int>()); 
     }
     int size = lpp.copy(targetLoraMessage);
-    blog_d("[LORA] CayeneLPP message size: %u", size);
+    blog_d("[LORA] CayenneLPP message size: %u", size);
     return size;
 }
 

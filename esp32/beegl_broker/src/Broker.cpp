@@ -23,103 +23,61 @@
 
 Broker::Broker(Service *server, Settings *settings, Publisher *publisher)
 {
-    m_server = server;
-    m_settings = settings;
-    m_publisher = publisher;
-    m_bleCallback = new BLESensorCallback(this);
+  m_server = server;
+  m_settings = settings;
+  m_publisher = publisher;
+}
+
+void Broker::registerInboundStrategy(BrokerInboundStrategy *inboundStrategy)
+{
+  inboundStrategy->setBroker(this);
+  m_inboundStrategies[inboundStartegyCount] = inboundStrategy;
+  inboundStartegyCount++;
 }
 
 void Broker::webServerBind()
 {
-    if (m_settings->inboundMode & 0x1)
-    {
-        sensorsHandler = new AsyncCallbackJsonWebHandler("/beegl/v1/measurements", [&](AsyncWebServerRequest *request, JsonVariant &json) {
-            JsonObject jsonObj = json.as<JsonObject>();
-            jsonObj[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
-            size_t size = measureJson(json);
-            char buffer[size+1];
-            serializeJson(json, buffer, size);
-            m_publisher->storeMessage(buffer);
-            request->send(200, "text/plain", "");
-        });
-        m_server->getWebServer()->addHandler(sensorsHandler);
-    }
 }
 
 void Broker::setup()
 {
-    webServerBind();
-    bleBind();
-}
-
-bool Broker::bleBind()
-{
-    if (m_settings->inboundMode & 0x2)
+  bool ret = false;
+  for (int i = 0; i < inboundStartegyCount; i++)
+  {
+    if(m_settings->inboundMode & m_inboundStrategies[i]->getInboundType())
     {
-        blog_i( "[BLE] Configuring BLE Server %s ", m_settings->deviceName);
-        blog_i( "[BLE] Service %s ", SERVICE_UUID);
-        blog_i( "[BLE] Characteristic %s ", CHARACTERISTIC_UUID);
-
-        if (esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P4) == OK)
-        {
-            blog_i( "[BLE] Transmission power changed\n");
-        }
-        BLEDevice::init(m_settings->deviceName);
-        BLEServer *pServer = BLEDevice::createServer();
-
-        BLEService *pService = pServer->createService(SERVICE_UUID);
-
-        BLECharacteristic *pCharacteristic = pService->createCharacteristic(
-            CHARACTERISTIC_UUID,
-            BLECharacteristic::PROPERTY_READ |
-                BLECharacteristic::PROPERTY_WRITE |
-                BLECharacteristic::PROPERTY_INDICATE);
-
-        ;
-
-        pCharacteristic->setCallbacks(m_bleCallback);
-        pService->start();
-        BLEAdvertising *pAdvertising = pServer->getAdvertising();
-        pAdvertising->addServiceUUID(SERVICE_UUID);
-        pAdvertising->setScanResponse(true);
-        pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
-        pAdvertising->setMinPreferred(0x12);
-        pAdvertising->start();
-    }
-    return true;
-}
-
-
-int Broker::storeMessage(const char* buffer)
-{
-    return m_publisher->storeMessage(buffer);
-}
-
- void Broker::BLESensorCallback::onWrite(BLECharacteristic *pCharacteristic)
-    {
-      std::string value = pCharacteristic->getValue();
-      if (value.length() > 0)
+      if(!m_inboundStrategies[i]->setup())
       {
-        StaticJsonDocument<512> jsonBuffer;
-        auto error = deserializeJson(jsonBuffer, value.c_str());
-        if (error)
-        {
-
-          log_e("[BLE] parseObject() failed");
-        }
-        else
-        {
-          JsonObject jsonObj = jsonBuffer.as<JsonObject>();
-          jsonObj[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
-          size_t size = measureJson(jsonBuffer);
-          char buffer[size + 1];
-          serializeJson(jsonBuffer, buffer, size);
-
-          if (m_broker)
-          {
-            m_broker->storeMessage(buffer);
-          }
-        }
+        blog_e("[BROKER] Error setting up broker strategy: %u", m_inboundStrategies[i]->getInboundType());
       }
     }
-  
+  }
+}
+int Broker::processMessage(const JsonObject &jsonObject)
+{
+  jsonObject[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
+  size_t size = measureJson(jsonObject);
+  char buffer[size + 1];
+  serializeJson(jsonObject, buffer, size);
+
+  if (m_publisher)
+  {
+    m_publisher->storeMessage(buffer);
+  }
+  return size;
+}
+int Broker::processMessage(const char *buffer)
+{
+  StaticJsonDocument<512> jsonBuffer;
+  auto error = deserializeJson(jsonBuffer, buffer);
+  if (error)
+  {
+    log_e("[BROKER] parseObject() failed");
+    return -1;
+  }
+  else
+  {
+    JsonObject jsonObj = jsonBuffer.as<JsonObject>();
+    this->processMessage(jsonObj);
+  }
+}

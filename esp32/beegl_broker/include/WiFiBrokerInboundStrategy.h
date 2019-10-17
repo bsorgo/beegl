@@ -1,5 +1,5 @@
 /*
-  Broker.h - Broker header file
+  WiFiBrokerInboundStrategy.h - Broker Inbound trrategy header file for Wifi
     
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -17,15 +17,13 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef Broker_h
-#define Broker_h
+#ifndef WiFiBrokerInboundStrategy_h
+#define WiFiBrokerInboundStrategy_h
 
 #define SERVICE_UUID "ebd31aa0-b7c7-497a-a92c-e18f78f64efa"
 #define CHARACTERISTIC_UUID "df878320-0c82-45c9-a5e2-47ff1ee43883"
 
-#include "Log.h"
-#include "Service.h"
-#include "Publisher.h"
+#include "Broker.h"
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -34,49 +32,14 @@
 
 typedef char *(*jsonFunctionPtr)(JsonObject &jsonObj);
 
-class Broker;
-
-class BrokerInboundStrategy
+class WiFiBrokerInboundStrategy : public BrokerInboundStrategy
 {
 public:
-  BrokerInboundStrategy(Service *server, Settings *settings)
-  {
-    m_server = server;
-    m_settings = settings;
-  }
-  void setBroker(Broker *broker) { m_broker = broker; };
-  virtual bool setup() { return false; };
-  virtual const char getInboundType() { return 0x00;};
-
-protected:
-  Broker *m_broker;
-  Service *m_server;
-  Settings *m_settings;
-};
-
-
-class Broker
-{
-public:
-  Broker(Service *server, Settings *settings, Publisher *publisher);
-
-  void setup();
-  int processMessage(const JsonObject &jsonObject);
-  int processMessage(const char *buffer);
-  void registerInboundStrategy(BrokerInboundStrategy *brokerInboundStrategy);
+  WiFiBrokerInboundStrategy(Service *server, Settings *settings);
+  virtual bool setup() override;
+  const char getInboundType() { return 0x01;};
 
 private:
-  Service *m_server;
-  Settings *m_settings;
-  Publisher *m_publisher;
-
   AsyncCallbackJsonWebHandler *sensorsHandler;
-
-  void webServerBind();
-
-  BrokerInboundStrategy *m_inboundStrategies[5];
-  int inboundStartegyCount = 0;
 };
-
-
 #endif

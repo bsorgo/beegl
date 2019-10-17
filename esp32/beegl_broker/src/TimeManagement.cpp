@@ -137,6 +137,10 @@ bool TimeManagement::syncTime(char sourceType)
     if (!res)
     {
         blog_e("[TIME] Can't sync time. Check settings, connection, ...");
+    } 
+    else 
+    {
+        blog_i("[TIME] %s", m_settings->getDateTimeString(getUTCTime()).c_str());
     }
     return res;
 }

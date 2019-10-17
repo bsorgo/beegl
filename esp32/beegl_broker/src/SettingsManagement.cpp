@@ -427,7 +427,7 @@ void SettingsManagement::syncSettings()
 {
     Client *client = m_connection->getClient();
     SchEntryType schEntry = m_settings->getCurrentSchedulerEntry();
-    if (schEntry.updateFromServer && client != nullptr)
+    if (schEntry.updateFromServer && client != nullptr && m_settings->outboundMode & 0x3)
     {
         // GPRS || WiFi
         blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);

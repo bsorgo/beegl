@@ -81,7 +81,7 @@ void LoraWanConnectionProvider::resume()
 
 void LoraWanConnectionProvider::shutdown()
 {
-    loraWan.Shutdown();
+    //loraWan.Shutdown();
 }
 
 bool LoraWanConnectionProvider::setup()

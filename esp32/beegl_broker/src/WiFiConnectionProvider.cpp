@@ -32,12 +32,12 @@ WiFiConnectionProvider::WiFiConnectionProvider(Settings *settings) : ConnectionP
 
 void WiFiConnectionProvider::suspend()
 {
-
+    // not supported
 }
 
 void WiFiConnectionProvider::resume()
 {
-
+    // not supported
 }
 
 void WiFiConnectionProvider::shutdown()
