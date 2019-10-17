@@ -134,6 +134,45 @@ int LoraMeasurementMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMe
     return p;
 }
 
+LoraMeasurementCayenneLPPMessageFormatter::LoraMeasurementCayenneLPPMessageFormatter(Settings *settings) : LoraMessageFormatter(settings)
+{
+}
+
+int LoraMeasurementCayenneLPPMessageFormatter::formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject& source)
+{
+    lpp.reset();
+     if (source.containsKey(STR_EPOCHTIME))
+    {
+        if (TimeManagement::getInstance()->isAbsoluteTime())
+        {
+            long value = source[STR_EPOCHTIME].as<long>();
+            lpp.addUnixTime(1, value);
+        }
+        else
+        {
+            long value = source[STR_EPOCHTIME].as<long>();
+            value += now();
+            lpp.addUnixTime(2, value);
+        }
+    }
+
+    if (source.containsKey(STR_WEIGHT))
+    {
+        lpp.addGenericSensor(3, source[STR_WEIGHT].as<float>());
+    }
+    if (source.containsKey(STR_TEMP))
+    {
+       lpp.addTemperature(4, source[STR_TEMP].as<float>()); 
+    }
+    if (source.containsKey(STR_HUMIDITY))
+    {
+        lpp.addPercentage(5, source[STR_HUMIDITY].as<int>()); 
+    }
+    int size = lpp.copy(targetLoraMessage);
+    blog_d("[LORA] CayeneLPP message size: %u", size);
+    return size;
+}
+
 void LoraPublishStrategy::update()
 {
     MyLoRaWAN::GetInstance()->loop();
@@ -145,13 +184,13 @@ void LoraPublishStrategy::setup()
 
 LoraPublishStrategy::LoraPublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : PublishStrategy(runtime, settings, connection, service)
 {
-    m_formatter = LoraMeasurementMessageFormatter(m_settings);
+    m_formatter = new LoraMeasurementCayenneLPPMessageFormatter(m_settings);
 }
 
 bool LoraPublishStrategy::publishMessage(const char *message)
 {
     uint8_t *outputMessage = (uint8_t *)malloc(51);
-    int len = m_formatter.formatMessage(outputMessage, message);
+    int len = m_formatter->formatMessage(outputMessage, message);
     if (len > 0)
     {
         return MyLoRaWAN::GetInstance()->SendBuffer(outputMessage, len);

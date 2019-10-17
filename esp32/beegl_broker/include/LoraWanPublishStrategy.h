@@ -23,7 +23,7 @@
 
 #include "Publisher.h"
 #include "LoraWanConnectionProvider.h"
-
+#include <CayenneLPP.h>
 #define LORA_MESSAGE_BUFFER 512
 #define LORA_MEASUREMENT_MESSAGE_TYPE 0x30
 #define LORA_DELIMITER 0x7C
@@ -35,7 +35,7 @@ public:
   int formatMessage(uint8_t *targetLoraMessage, const char *sourceJsonMessage);
 
 protected:
-  virtual int formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject &source);
+  virtual int formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject &source) { return 0;};
   Settings *m_settings;
 };
 
@@ -46,6 +46,18 @@ public:
 
 protected:
   int formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject &source) override;
+};
+
+class LoraMeasurementCayenneLPPMessageFormatter : public LoraMessageFormatter
+{
+public:
+  LoraMeasurementCayenneLPPMessageFormatter(Settings *settings);
+
+protected:
+  int formatMessageFromJson(uint8_t *targetLoraMessage, const JsonObject &source) override;
+
+private:
+  CayenneLPP lpp = CayenneLPP(51);
 };
 
 class LoraPublishStrategy : public PublishStrategy
@@ -62,7 +74,7 @@ public:
   const char getSupportedOutboundTypes() { return 0x4; }
 
 private:
-  LoraMeasurementMessageFormatter m_formatter = NULL;
+  LoraMessageFormatter* m_formatter;
 };
 
 #endif

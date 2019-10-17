@@ -58,8 +58,9 @@ void MyLoRaWAN::NetSaveFCntUp(uint32_t uFCntUp)
 void MyLoRaWAN::NetSaveSessionInfo(
     const SessionInfo &Info,
     const uint8_t *pExtraInfo,
-    size_t nExtraInfo)
-{
+    size_t nExtraInfo){
+    // write to log
+    blog_i("[LORAWAN] Session info. Country: %u, NetID: %u, FCntUp: %u, FCntDown:", Info.V2.Country, Info.V2.NetID, Info.V2.FCntUp, Info.V2.FCntDown);
 }
 
 // set up the data structures.
@@ -70,14 +71,17 @@ LoraWanConnectionProvider::LoraWanConnectionProvider(Settings *settings) : Conne
 
 void LoraWanConnectionProvider::suspend()
 {
+    // not supported
 }
 
 void LoraWanConnectionProvider::resume()
 {
+    // not supported
 }
 
 void LoraWanConnectionProvider::shutdown()
 {
+    loraWan.Shutdown();
 }
 
 bool LoraWanConnectionProvider::setup()
@@ -98,9 +102,11 @@ bool LoraWanConnectionProvider::setup()
 
 void LoraWanConnectionProvider::checkConnect()
 {
+    // not supported
 }
 
 Client *LoraWanConnectionProvider::getClient()
 {
+    // client not supported
     return nullptr;
 }
