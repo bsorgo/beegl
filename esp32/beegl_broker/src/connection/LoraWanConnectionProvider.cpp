@@ -19,8 +19,10 @@
 
 */
 
-#include "LoraWanConnectionProvider.h"
+#include "connection/LoraWanConnectionProvider.h"
 
+namespace beegl
+{
 void from_hex_char(uint8_t *dest, const char *source, const size_t size, bool lsb)
 {
     for (int i = lsb ? (size / 2) - 1 : 0, j = 0; j < size; lsb ? --i : ++i, j += 2)
@@ -58,15 +60,42 @@ void MyLoRaWAN::NetSaveFCntUp(uint32_t uFCntUp)
 void MyLoRaWAN::NetSaveSessionInfo(
     const SessionInfo &Info,
     const uint8_t *pExtraInfo,
-    size_t nExtraInfo){
+    size_t nExtraInfo)
+{
     // write to log
     blog_i("[LORAWAN] Session info. Country: %u, NetID: %u, FCntUp: %u, FCntDown:", Info.V2.Country, Info.V2.NetID, Info.V2.FCntUp, Info.V2.FCntDown);
 }
 
 // set up the data structures.
 
-LoraWanConnectionProvider::LoraWanConnectionProvider(Settings *settings) : ConnectionProvider(settings)
+LoraWanConnectionProvider::LoraWanConnectionProvider(Connection *connection, Settings *settings) : ConnectionProvider(connection, settings)
 {
+}
+
+LoraWanConnectionProvider *LoraWanConnectionProvider::createAndRegister(BeeGl *core)
+{
+    LoraWanConnectionProvider *i = new LoraWanConnectionProvider(&core->connection, &core->settings);
+    core->registerConnectionProvider(i);
+    return i;
+}
+
+void LoraWanConnectionProvider::readSettings(const JsonObject &source)
+{
+    //lorawan settings
+
+    JsonObject loraSettings = source[STR_LORASETTINGS];
+    strlcpy(m_loraAppEUI, loraSettings[STR_LORAAPPEUI] | m_loraAppEUI, 17);
+    strlcpy(m_loraDeviceEUI, loraSettings[STR_LORADEVEUI] | m_loraDeviceEUI, 17);
+    strlcpy(m_loraAppKey, loraSettings[STR_LORAAPPKEY] | m_loraAppKey, 33);
+}
+void LoraWanConnectionProvider::writeSettings(JsonObject &target, const JsonObject &input)
+{
+    JsonObject loraSettings = target.createNestedObject(STR_LORASETTINGS);
+    loraSettings[STR_LORAAPPEUI] = m_loraAppEUI;
+    loraSettings[STR_LORADEVEUI] = m_loraDeviceEUI;
+    loraSettings[STR_LORAAPPKEY] = m_loraAppKey;
+
+    Settings::merge(loraSettings, input[STR_LORASETTINGS]);
 }
 
 void LoraWanConnectionProvider::suspend()
@@ -87,12 +116,12 @@ void LoraWanConnectionProvider::shutdown()
 bool LoraWanConnectionProvider::setup()
 {
     blog_i("[LORAWAN] Begin");
-    blog_i("[LORAWAN] App EUI: %s", m_settings->loraAppEUI);
-    blog_i("[LORAWAN] Dev EUI: %s", m_settings->loraDeviceEUI);
-    blog_d("[LORAWAN] App Key: %s", m_settings->loraAppKey);
-    from_hex_char(m_provisioningInfo.AppKey, m_settings->loraAppKey, 32, false);
-    from_hex_char(m_provisioningInfo.DevEUI, m_settings->loraDeviceEUI, 16, true);
-    from_hex_char(m_provisioningInfo.AppEUI, m_settings->loraAppEUI, 16, true);
+    blog_i("[LORAWAN] App EUI: %s", m_loraAppEUI);
+    blog_i("[LORAWAN] Dev EUI: %s", m_loraDeviceEUI);
+    blog_d("[LORAWAN] App Key: %s", m_loraAppKey);
+    from_hex_char(m_provisioningInfo.AppKey, m_loraAppKey, 32, false);
+    from_hex_char(m_provisioningInfo.DevEUI, m_loraDeviceEUI, 16, true);
+    from_hex_char(m_provisioningInfo.AppEUI, m_loraAppEUI, 16, true);
     loraWan.setProvisioningInfo(&m_provisioningInfo);
     loraWan.begin(loraDevicePinMap);
     loraWan.SetLinkCheckMode(0);
@@ -108,5 +137,6 @@ void LoraWanConnectionProvider::checkConnect()
 Client *LoraWanConnectionProvider::getClient()
 {
     // client not supported
-    return nullptr;
+    return NULL;
 }
+} // namespace beegl

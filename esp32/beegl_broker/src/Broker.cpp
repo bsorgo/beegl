@@ -20,64 +20,55 @@
 */
 
 #include "Broker.h"
-
-Broker::Broker(Service *server, Settings *settings, Publisher *publisher)
+namespace beegl
 {
+Broker::Broker(Connection *connection, Service *server, Settings *settings, Publisher *publisher) : ISettingsHandler(settings)
+{
+  m_connection = connection;
   m_server = server;
-  m_settings = settings;
   m_publisher = publisher;
 }
-
-void Broker::registerInboundStrategy(BrokerInboundStrategy *inboundStrategy)
+int Broker::registerInboundStrategy(BrokerInboundStrategy *inboundStrategy)
 {
   inboundStrategy->setBroker(this);
   m_inboundStrategies[inboundStartegyCount] = inboundStrategy;
   inboundStartegyCount++;
-}
-
-void Broker::webServerBind()
-{
+  return inboundStartegyCount;
 }
 
 void Broker::setup()
 {
-  bool ret = false;
   for (int i = 0; i < inboundStartegyCount; i++)
   {
-    if(m_settings->inboundMode & m_inboundStrategies[i]->getInboundType())
+    if (m_connection->getInboundMode() & m_inboundStrategies[i]->getInboundType())
     {
-      if(!m_inboundStrategies[i]->setup())
+      if (!m_inboundStrategies[i]->setup())
       {
         blog_e("[BROKER] Error setting up broker strategy: %u", m_inboundStrategies[i]->getInboundType());
       }
     }
   }
 }
-int Broker::processMessage(const JsonObject &jsonObject)
+void Broker::processMessage(const JsonObject &message)
 {
-  jsonObject[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
-  size_t size = measureJson(jsonObject);
-  char buffer[size + 1];
-  serializeJson(jsonObject, buffer, size);
-
-  if (m_publisher)
-  {
-    m_publisher->storeMessage(buffer);
-  }
-  return size;
+  char temp[MESSAGE_SIZE];
+  serializeJson(message, temp);
+  JsonDocument *doc = m_serializer.deserialize(temp);
+  JsonObject root = doc->as<JsonObject>();
+  enrich(root);
+  m_publisher->store(doc);
 }
-int Broker::processMessage(const char *buffer)
+
+void Broker::processMessage(const char *message)
 {
-  StaticJsonDocument<512> jsonBuffer;
-  auto error = deserializeJson(jsonBuffer, buffer);
-  if (error)
-  {
-    log_e("[BROKER] parseObject() failed");
-    return -1;
-  }
-  else
-  {
-    JsonObject jsonObj = jsonBuffer.as<JsonObject>();
-    this->processMessage(jsonObj);
-  }
+  JsonDocument *doc = m_serializer.deserialize(message);
+  JsonObject root = doc->as<JsonObject>();
+  enrich(root);
+  m_publisher->store(doc);
+}
+
+void Broker::enrich(JsonObject &root)
+{
+  root[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
+}
 }

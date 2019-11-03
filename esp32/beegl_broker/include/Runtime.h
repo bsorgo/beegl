@@ -25,41 +25,78 @@
 #include "Settings.h"
 #include "Connection.h"
 #include "Service.h"
+#include "TimeManagement.h"
 
 #include <ArduinoNvs.h>
 #include <timer.h>
 #include <timerManager.h>
 
-class Runtime
+#define STR_SCHSETTINGS "schS"
+#define STR_SCHENTRY "schE"
+#define STR_SCHHOURFROM "hf"
+#define STR_SCHMINFROM "mf"
+#define STR_SCHHOURTO "ht"
+#define STR_SCHMINTO "mt"
+#define STR_SCHUPDATE "upd"
+namespace beegl
+{
+class Runtime : public ISettingsHandler
 {
 
 public:
-    Runtime(Service* server, Settings* settings, Connection* connection);
-    void checkOperationalTime();
-    void update();
-    void deepSleep(uint32_t timeToSleep);
-    void deepSleep();
-    void printWakeupReason();
-    int8_t getSafeModeOnRestart();
-    void setSafeModeOnRestart(int8_t safeModeOnRestart);
-    int8_t getSafeMode();
-    void setSafeMode(int8_t value);
-    void initialize();
-    static Runtime* getInstance();
-    static void checkScheduler();
-    #ifdef VER
-    const char* FIRMWAREVERSION = VER;
-    #else
-    const char* FIRMWAREVERSION = "1.5.0";
-    #endif
-private:
-    static Timer p_schedulerTimer;
-    static Runtime* p_instance;
-    Settings *m_settings;
-    Connection *m_connection;
-    Service* m_server;
-    int8_t m_safeMode;
-    void webServerBind();
-};
+  Runtime(Service *server, Settings *settings, Connection *connection);
+  void checkOperationalTime();
+  void update();
+  void deepSleep(uint32_t timeToSleep);
+  void deepSleep();
+  void printWakeupReason();
+  int8_t getSafeModeOnRestart();
+  void setSafeModeOnRestart(int8_t safeModeOnRestart);
+  int8_t getSafeMode();
+  void setSafeMode(int8_t value);
+  void initialize();
+  static Runtime *getInstance();
+  static void checkScheduler();
 
+  SchEntryType getCurrentSchedulerEntry();
+
+  void readSettings(const JsonObject &source) override;
+  void writeSettings(JsonObject &target, const JsonObject &input) override;
+
+  const struct SchEntryType* getSchEntries()
+  {
+    return m_schEntries;
+  }
+
+#ifdef VER
+  const char *FIRMWAREVERSION = VER;
+#else
+  const char *FIRMWAREVERSION = "1.5.0";
+#endif
+
+private:
+  static Timer p_schedulerTimer;
+  static Runtime *p_instance;
+  Connection *m_connection;
+  Service *m_server;
+  int8_t m_safeMode;
+  /*
+  Scheduler entries:
+        schedulerHourFrom:
+        Operational hour from
+        schedulerMinFrom:
+        Operational minute from
+        schedulerHourTo:
+        Operational hour to
+        schedulerMinTo:
+        Operational minute to
+        updateFromServer:
+        Perform upate from server (firmware, settings, resources) in this time interval
+    */
+  struct SchEntryType m_schEntries[10] = {{0, 0, 23, 59, false}};
+  int schEntriesLength = 1;
+
+  void webServerBind();
+};
+}
 #endif

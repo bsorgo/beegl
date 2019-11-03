@@ -21,12 +21,12 @@ LogManagmeent.cpp -  log file management:
 
 */
 
-
 #include "LogManagement.h"
-
-LogManagement::LogManagement(Settings *settings, Service *service)
+namespace beegl
 {
-    m_settings = settings;
+LogManagement::LogManagement(Settings *settings, Service *service) : ISettingsHandler(settings)
+{
+
     m_server = service;
     webServerBind();
 }
@@ -40,16 +40,16 @@ void LogManagement::webServerBind()
         StaticJsonDocument<1024> jsonBuffer;
         JsonObject root = jsonBuffer.to<JsonObject>();
         JsonArray logs = root.createNestedArray("logs");
-        
+
         long logNumber = log_number();
-        for(int i=logNumber;i>logNumber-MAX_LOG_FILES && i>0;i--)
+        for (int i = logNumber; i > logNumber - MAX_LOG_FILES && i > 0; i--)
         {
-            
+
             String filename = String(LOG_DIR_PREFIX);
-            filename+=i;
-            filename+=LOG_EXTENSION;
+            filename += i;
+            filename += LOG_EXTENSION;
             log_d("[LOG MANAGEMENT] Filename: %s", filename.c_str());
-            if(FILESYSTEM.exists(filename))
+            if (FILESYSTEM.exists(filename))
             {
                 JsonObject log = logs.createNestedObject();
                 log["filename"] = filename;
@@ -60,3 +60,4 @@ void LogManagement::webServerBind()
         request->send(response);
     });
 }
+} // namespace beegl

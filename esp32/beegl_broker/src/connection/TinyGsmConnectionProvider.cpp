@@ -19,23 +19,48 @@
 
 */
 
-#include "TinyGsmConnectionProvider.h"
+#include "connection/TinyGsmConnectionProvider.h"
 
-// set up the data structures.
+namespace beegl
+{
 
-TinyGsmConnectionProvider::TinyGsmConnectionProvider(Settings *settings) : ConnectionProvider(settings)
+TinyGsmConnectionProvider::TinyGsmConnectionProvider(Connection *connection, Settings *settings) : ConnectionProvider(connection, settings)
 {
 
     serialAT = new HardwareSerial(1);
     modem = new TinyGsm(*serialAT);
     gsmClient = new TinyGsmClient();
     gsmClient->init(modem);
- 
 
     pinMode(MODEM_POWER_PIN, OUTPUT);
     digitalWrite(MODEM_POWER_PIN, HIGH);
 }
 
+TinyGsmConnectionProvider *TinyGsmConnectionProvider::createAndRegister(BeeGl *core)
+{
+    TinyGsmConnectionProvider *i = new TinyGsmConnectionProvider(&core->connection, &core->settings);
+    core->registerConnectionProvider(i);
+    return i;
+}
+
+void TinyGsmConnectionProvider::readSettings(const JsonObject &source)
+{
+    // gprs settings
+
+    JsonObject gprsSettings = source[STR_GPRSSETTINGS];
+    strlcpy(m_apn, gprsSettings[STR_GPRSAPN] | m_apn, 32);
+    strlcpy(m_apnUser, gprsSettings[STR_GPRSUSERNAME] | m_apnUser, 16);
+    strlcpy(m_apnPass, gprsSettings[STR_GPRSPASSWORD] | m_apnPass, 16);
+}
+void TinyGsmConnectionProvider::writeSettings(JsonObject &target, const JsonObject &input)
+{
+    JsonObject gprsSettings = target.createNestedObject(STR_GPRSSETTINGS);
+    gprsSettings[STR_GPRSAPN] = m_apn;
+    gprsSettings[STR_GPRSPASSWORD] = m_apnPass;
+    gprsSettings[STR_GPRSUSERNAME] = m_apnUser;
+
+    Settings::merge(gprsSettings, input[STR_GPRSSETTINGS]);
+}
 
 void TinyGsmConnectionProvider::modemOff()
 {
@@ -60,7 +85,7 @@ void TinyGsmConnectionProvider::modemPowerup()
 
 void TinyGsmConnectionProvider::suspend()
 {
-    
+
 #if defined(TINY_GSM_MODEM_SIM7020)
     modem->sendAT(GF("+CPSMS=1"));
     modem->waitResponse(5000L);
@@ -70,7 +95,6 @@ void TinyGsmConnectionProvider::suspend()
     modem->waitResponse(5000L);
 #endif
     log_d("[GSM] SUSPENDED");
-    
 }
 
 void TinyGsmConnectionProvider::resume()
@@ -93,17 +117,15 @@ void TinyGsmConnectionProvider::shutdown()
 
 bool TinyGsmConnectionProvider::gprsSetup()
 {
-    if (m_settings->outboundMode & 0x2)
-    {
 
-        blog_i("[GSM] Connecting to APN %s with username %s and password %s", m_settings->apn, m_settings->apnUser, m_settings->apnPass);
-        if (!modem->gprsConnect(m_settings->apn, m_settings->apnUser, m_settings->apnPass))
-        {
-            blog_i("[GSM] NOK");
-            return false;
-        }
-        blog_i("[GSM] OK");
+    blog_i("[GSM] Connecting to APN %s with username %s and password %s", m_apn, m_apnUser, m_apnPass);
+    if (!modem->gprsConnect(m_apn, m_apnUser, m_apnPass))
+    {
+        blog_i("[GSM] NOK");
+        return false;
     }
+    blog_i("[GSM] OK");
+
     return true;
 }
 
@@ -163,9 +185,10 @@ void TinyGsmConnectionProvider::checkConnect()
 }
 Client *TinyGsmConnectionProvider::getClient()
 {
-        return gsmClient;
+    return gsmClient;
 }
 TinyGsm *TinyGsmConnectionProvider::getModem()
 {
     return modem;
 }
+} // namespace beegl

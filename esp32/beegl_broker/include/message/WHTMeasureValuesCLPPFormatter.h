@@ -1,8 +1,5 @@
-#ifndef WiFiConnectionProvider_h
-#define WiFiConnectionProvider_h
-
 /*
-  WifiConnectionProvider.h - WiFi connection
+  LoraMeasurementCayenneLPPMessageFormatter.h - Measure values formatter
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,33 +15,28 @@
  
   You should have received a copy of the GNU General Public License 
   along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 */
 
-#include "Log.h"
-#include "Connection.h"
-#include "Settings.h"
+#ifndef WHTMeasureValuesCLPPFormatter_h
+#define WHTMeasureValuesCLPPFormatter_h
 
-class WiFiConnectionProvider : public ConnectionProvider
+#include "Message.h"
+#include "Measurer.h"
+#include "BeeGl.h"
+#include "measurer/DHT22TempAndHumidityMeasureProvider.h"
+#include "measurer/HX711WeightMeasureProvider.h"
+#include <CayenneLPP.h>
+
+namespace beegl
 {
-
+class WHTMeasureValuesCLPPFormatter : public IByteMessageSerializer
+{
 public:
-  WiFiConnectionProvider(Settings *settings);
-  Client *getClient() override;
-  void checkConnect() override;
-  bool setup() override;
-  void shutdown() override;
-  void suspend() override;
-  void resume() override;
-  const char getInboundType() { return 0x1;}
-  const char getOutboundType() { return 0x1;}
-  const char* getName() { return "WIFI";}
+  WHTMeasureValuesCLPPFormatter() {}
+  int serializeBinary(JsonDocument *source, uint8_t *target) override;
 
 private:
-  bool wifiSetup();
-  WiFiClient *wifiClient;
-  void wifiOff();
-  const char m_name[5] = "WIFI";
+  CayenneLPP lpp = CayenneLPP(51);
 };
-
+} // namespace beegl
 #endif

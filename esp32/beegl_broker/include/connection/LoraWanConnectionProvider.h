@@ -24,12 +24,19 @@
 #include "Log.h"
 #include "Connection.h"
 #include "Settings.h"
+#include "BeeGl.h"
 #include <Arduino_LoRaWAN_ttn.h>
 #include <arduino_lmic_hal_boards.h>
 #include <Arduino_LoRaWAN_lmic.h>
 #include <mcciadk_baselib.h>
 #include <hal/hal.h>
 
+#define STR_LORASETTINGS "loraS"
+#define STR_LORAAPPEUI "aeui"
+#define STR_LORADEVEUI "deui"
+#define STR_LORAAPPKEY "akey"
+namespace beegl
+{
 class MyLoRaWAN : public Arduino_LoRaWAN_ttn
 {
 private:
@@ -53,7 +60,9 @@ class LoraWanConnectionProvider : public ConnectionProvider
 {
 
 public:
-  LoraWanConnectionProvider(Settings *settings);
+  LoraWanConnectionProvider(Connection *connection, Settings *settings);
+  static LoraWanConnectionProvider* createAndRegister(BeeGl *core);
+
   Client *getClient() override;
   void checkConnect() override;
   bool setup() override;
@@ -64,6 +73,23 @@ public:
   const char getOutboundType() { return 0x4; }
   const char *getName() { return "LoraWan"; }
 
+  void readSettings(const JsonObject &source) override;
+  void writeSettings(JsonObject &target, const JsonObject &input) override;
+
+  const char *getLoraAppEUI()
+  {
+    return m_loraAppEUI;
+  }
+
+  const char *getLoraDeviceEUI()
+  {
+    return m_loraDeviceEUI;
+  }
+
+  const char *getLoraAppKey()
+  {
+    return m_loraAppKey;
+  }
 
 private:
   MyLoRaWAN loraWan{};
@@ -78,6 +104,19 @@ private:
       .rssi_cal = 8,
       .spi_freq = 8000000,
   };
-};
 
+  /* Lorawan parameters
+    loraAppEUI:
+    TTN App EUI
+    loraDevicEUI:
+    TTN Device EUI
+    loraAppKey
+    TTN App key
+    */
+
+  char m_loraAppEUI[17] = "0000000000000000";
+  char m_loraDeviceEUI[17] = "0000000000000000";
+  char m_loraAppKey[33] = "00000000000000000000000000000000";
+};
+} // namespace beegl
 #endif

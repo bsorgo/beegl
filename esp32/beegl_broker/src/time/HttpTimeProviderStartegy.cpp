@@ -1,7 +1,15 @@
-#include "HttpTimeProviderStrategy.h"
-
+#include "time/HttpTimeProviderStrategy.h"
+namespace beegl
+{
 HttpTimeProviderStrategy::HttpTimeProviderStrategy(Settings *settings, Connection *connection) : TimeProviderStrategy(settings, connection)
 {
+}
+
+HttpTimeProviderStrategy *HttpTimeProviderStrategy::createAndRegister(BeeGl *core)
+{
+    HttpTimeProviderStrategy *i = new HttpTimeProviderStrategy(&core->settings, &core->connection);
+    core->registerTimeProviderStrategy(i);
+    return i;
 }
 
 int HttpTimeProviderStrategy::getMonthFromString(char *s)
@@ -64,7 +72,7 @@ time_t HttpTimeProviderStrategy::getUTCTime()
 }
 bool HttpTimeProviderStrategy::syncTimeFrom(TimeProviderStrategy *sourceStrategy)
 {
-    if(sourceStrategy!=nullptr)
+    if (sourceStrategy != nullptr)
     {
         setUTCTime(sourceStrategy->getUTCTime());
     }
@@ -152,7 +160,7 @@ bool HttpTimeProviderStrategy::syncTime()
     }
     return false;
 }
-void HttpTimeProviderStrategy::setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds,uint8_t days, uint8_t months, uint8_t years)
+void HttpTimeProviderStrategy::setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds, uint8_t days, uint8_t months, uint8_t years)
 {
     setTime(hours, minutes, seconds, days, months, years);
 }
@@ -166,3 +174,4 @@ bool HttpTimeProviderStrategy::isAbsoluteTime()
 {
     return synced;
 }
+} // namespace beegl

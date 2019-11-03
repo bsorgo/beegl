@@ -1,5 +1,5 @@
 /*
-  WiFiBrokerInboundStrategy.cpp -   Broker strategy for BLE bluetooth
+  WiFiBrokerInboundStrategy.cpp -   Broker strategy for WiFi (HTTP)
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,30 +18,29 @@
 
 */
 
-#include "WiFiBrokerInboundStrategy.h"
+#include "broker/WiFiBrokerInboundStrategy.h"
+
+namespace beegl
+{
 
 WiFiBrokerInboundStrategy::WiFiBrokerInboundStrategy(Service *server, Settings *settings) : BrokerInboundStrategy(server, settings)
 {
-  
+}
+WiFiBrokerInboundStrategy *WiFiBrokerInboundStrategy::createAndRegister(BeeGl *core)
+{
+  WiFiBrokerInboundStrategy * i = new WiFiBrokerInboundStrategy(&core->service, &core->settings);
+  core->registerBrokerInboundStrategy(i);
+  return i;
 }
 bool WiFiBrokerInboundStrategy::setup()
 {
-    sensorsHandler = new AsyncCallbackJsonWebHandler("/beegl/v1/measurements", [&](AsyncWebServerRequest *request, JsonVariant &json) {
-      JsonObject jsonObj = json.as<JsonObject>();
-     
-      int size = m_broker->processMessage(jsonObj);
-      if(size)
-      {
-        request->send(200, "text/plain", "");
-      }
-      else
-      {
-        request->send(405, "text/plain", "");
-      }
-    });
-    m_server->getWebServer()->addHandler(sensorsHandler);
-  
+  sensorsHandler = new AsyncCallbackJsonWebHandler("/beegl/v1/measurements", [&](AsyncWebServerRequest *request, JsonVariant &json) {
+    JsonObject root = json.as<JsonObject>();
+    m_broker->processMessage(root);
+    request->send(200, "text/plain", "");
+  });
+  m_server->getWebServer()->addHandler(sensorsHandler);
 
   return true;
 }
-
+} // namespace beegl

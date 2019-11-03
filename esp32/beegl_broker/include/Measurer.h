@@ -22,51 +22,59 @@
 #define Measurer_h
 
 #include "Log.h"
-#include "DHTesp.h"
-#include <HX711.h>
 
 #include "Service.h"
 #include "Settings.h"
 #include "Publisher.h"
 
-#define MEASURER_TASK "Measure Task"
+#include <ArduinoJson.h>
 
-struct MeasureData
+#define MEASURER_TASK "Measure Task"
+namespace beegl
 {
-    float weight;
-    float temp;
-    float humidity;
+class MeasureProvider : public ISettingsHandler
+{
+public:
+    MeasureProvider(Runtime *runtime, Service *service, Settings *settings) : ISettingsHandler(settings)
+    {
+        m_runtime = runtime;
+        m_service = service;
+    }
+    virtual void measure(JsonDocument *values) = 0;
+    virtual void setup() {}
+
+protected:
+    Runtime *m_runtime;
+    Service *m_service;
 };
 
-class Measurer
+class Measurer : public ISettingsHandler
 {
-  
 
 public:
-    Measurer(Runtime* runtime, Service* server, Settings *settings, Publisher *publisher);
-    bool setup();
-    long zero();
-    int measure();
-    void begin();
+    Measurer(Runtime *runtime, Service *server, Settings *settings, Publisher *publisher);
+    static Measurer *getInstance();
+    void webServerBind();
+
+    int registerMeasureProvider(MeasureProvider *measureProvider);
     uint32_t getMeasureInterval();
-    static Measurer* getInstance();
+    void setup();
+    JsonDocument *measure();
+    void measureAndStore();
+    void begin();
+
+    void readSettings(const JsonObject &source) override;
+    void writeSettings(JsonObject &target, const JsonObject &input) override;
+
 private:
-    HX711 *m_scale;
-    Settings *m_settings;
     Publisher *m_publisher;
     Runtime *m_runtime;
-    DHTesp *m_dht;
-    const char SCALE_DOUT_PIN = 32;
-    const char SCALE_SCK_PIN = 33;
-    const int DHT_PIN = 34;
-    bool scaleSetup();
-    bool dhtSetup();
-    int storeMessage(MeasureData measureData);
-    void webServerBind();
-    Service* m_server;
-    static void measureLoop( void * pvParameters );
-
-    static Measurer* p_instance;
+    JsonMessageSerializer m_serializer;
+    Service *m_server;
+    static void measureLoop(void *pvParameters);
+    static Measurer *p_instance;
+    MeasureProvider *measureProviders[8];
+    int measureProviderCount = 0;
 };
-
+} // namespace beegl
 #endif

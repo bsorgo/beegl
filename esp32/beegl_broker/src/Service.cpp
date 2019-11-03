@@ -2,6 +2,8 @@
 
 #include "Service.h"
 #include "Settings.h"
+namespace beegl
+{
 class Settings;
 
 void notFound(AsyncWebServerRequest *request)
@@ -9,32 +11,26 @@ void notFound(AsyncWebServerRequest *request)
   request->send(404, "text/plain", "Not found");
 }
 
-Service::Service(Settings* settings) 
+Service::Service(Settings *settings) : ISettingsHandler(settings)
 {
-    m_settings = settings;
-    m_webserver = new AsyncWebServer(80);
-    m_webserver->onNotFound(notFound);
-    
+  m_webserver = new AsyncWebServer(80);
+  m_webserver->onNotFound(notFound);
 }
-void Service::setup() {
+void Service::setup()
+{
   webServerSetup();
 }
 
-
-
-
-AsyncWebServer* Service::getWebServer() {
-    return m_webserver;
+AsyncWebServer *Service::getWebServer()
+{
+  return m_webserver;
 }
 
 void Service::webServerSetup()
 {
-  
-  if(m_settings->inboundMode & 0x1 || m_settings->outboundMode & 0x1) {
-    blog_i("[WEB Server] Starting web server");
-    m_webserver->begin();
-    blog_i("[WEB Server] Web server started");
-  }
-  
-  
+  blog_i("[WEB Server] Starting web server");
+  m_webserver->begin();
+  blog_i("[WEB Server] Web server started");
 }
+
+} // namespace beegl

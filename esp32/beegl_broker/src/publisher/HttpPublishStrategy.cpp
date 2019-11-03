@@ -18,40 +18,39 @@
 
 */
 
-#include "HttpPublishStrategy.h"
-
-#define MESSAGE "{test:\"test\"}"
-#define CONTENTTYPEJSON "application/json"
-#define CONTENTTYPE "Content-Type"
-#define CONTENTLENGTH "Content-Length"
-
-void HttpPublishStrategy::setup()
+#include "publisher/HttpPublishStrategy.h"
+namespace beegl
 {
+void HttpPublishStrategy::setup() {}
+
+void HttpPublishStrategy::update() {}
+
+HttpPublishStrategy::HttpPublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : PublishStrategy(runtime, settings, connection, service) {}
+
+HttpPublishStrategy *HttpPublishStrategy::createAndRegister(BeeGl *core)
+{
+  HttpPublishStrategy *i = new HttpPublishStrategy(&core->runtime, &core->settings, &core->connection, &core->service);
+  core->registerPublishStrategy(i);
+  return i;
 }
 
-void HttpPublishStrategy::update()
+bool HttpPublishStrategy::publishMessage(JsonDocument *payload)
 {
-}
+  char message[MESSAGE_SIZE];
+  m_serializer.serialize(payload, message);
 
-HttpPublishStrategy::HttpPublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : PublishStrategy(runtime, settings, connection, service)
-{
-}
-
-bool HttpPublishStrategy::publishMessage(const char *message)
-{
-
-  char *hostname = m_settings->getSettingsHostname();
-  char *path = m_settings->getSensorPublishPath();
+  char *hostname = ISettingsHandler::m_settings->getSettingsHostname();
+  char *path = getSensorPublishPath();
 
   blog_d("[HTTPPUBLISHER] Hostname: %s", hostname);
   blog_d("[HTTPPUBLISHER] Path: %s", path);
-  blog_d("[HTTPPUBLISHER] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
-  HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
+  blog_d("[HTTPPUBLISHER] Username: %s, password: %s", ISettingsHandler::m_settings->httpTimeAndSettingUsername, ISettingsHandler::m_settings->httpTimeAndSettingPassword);
+  HttpClient httpClient = HttpClient(*PublishStrategy::m_connection->getClient(), hostname, 80);
   httpClient.connectionKeepAlive();
   httpClient.setHttpResponseTimeout(8000);
   httpClient.beginRequest();
   httpClient.post(path);
-  httpClient.sendBasicAuth(m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+  httpClient.sendBasicAuth(ISettingsHandler::m_settings->httpTimeAndSettingUsername, ISettingsHandler::m_settings->httpTimeAndSettingPassword);
   httpClient.sendHeader(CONTENTLENGTH, strlen(message));
   httpClient.sendHeader(CONTENTTYPE, CONTENTTYPEJSON);
   httpClient.beginBody();
@@ -68,7 +67,7 @@ bool HttpPublishStrategy::publishMessage(const char *message)
   }
   else
   {
-     blog_e("[HTTPPUBLISHER] Error. Response code from server: %u", responseCode);
+    blog_e("[HTTPPUBLISHER] Error. Response code from server: %u", responseCode);
     return false;
   }
 }
@@ -78,3 +77,12 @@ bool HttpPublishStrategy::reconnect()
   delay(5000);
   return true;
 }
+
+char *HttpPublishStrategy::getSensorPublishPath() const
+{
+
+  char *path = Settings::getPath(m_settings->httpTimeAndSettingsPrefix);
+  strcat(path, "v1/measurements");
+  return path;
+}
+} // namespace beegl

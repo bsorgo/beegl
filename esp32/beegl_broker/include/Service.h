@@ -23,20 +23,22 @@
 
 #include "Log.h"
 #include <ESPAsyncWebServer.h>
-#include <Settings.h>
-
-class Service
+#include "Settings.h"
+namespace beegl
+{
+class Service : public ISettingsHandler
 {
 
 public:
-    Service(Settings* settings);
-    AsyncWebServer *getWebServer();
-    void setup();
+  Service(Settings *settings);
+  AsyncWebServer *getWebServer();
+  void setup();
+
+
 
 private:
-    AsyncWebServer* m_webserver;
-    void webServerSetup();
-    Settings* m_settings;
+  AsyncWebServer *m_webserver;
+  void webServerSetup();
 };
-
+}
 #endif

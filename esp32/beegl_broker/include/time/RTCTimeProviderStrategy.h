@@ -21,19 +21,23 @@ RTCTimeProviderStrategy.h - RTC time provider
 #ifndef RTCTimeProviderStrategy_h
 #define RTCTimeProviderStrategy_h
 
-#include "TimeManagement.h"
+#include "BeeGl.h"
 #include <DS3231.h>
 #include <Wire.h>
+namespace beegl
+{
 
 class RTCTimeProviderStrategy : public TimeProviderStrategy
 {
 
 public:
   RTCTimeProviderStrategy(Settings *settings, Connection *connection);
+  static RTCTimeProviderStrategy* createAndRegister(BeeGl *core);
+
   time_t getUTCTime();
   bool syncTime();
   bool syncTimeFrom(TimeProviderStrategy *sourceStrategy);
-  void setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds,uint8_t days, uint8_t months, uint8_t years);
+  void setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds, uint8_t days, uint8_t months, uint8_t years);
   void setUTCTime(time_t time);
   const char getType() { return 0x08; };
   const char *getName() { return "Real Time Clock"; }
@@ -46,5 +50,5 @@ private:
   RTClib RTC = RTClib();
   DS3231 ds3231 = DS3231();
 };
-
+} // namespace beegl
 #endif

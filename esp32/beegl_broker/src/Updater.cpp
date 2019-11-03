@@ -23,12 +23,11 @@
 */
 
 #include "Updater.h"
-
-
-Updater::Updater(Runtime *runtime, Service *service, Settings *settings, Connection *connection)
+namespace beegl
+{
+Updater::Updater(Runtime *runtime, Service *service, Settings *settings, Connection *connection) : ISettingsHandler(settings)
 {
   m_server = service;
-  m_settings = settings;
   m_connection = connection;
   m_runtime = runtime;
   webServerBind();
@@ -41,7 +40,7 @@ void Updater::webServerBind()
     ESP.restart(); }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
     if(!index){
-      Serial.printf("[UPDATER] UploadStart: %s\n", filename.c_str());
+      blog_i("[UPDATER] UploadStart: %s\n", filename.c_str());
       if (!Update.begin(UPDATE_SIZE_UNKNOWN)) { 
         Update.printError(Serial);
       }
@@ -51,10 +50,10 @@ void Updater::webServerBind()
       Update.printError(Serial);
     }
     if(final) {
-    Serial.printf("[UPDATER] BodyEnd: %u B\n", index+len);
+    blog_i("[UPDATER] BodyEnd: %u B\n", index+len);
      if(Update.end(true))
      {
-        Serial.printf("[UPDATER] Update Success: %u\nRebooting...\n", index+len);
+        blog_i("[UPDATER] Update Success: %u\nRebooting...\n", index+len);
         ESP.restart();
      }
     } });
@@ -63,15 +62,16 @@ void Updater::webServerBind()
 void Updater::checkFirmware()
 {
 
-  SchEntryType schEntry = m_settings->getCurrentSchedulerEntry();
-  
+  SchEntryType schEntry = m_runtime->getCurrentSchedulerEntry();
+
   // is this operational time entry for updates?
-  if(m_connection->getClient()!=nullptr && schEntry.updateFromServer) {
-     // firmware
+  if (m_connection->getClient() != nullptr && schEntry.updateFromServer)
+  {
+    // firmware
     if (strcmp(m_runtime->FIRMWAREVERSION, m_settings->firmwareVersion) < 0)
     {
       char *hostname = m_settings->getSettingsHostname();
-      char *path = m_settings->getFirmwarePath();
+      char *path = getFirmwarePath();
       strcat(path, SYSTEM_VARIANT);
       strcat(path, "_");
       strcat(path, m_settings->firmwareVersion);
@@ -97,7 +97,8 @@ String Updater::getLocalFileMd5(const char *filename)
 
   if (!file)
   {
-    blog_e("[UPDATER] Error. File %s not found.", localFilename);;
+    blog_e("[UPDATER] Error. File %s not found.", localFilename);
+    ;
     return "0";
   }
   MD5Builder md5;
@@ -115,7 +116,7 @@ String Updater::getServerFileMd5(const char *filename)
 {
 
   char *hostname = m_settings->getSettingsHostname();
-  char *path = m_settings->getFirmwarePath();
+  char *path = getFirmwarePath();
   strcat(path, filename);
   strcat(path, ".md5");
   m_connection->checkConnect();
@@ -125,7 +126,7 @@ String Updater::getServerFileMd5(const char *filename)
   if (res == 0 && responseCode == 200)
   {
     httpClient.skipResponseHeaders();
-    String md5str =  httpClient.readString();
+    String md5str = httpClient.readString();
     blog_i("[UPDATER] Server file:%s MD5:%s", path, md5str.c_str());
     return md5str;
   }
@@ -133,7 +134,9 @@ String Updater::getServerFileMd5(const char *filename)
   {
     blog_i("[UPDATER] No server file on path:%s", path);
     return "";
-  } else {
+  }
+  else
+  {
     blog_e("[UPDATER] Error obtaining md5 file :%s. Response code:%u", path, responseCode);
     return "";
   }
@@ -196,7 +199,7 @@ bool Updater::checkDownloadFile(const char *filename)
   String localMd5 = getLocalFileMd5(filename);
   serverMd5.trim();
   localMd5.trim();
-  if (serverMd5.compareTo(localMd5)!=0)
+  if (serverMd5.compareTo(localMd5) != 0)
   {
     return downloadFile(filename);
   }
@@ -205,7 +208,7 @@ bool Updater::checkDownloadFile(const char *filename)
 bool Updater::downloadFile(const char *filename)
 {
   char *hostname = m_settings->getSettingsHostname();
-  char *path = m_settings->getFirmwarePath();
+  char *path = getFirmwarePath();
   strcat(path, filename);
   int result = downloadFile(hostname, path, filename);
   free(hostname);
@@ -215,11 +218,11 @@ bool Updater::downloadFile(const char *filename)
 bool Updater::downloadFile(const char *hostname, const char *path, const char *filename)
 {
   int err = 0;
-   char *localFilename = (char *)malloc(sizeof(char) * 32);
+  char *localFilename = (char *)malloc(sizeof(char) * 32);
   strcpy(localFilename, "/");
   strcat(localFilename, filename);
   m_connection->checkConnect();
-  
+
   HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
   httpClient.connectionKeepAlive();
   err = httpClient.get(path);
@@ -258,4 +261,13 @@ bool Updater::downloadFile(const char *hostname, const char *path, const char *f
   }
   free(localFilename);
   return true;
+}
+
+char *Updater::getFirmwarePath()
+{
+
+  char *path = Settings::getPath(m_settings->httpTimeAndSettingsPrefix);
+  strcat(path, "fws/");
+  return path;
+}
 }

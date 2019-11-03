@@ -19,7 +19,8 @@
 */
 
 #include "Log.h"
-
+namespace beegl
+{
 int fs_log_printf(const char *fmt, ...);
 int lastLog = 0;
 long lastLogFileSize = 0;
@@ -142,3 +143,4 @@ long log_number()
 {
     return lastLog;
 }
+} // namespace beegl

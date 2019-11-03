@@ -1,6 +1,6 @@
 /*
-  MqttPublishStrategy.h - Mqtt PublishStrategy header file
-  
+  WiFiBrokerInboundStrategy.h - Broker Inbound trrategy header file for Wifi
+    
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
   
@@ -15,35 +15,29 @@
  
   You should have received a copy of the GNU General Public License 
   along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 */
 
-#ifndef MqttPublishStrategy_h
-#define MqttPublishStrategy_h
+#ifndef WiFiBrokerInboundStrategy_h
+#define WiFiBrokerInboundStrategy_h
 
 
-#include "Publisher.h"
-#include <PubSubClient.h>
+#include "Broker.h"
+#include "BeeGl.h"
+#include <AsyncJson.h>
 
-
-class MqttPublishStrategy : public PublishStrategy
+namespace beegl
+{
+class WiFiBrokerInboundStrategy : public BrokerInboundStrategy
 {
 public:
-  MqttPublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  void setup() override;
-  void update() override;
-  bool reconnect() override;
-  bool publishMessage(const char *message) override;
-  const char getProtocol() {return 0x1;}
-  const char* getProtocolName() { return "MQTT";}
-  int getInterval() { return 60000; }
-  const char getSupportedOutboundTypes() { return 0x3;}
-  
+  WiFiBrokerInboundStrategy(Service *server, Settings *settings);
+  static WiFiBrokerInboundStrategy* createAndRegister(BeeGl *core);
+
+  virtual bool setup() override;
+  const char getInboundType() const override { return 0x01; };
+
 private:
-  PubSubClient *mqttClient;
-
-protected:
-  
+  AsyncCallbackJsonWebHandler *sensorsHandler;
 };
-
+} // namespace beegl
 #endif

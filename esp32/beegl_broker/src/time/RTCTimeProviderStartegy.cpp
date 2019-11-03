@@ -1,19 +1,27 @@
-#include "RTCTimeProviderStrategy.h"
-
+#include "time/RTCTimeProviderStrategy.h"
+namespace beegl
+{
 RTCTimeProviderStrategy::RTCTimeProviderStrategy(Settings *settings, Connection *connection) : TimeProviderStrategy(settings, connection)
 {
     Wire.begin();
 }
 
+RTCTimeProviderStrategy *RTCTimeProviderStrategy::createAndRegister(BeeGl *core)
+{
+    RTCTimeProviderStrategy *i = new RTCTimeProviderStrategy(&core->settings, &core->connection);
+    core->registerTimeProviderStrategy(i);
+    return i;
+}
 
 time_t RTCTimeProviderStrategy::getUTCTime()
 {
-    DateTime now = RTC.now();;
+    DateTime now = RTC.now();
+    ;
     return now.unixtime();
 }
 bool RTCTimeProviderStrategy::syncTimeFrom(TimeProviderStrategy *sourceStrategy)
 {
-    if(sourceStrategy!=nullptr)
+    if (sourceStrategy != nullptr)
     {
         setUTCTime(sourceStrategy->getUTCTime());
     }
@@ -21,8 +29,8 @@ bool RTCTimeProviderStrategy::syncTimeFrom(TimeProviderStrategy *sourceStrategy)
 }
 bool RTCTimeProviderStrategy::syncTime()
 {
-   synced = true;
-   return true;
+    synced = true;
+    return true;
 }
 void RTCTimeProviderStrategy::setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds, uint8_t days, uint8_t months, uint8_t years)
 {
@@ -37,10 +45,12 @@ void RTCTimeProviderStrategy::setUTCTime(uint8_t hours, uint8_t minutes, uint8_t
 
 void RTCTimeProviderStrategy::setUTCTime(time_t time)
 {
-    setUTCTime(hour(time), minute(time), second(time), day(time), month(time), year(time)-2000);
+    setUTCTime(hour(time), minute(time), second(time), day(time), month(time), year(time) - 2000);
 }
 
 bool RTCTimeProviderStrategy::isAbsoluteTime()
 {
     return true;
 }
+
+} // namespace beegl

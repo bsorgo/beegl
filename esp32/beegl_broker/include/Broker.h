@@ -20,63 +20,57 @@
 #ifndef Broker_h
 #define Broker_h
 
-#define SERVICE_UUID "ebd31aa0-b7c7-497a-a92c-e18f78f64efa"
-#define CHARACTERISTIC_UUID "df878320-0c82-45c9-a5e2-47ff1ee43883"
-
 #include "Log.h"
 #include "Service.h"
 #include "Publisher.h"
-#include <BLEDevice.h>
-#include <BLEUtils.h>
-#include <BLEServer.h>
+#include "Message.h"
 
 #include <AsyncJson.h>
-
-typedef char *(*jsonFunctionPtr)(JsonObject &jsonObj);
-
-class Broker;
-
-class BrokerInboundStrategy
+namespace beegl
+{
+class IBrokerProcessor
 {
 public:
-  BrokerInboundStrategy(Service *server, Settings *settings)
-  {
-    m_server = server;
-    m_settings = settings;
-  }
-  void setBroker(Broker *broker) { m_broker = broker; };
-  virtual bool setup() { return false; };
-  virtual const char getInboundType() { return 0x00;};
-
-protected:
-  Broker *m_broker;
-  Service *m_server;
-  Settings *m_settings;
+  virtual void processMessage(const JsonObject &message) {}
+  virtual void processMessage(const char *message) {}
 };
 
-
-class Broker
+class BrokerInboundStrategy : public ISettingsHandler
 {
 public:
-  Broker(Service *server, Settings *settings, Publisher *publisher);
+  BrokerInboundStrategy(Service *server, Settings *settings) : ISettingsHandler(settings)
+  {
+    m_server = server;
+  }
 
+  void setBroker(IBrokerProcessor *broker) { m_broker = broker; };
+  virtual bool setup() { return false; };
+  virtual const char getInboundType() const = 0;
+
+protected:
+  IBrokerProcessor *m_broker;
+  Service *m_server;
+};
+
+class Broker : public IBrokerProcessor, public ISettingsHandler
+{
+public:
+  Broker(Connection *connection, Service *server, Settings *settings, Publisher *publisher);
+  int registerInboundStrategy(BrokerInboundStrategy *inboundStrategy);
   void setup();
-  int processMessage(const JsonObject &jsonObject);
-  int processMessage(const char *buffer);
-  void registerInboundStrategy(BrokerInboundStrategy *brokerInboundStrategy);
+  void processMessage(const JsonObject &message) override;
+  void processMessage(const char *message) override;
+  void enrich(JsonObject &root);
 
 private:
+  Connection *m_connection;
   Service *m_server;
-  Settings *m_settings;
   Publisher *m_publisher;
-
-  AsyncCallbackJsonWebHandler *sensorsHandler;
-
+  JsonMessageSerializer m_serializer;
   void webServerBind();
-
   BrokerInboundStrategy *m_inboundStrategies[5];
   int inboundStartegyCount = 0;
 };
-
+} // namespace beegl
 
 #endif

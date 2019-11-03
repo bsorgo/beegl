@@ -24,49 +24,32 @@
 #error "Only ESP32 supported"
 #endif
 #include <Arduino.h>
-#include <SPI.h>
-#include <WiFi.h>
-#include <ArduinoNvs.h>
-#include <Storage.h>
-#include <EEPROM.h>
-#include <TimeLib.h>
-#include <unistd.h>
-#include "esp32-hal-log.h"
-#include "Indicator.h"
-#include "Service.h"
-#include "Settings.h"
-#include "Connection.h"
-#include "TimeManagement.h"
-#include "Broker.h"
 
-#include "HttpTimeProviderStrategy.h"
+#include "esp32-hal-log.h"
+
+#include "time/HttpTimeProviderStrategy.h"
 
 #ifdef SUPPORTSGSM
-#include "TinyGsmConnectionProvider.h"
+#include "connection/TinyGsmConnectionProvider.h"
 #endif
 #ifdef SUPPORTSLORAWAN
-#include "LoraWanConnectionProvider.h"
-#include "LoraWanPublishStrategy.h"
+#include "message/WHTMeasureValuesCLPPFormatter.h"
+#include "connection/LoraWanConnectionProvider.h"
+#include "publisher/LoraWanPublishStrategy.h"
 #endif
 #ifdef SUPPORTSBLE
-#include "BLEConnectionProvider.h"
-#include "BLEBrokerInboundStrategy.h"
+#include "connection/BLEConnectionProvider.h"
+#include "broker/BLEBrokerInboundStrategy.h"
 #endif
 #ifdef SUPPORTSRTC
-#include "RTCTimeProviderStrategy.h"
+#include "time/RTCTimeProviderStrategy.h"
 #endif
-#include "WiFiConnectionProvider.h"
-#include "Runtime.h"
-#include "Updater.h"
-#include "Publisher.h"
-#include "HttpPublishStrategy.h"
-#include "MqttPublishStrategy.h"
-#include "WiFiBrokerInboundStrategy.h"
+#include "publisher/HttpPublishStrategy.h"
+#include "publisher/MqttPublishStrategy.h"
+#include "broker/WiFiBrokerInboundStrategy.h"
 
-
-#include "Measurer.h"
-#include "SettingsManagement.h"
-#include "LogManagement.h"
+#include "measurer/DHT22TempAndHumidityMeasureProvider.h"
+#include "measurer/HX711WeightMeasureProvider.h"
 
 #ifdef HEAPTRACE
 #include "esp_heap_trace.h"
@@ -75,42 +58,9 @@ static heap_trace_record_t trace_record[HEAP_TRACE_NUM_RECORDS]; // This buffer 
 #endif
 
 #define SerialMon Serial
+using namespace beegl;
 
-Indicator indicator = Indicator();
-Settings settings = Settings();
-Service service = Service(&settings);
-Connection connection = Connection(&service, &settings);
-TimeManagement timeManagement = TimeManagement(&service, &settings, &connection);
-Runtime runtime = Runtime(&service, &settings, &connection);
-Updater updater = Updater(&runtime, &service, &settings, &connection);
-Publisher publisher = Publisher(&runtime, &settings, &connection, &service);
-SettingsManagement settingsManagement = SettingsManagement(&settings, &connection, &service, &runtime);
-LogManagement logManagement = LogManagement(&settings, &service);
-Measurer measurer = Measurer(&runtime, &service, &settings, &publisher);
-Broker broker = Broker(&service, &settings, &publisher);
-
-void reportStatus()
-{
-  if (runtime.getSafeMode())
-  {
-    indicator.reportFail();
-  }
-  else
-  {
-    indicator.reportSuccess();
-  }
-}
-
-bool nvsSetup()
-{
-  Serial.println("[NVS] Begin NVS");
-  if (!NVS.begin())
-  {
-    Serial.println("[NVS] An Error has occurred while initilizing NVS");
-    return false;
-  }
-  return true;
-}
+BeeGl beeGl;
 
 void setup()
 {
@@ -120,118 +70,42 @@ void setup()
   {
     ;
   }
-  if (!nvsSetup() || !storage_setup())
-  {
-    indicator.reportFail(1);
-    return;
-  }
-  else
-  {
-    indicator.reportSuccess(1);
-  }
 
-  connection.addConnectionProvider(new WiFiConnectionProvider(&settings));
+  beeGl.prepare();
 
 #ifdef SUPPORTSGSM
-  connection.addConnectionProvider(new TinyGsmConnectionProvider(&settings));
+  TinyGsmConnectionProvider::createAndRegister(&beeGl);
 #endif
 #ifdef SUPPORTSLORAWAN
-  connection.addConnectionProvider(new LoraWanConnectionProvider(&settings));
+  LoraWanConnectionProvider::createAndRegister(&beeGl);
 #endif
 #ifdef SUPPORTSBLE
-  connection.addConnectionProvider(new BLEConnectionProvider(&settings));
+  BLEConnectionProvider::createAndRegister(&beeGl);
 #endif
   // Add default - No Time
-  timeManagement.addTimeProviderStrategy(new TimeProviderStrategy(&settings, &connection));
-  timeManagement.addTimeProviderStrategy(new HttpTimeProviderStrategy(&settings, &connection));
+
+  HttpTimeProviderStrategy::createAndRegister(&beeGl);
 #ifdef SUPPORTSRTC
-  timeManagement.addTimeProviderStrategy(new RTCTimeProviderStrategy(&settings, &connection));
+  RTCTimeProviderStrategy::createAndRegister(&beeGl);
 #endif
-
-  publisher.addPublishStrategy(new MqttPublishStrategy(&runtime, &settings, &connection, &service));
-  publisher.addPublishStrategy(new HttpPublishStrategy(&runtime, &settings, &connection, &service));
+  HX711WeightMeasureProvider::createAndRegister(&beeGl);
+  DHT22TempAndHumidityMeasureProvider::createAndRegister(&beeGl);
+  MqttPublishStrategy::createAndRegister(&beeGl);
+  HttpPublishStrategy::createAndRegister(&beeGl);
 #ifdef SUPPORTSLORAWAN
-  publisher.addPublishStrategy(new LoraPublishStrategy(&runtime, &settings, &connection, &service));
+  WHTMeasureValuesCLPPFormatter *loraFormatter = new WHTMeasureValuesCLPPFormatter();
+  LoraWanPublishStrategy::createAndRegister(&beeGl, loraFormatter);
 #endif
 
-  broker.registerInboundStrategy(new WiFiBrokerInboundStrategy(&service, &settings));
+  WiFiBrokerInboundStrategy::createAndRegister(&beeGl);
 #ifdef SUPPORTSBLE
-  broker.registerInboundStrategy(new BLEBrokerInboundStrategy(&service, &settings));
+  BLEBrokerInboundStrategy::createAndRegister(&beeGl);
 #endif
-  runtime.initialize();
-  runtime.setSafeModeOnRestart(1);
-
-  delay(500);
-  Serial.flush();
-
-  runtime.printWakeupReason();
-
-  if (runtime.getSafeMode())
-  {
-    // start AP and web server only
-    settings.outboundMode = 0x0;
-    settings.inboundMode = 0x1;
-    connection.setup();
-    service.setup();
-    runtime.setSafeModeOnRestart(0);
-    timeManagement.setup();
-    log_i("***************************************");
-    log_i("******** SAFE/MAINTENANCE MODE ********");
-    log_i("***************************************");
-    log_i("Use Wifi device, connect to SSID:%s. By using web browser navigate to http://%s", settings.deviceName, settings.apIp.toString().c_str());
-    return;
-  }
-
-  if (!settingsManagement.readConfig())
-  {
-    indicator.reportFail(2);
-    runtime.setSafeMode(1);
-  }
-  else
-  {
-    indicator.reportSuccess(2);
-  }
-
-  log_i("[ESP] Device name: %s ", settings.deviceName);
-  log_i("[ESP] Inbound mode: %u ", settings.inboundMode);
-  log_i("[ESP] Outbound mode: %u ", settings.outboundMode);
-
-  if (!connection.setup())
-  {
-    indicator.reportFail(3);
-    runtime.deepSleep();
-  }
-  else
-  {
-    indicator.reportSuccess(3);
-  }
-
-  service.setup();
-  timeManagement.setup();
-  timeManagement.syncTime();
-  settingsManagement.syncSettings();
-  updater.checkFirmware();
-  
-  publisher.setup();
-  measurer.setup();
-  broker.setup();
-
-  settingsManagement.storeLastGood();
-  indicator.reportSuccess(4);
-  connection.suspend();
-  delay(2000);
-  runtime.setSafeModeOnRestart(0);
-  if (!runtime.getSafeMode())
-  {
-    measurer.begin();
-    publisher.publish();
-  }
+  beeGl.begin();
 }
 
 void loop()
 {
-  reportStatus();
-  runtime.update();
-  publisher.update();
+  beeGl.update();
   delay(10);
 }

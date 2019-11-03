@@ -25,11 +25,10 @@
 #include "Connection.h"
 #include "Runtime.h"
 #include "Service.h"
+#include "Message.h"
 #include <timer.h>
 #include <timerManager.h>
 #include "TimeManagement.h"
-#include <PubSubClient.h>
-
 #define STORAGE_SIZE 30
 #define BACKLOG_NVS "backlog"
 #define BACKLOG_DIR "/backlog"
@@ -39,45 +38,60 @@
 #define MAX_BACKLOG 200
 #endif
 
-class PublishStrategy
+#define STR_PUBLISHERSETTINGS "pubS"
+#define STR_PUBLISHERPROTOCOL "proto"
+namespace beegl
 {
-  
-public:
-  PublishStrategy(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
+class PublishStrategy : public ISettingsHandler
+{
 
-  virtual void setup(){};
+public:
+  PublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : ISettingsHandler(settings)
+  {
+    m_connection = connection;
+    m_runtime = runtime;
+    m_service = service;
+  }
+
+  virtual void setup() = 0;
   virtual bool reconnect() { return true; };
-  virtual bool publishMessage(const char *message) { return true; };
+  virtual bool publishMessage(JsonDocument *message) = 0;
   virtual void update(){};
-  virtual const char getProtocol() { return 0x0; }
-  virtual const char *getProtocolName() { return {0x00}; };
-  virtual int getInterval() { return 60000; }
-  virtual const char getSupportedOutboundTypes() { return {0x00}; }
+  virtual const char getProtocol() const = 0;
+  virtual const char *getProtocolName() const = 0;
+  virtual const int getInterval() const { return 60000; }
+  virtual const char getSupportedOutboundTypes() const = 0;
 
 protected:
   Connection *m_connection;
-  Settings *m_settings;
   Runtime *m_runtime;
   Service *m_service;
 };
 
-class Publisher
+class Publisher : public ISettingsHandler
 {
 
 public:
-  Publisher(Runtime *runtime, Settings *settings, Connection *outboundConnection, Service *service);
-  virtual void setup();
-  virtual void update();
+  Publisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service);
+  void backlog();
+  void setup();
+  void update();
   bool publish();
-  int storeMessage(const char* buffer);
-  void getMessage(char* buffer, const int index);
-  void addPublishStrategy(PublishStrategy *publishStrategy);
+  int store(JsonDocument *measureValue);
+  int registerPublishStrategy(PublishStrategy *publishStrategy);
   int getInterval();
   static Publisher *getInstance();
   static void publishCallback();
 
+  void readSettings(const JsonObject &source);
+  void writeSettings(JsonObject &target, const JsonObject &input);
+
+  char getProtocol()
+  {
+    return m_protocol;
+  }
+
 private:
-  int getStrategies(PublishStrategy **strategies, char outboundType);
   static Publisher *p_instance;
   static Timer p_publisherTimer;
   int32_t backlogCount;
@@ -88,13 +102,16 @@ private:
   int storageIndex = -1;
   int publishIndex = -1;
   Connection *m_connection;
-  Settings *m_settings;
   Runtime *m_runtime;
   Service *m_service;
-  char messageStorage[STORAGE_SIZE][350];
+  JsonMessageSerializer m_serializer;
+  JsonDocument *messageStorage[20];
+  char m_protocol = 0x1;
+
+  int getStrategies(PublishStrategy **strategies, char outboundType);
   PublishStrategy *getSelectedStrategy();
   void webServerBind();
   int getIndex();
 };
-
+} // namespace beegl
 #endif

@@ -505,7 +505,7 @@
                     "id": document.getElementById("deviceName").value,
                     "inM": document.getElementById("inboundMode").value,
                     "outM": document.getElementById("outboundMode").value,
-                    "tSrc": document.getElementById("timeSource").value,
+                    
                     "refresh": document.getElementById("refresh").value,
                     "setUrl": document.getElementById("setUrl").value,
                     "setUser": document.getElementById("setUsername").value,
@@ -513,11 +513,6 @@
                     "pubS":
                     {
                         "proto": document.getElementById("publisherProtocol").value
-                    },
-                    "mesS":
-                    {
-                        "mesW": document.getElementById("measurerMeasureWeight").value,
-                        "mesTh": document.getElementById("measurerMeasureTempAndHumidity").value
                     },
                     "scaleS":
                     {
@@ -550,6 +545,7 @@
                     },
                     "timeS":
                     {
+                        "tSrc": document.getElementById("timeSource").value,
                         "zone": document.getElementById("timeZone").value,
                         "sZone": document.getElementById("timeSZone").value
                     },
@@ -605,6 +601,15 @@
             }
         }
 
+        async function factory() {
+            const url = "/rest/settings/default";
+            try {
+                const response = await request(url, "POST");
+            } catch (error) {
+                displayMessage("Error defaulting settings Error: " + error);
+            }
+        }
+
         async function fillForm() {
             const url = "/rest/settings";
             initializeSchedulerTable();
@@ -615,7 +620,7 @@
                 document.getElementById("deviceName").value = json.id;
                 document.getElementById("inboundMode").value = json.inM;
                 document.getElementById("outboundMode").value = json.outM;
-                document.getElementById("timeSource").value = json.tSrc;
+                
                 document.getElementById("refresh").value = json.refresh;
 
                 document.getElementById("setUrl").value = json.setUrl;
@@ -627,9 +632,6 @@
                 document.getElementById("scaleFactor").value = json.scaleS.f;
                 document.getElementById("scaleOffset").value = json.scaleS.off;
                 document.getElementById("scaleUnit").value = json.scaleS.u;
-
-                document.getElementById("measurerMeasureWeight").value = json.mesS.mesW;
-                document.getElementById("measurerMeasureTempAndHumidity").value = json.mesS.mesTh;
 
                 document.getElementById("wifiSSID").value = json.wifiS.ssid;
                 document.getElementById("wifiPassword").value = json.wifiS.pwd;
@@ -647,6 +649,7 @@
                 document.getElementById("gprsUsername").value = json.gprsS.user;
                 document.getElementById("gprsPassword").value = json.gprsS.pwd;
 
+                document.getElementById("timeSource").value = json.timeS.tSrc;
                 document.getElementById("timeZone").value = json.timeS.zone;
                 document.getElementById("timeSZone").value = json.timeS.sZone;
 
@@ -785,8 +788,7 @@
                 <button onclick="submitForm()" type="button" class="button-success pure-button">Save</button>
                 <button onclick="reboot()" type="button" class="button-warning pure-button">Reboot</button>
                 <button onclick="fillForm()" type="button" class="button-warning pure-button">Reload</button>
-                <button onclick="syncSettings()" type="button" class="button-success pure-button">Sync to
-                    server</button>
+          
 
                 <form class="pure-form pure-form-stacked" id="settings">
                     <fieldset>
@@ -957,19 +959,7 @@
                             maxLength="32">
                     </fieldset>
 
-                    <fieldset>
-                        <legend>Measurer Settings</legend>
-                        <label for="measurerMeasureWeight">Measure weight</label><select id="measurerMeasureWeight">
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                        </select>
-                        <label for="measurerMeasureTempAndHumidity">Measure temperature and humidity</label><select
-                            id="measurerMeasureTempAndHumidity">
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                        </select>
-                    </fieldset>
-
+                   
 
                     <fieldset>
                         <legend>Scale Settings</legend>
@@ -1022,8 +1012,7 @@
                     <button onclick="submitForm()" type="button" class="button-success pure-button">Save</button>
                     <button onclick="reboot()" type="button" class="button-warning pure-button">Reboot</button>
                     <button onclick="fillForm()" type="button" class="button-warning pure-button">Reload</button>
-                    <button onclick="syncSettings()" type="button" class="button-success pure-button">Sync to
-                        server</button>
+                    <button onclick="factory()" type="button" class="button-success pure-button">Default</button>
                 </form>
             </div>
             <div id="Log" class="tabcontent">
@@ -1064,4 +1053,4 @@
 </body>
 
 </html>                                                                                                                               
-                     
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            

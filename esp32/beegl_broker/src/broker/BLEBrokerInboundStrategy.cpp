@@ -18,19 +18,25 @@
 
 */
 
-#include "BLEBrokerInboundStrategy.h"
+#include "broker/BLEBrokerInboundStrategy.h"
+namespace beegl
+{
 
 BLEBrokerInboundStrategy::BLEBrokerInboundStrategy(Service *server, Settings *settings) : BrokerInboundStrategy(server, settings)
 {
   m_bleCallback = new BLESensorCallback(this->m_broker);
 }
+BLEBrokerInboundStrategy *BLEBrokerInboundStrategy::createAndRegister(BeeGl *core)
+{
+  BLEBrokerInboundStrategy * i = new BLEBrokerInboundStrategy(&core->service, &core->settings);
+  core->registerBrokerInboundStrategy(i);
+  return i;
+}
 bool BLEBrokerInboundStrategy::setup()
 {
-
   blog_i("[BLE] Configuring BLE Server %s ", m_settings->deviceName);
   blog_i("[BLE] Service %s ", SERVICE_UUID);
   blog_i("[BLE] Characteristic %s ", CHARACTERISTIC_UUID);
-
   if (esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, ESP_PWR_LVL_P4) == OK)
   {
     blog_i("[BLE] Transmission power changed\n");
@@ -68,3 +74,4 @@ void BLEBrokerInboundStrategy::BLESensorCallback::onWrite(BLECharacteristic *pCh
     m_broker->processMessage(value.c_str());
   }
 }
+} // namespace beegl

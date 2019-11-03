@@ -1,5 +1,6 @@
 #include <Storage.h>
-
+namespace beegl
+{
 bool storage_setup()
 {
     Serial.println("[SPIFFS] Begin SPIFFS");
@@ -17,4 +18,5 @@ bool storage_setup()
     }
 #endif
     return true;
+}
 }

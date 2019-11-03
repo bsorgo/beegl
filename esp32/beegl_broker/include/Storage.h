@@ -7,7 +7,8 @@
 #else
 #define FILESYSTEM SPIFFS
 #endif
-
+namespace beegl
+{
 bool storage_setup();
-
+}
 #endif

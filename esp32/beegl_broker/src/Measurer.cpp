@@ -19,192 +19,118 @@
 */
 
 #include "Measurer.h"
+namespace beegl
+{
+Measurer *Measurer::p_instance = NULL;
 
-Measurer* Measurer::p_instance = NULL;
-
-Measurer::Measurer(Runtime *runtime, Service *server, Settings *settings, Publisher *publisher)
+Measurer::Measurer(Runtime *runtime, Service *server, Settings *settings, Publisher *publisher) : ISettingsHandler(settings)
 {
 
-    m_server = server;
-    m_settings = settings;
-    m_publisher = publisher;
-    m_runtime = runtime;
-
-    m_scale = new HX711();
-    m_scale->begin(SCALE_DOUT_PIN, SCALE_SCK_PIN);
-    m_dht = new DHTesp();
-    p_instance = this;
-    webServerBind();
+  m_server = server;
+  m_publisher = publisher;
+  m_runtime = runtime;
+  p_instance = this;
+  webServerBind();
 }
 
-Measurer* Measurer::getInstance() {
-    return p_instance;
+int Measurer::registerMeasureProvider(MeasureProvider *measureProvider)
+{
+  measureProviders[measureProviderCount] = measureProvider;
+  measureProviderCount++;
+  return measureProviderCount;
 }
 
+Measurer *Measurer::getInstance()
+{
+  return p_instance;
+}
 
 void Measurer::webServerBind()
 {
-    m_server->getWebServer()->on("/rest/measure", HTTP_GET, [&](AsyncWebServerRequest *request) {
-        if (request->hasParam("scaleFactor"))
-            m_settings->scaleFactor = atof(request->getParam("scaleFactor", false, false)->value().c_str());
-        if (request->hasParam("scaleOffset"))
-            m_settings->scaleOffset = atoi(request->getParam("scaleOffset", false, false)->value().c_str());
-        blog_d("Scale factor: %f, offset: %u", m_settings->scaleFactor, m_settings->scaleOffset);
-        int index = measure();
-        char message[350];
-        m_publisher->getMessage(message, index);
-        if (message)
-        {
-            blog_d("Payload: %s", message);
-            request->send(200, "text/plain", message);
-        }
-        else
-        {
-            request->send(500);
-        }
-    });
-
-    m_server->getWebServer()->on("/rest/scale/tare", HTTP_POST,
-                                 [&](AsyncWebServerRequest *request) {
-                                     long tareValue = zero();
-
-                                     String strValue = String(tareValue);
-                                     request->send(200, "text/plain", strValue);
-                                 });
+  m_server->getWebServer()->on("/rest/measure", HTTP_GET, [&](AsyncWebServerRequest *request) {
+    JsonDocument *value = measure();
+    char message[MESSAGE_SIZE];
+    m_serializer.serialize(value, message);
+    if (strlen(message) > 0)
+    {
+      blog_d("JsonDocument: %s", message);
+      request->send(200, JSON_MIMETYPE, message);
+    }
+    else
+    {
+      request->send(500);
+    }
+  });
 }
 
 uint32_t Measurer::getMeasureInterval()
 {
-    return m_settings->refreshInterval;
+  return m_settings->refreshInterval;
+}
+void Measurer::setup()
+{
+  for (int i = 0; i < measureProviderCount; i++)
+  {
+    measureProviders[i]->setup();
+  }
 }
 
-bool Measurer::scaleSetup()
+JsonDocument *Measurer::measure()
 {
-    if (m_settings->measureWeight)
-    {
-        blog_i("[HX711] Setup");
-        blog_i("[HX711] Scale factor: %f", m_settings->scaleFactor);
-        blog_i("[HX711] Scale offset: %u", m_settings->scaleOffset);
-        blog_i("[HX711] Scale unit: %s", m_settings->scaleUnit);
-    }
-    return true;
+  StaticJsonDocument<512> *document = new StaticJsonDocument<512>();
+  JsonObject root = document->to<JsonObject>();
+  root[STR_DEVICEID] = String(m_settings->deviceName);
+  root[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
+  root[STR_VER] = m_runtime->FIRMWAREVERSION;
+  for (int i = 0; i < measureProviderCount; i++)
+  {
+    measureProviders[i]->measure(document);
+  }
+  return document;
 }
-
-bool Measurer::dhtSetup()
+void Measurer::measureAndStore()
 {
-    if (m_settings->measureTempAndHumidity)
-    {
-        blog_i("[DHT] Setup");
-        m_dht->setup(DHT_PIN, DHTesp::DHT22);
-    }
-    return true;
-}
-
-bool Measurer::setup()
-{
-    if (!scaleSetup() || !dhtSetup())
-    {
-        return false;
-    }
-    return true;
-}
-
-long Measurer::zero()
-{
-    blog_d("[HX711] Powerup");
-    m_scale->power_up();
-    m_scale->set_scale(m_settings->scaleFactor);
-    m_scale->set_offset(m_settings->scaleOffset);
-    blog_i("[HX711] Tare");
-    m_scale->tare(10);
-    long tareValue = m_scale->get_offset();
-    blog_d("[HX711] Tare value: %u", tareValue);
-    m_settings->scaleOffset = m_scale->get_offset();
-    blog_d("[HX711] Shutdown");
-    m_scale->power_down();
-    return tareValue;
-}
-
-int Measurer::measure()
-{
-    MeasureData data;
-
-    if (m_settings->measureWeight)
-    {
-        blog_d("[HX711] Powerup");
-        m_scale->power_up();
-        delay(200);
-        m_scale->set_scale(m_settings->scaleFactor);
-        m_scale->set_offset(m_settings->scaleOffset);
-        delay(200);
-        data.weight = -1;
-        data.weight = m_scale->get_units(10);
-        blog_d("[MEASURER] Read weight %f ", data.weight);
-        blog_d("[HX711] Shutdown");
-        m_scale->power_down();
-    }
-    if (m_settings->measureTempAndHumidity)
-    {
-        TempAndHumidity sensorData = m_dht->getTempAndHumidity();
-        data.temp = sensorData.temperature;
-        data.humidity = sensorData.humidity;
-        blog_d("[MEASURER] Read temperature and humidity: %.2f C %.2f %% ", data.temp, data.humidity);
-    }
-    return storeMessage(data);
-}
-
-int Measurer::storeMessage(MeasureData measureData)
-{
-    StaticJsonDocument<512> jsonBuffer;
-    JsonObject root = jsonBuffer.to<JsonObject>();
-    root[STR_DEVICEID] = m_settings->deviceName;
-    root[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
-    root[STR_VER] = m_runtime->FIRMWAREVERSION;
-    if (m_settings->measureWeight && measureData.weight == measureData.weight)
-    {
-
-        JsonObject weightSensor = root.createNestedObject(STR_WEIGHTSENSOR);
-        weightSensor[STR_WEIGHT] = measureData.weight;
-        weightSensor[STR_WEIGHTUNIT] = STR_WEIGHTUNITG;
-    }
-
-    if (m_settings->measureTempAndHumidity && measureData.temp == measureData.temp)
-    {
-        JsonObject tempSensor = root.createNestedObject(STR_TEMPSENSOR);
-        tempSensor[STR_TEMP] = measureData.temp;
-        tempSensor[STR_TEMPUNIT] = STR_TEMPUNITC;
-
-        JsonObject humiditySensor = root.createNestedObject(STR_HUMIDITYSENSOR);
-        humiditySensor[STR_HUMIDITY] = measureData.humidity;
-        humiditySensor[STR_HUMIDITYUNIT] = STR_HUMIDITYUNITPERCENT;
-    }
-    char buffer[350];
-    serializeJson(jsonBuffer, buffer);
-    blog_d("Message: %s", buffer);
-    return m_publisher->storeMessage(buffer);
+  JsonDocument *values = measure();
+  m_publisher->store(values);
 }
 
 void Measurer::measureLoop(void *pvParameters)
 {
-    Measurer *measurer = (Measurer *)pvParameters;
+  Measurer *measurer = (Measurer *)pvParameters;
 
-    for (;;)
-    {
-        int publisherInterval = Publisher::getInstance()->getInterval();
-        int measurerInterval = measurer->getMeasureInterval();
-        measurer->measure();
-        delay(publisherInterval > measurerInterval ? publisherInterval : measurerInterval);
-    }
+  for (;;)
+  {
+    int publisherInterval = Publisher::getInstance()->getInterval();
+    int measurerInterval = measurer->getMeasureInterval();
+    measurer->measureAndStore();
+    delay(publisherInterval > measurerInterval ? publisherInterval : measurerInterval);
+  }
 }
 
 void Measurer::begin()
 {
-    measure();
-    // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
-    // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
-    // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
-    // the new task attempts to access it.
-    blog_d("[MEASURER] Creating measurer task.");
-    xTaskCreate(measureLoop, MEASURER_TASK, 8192, this, tskIDLE_PRIORITY, NULL);
+  blog_d("[MEASURER] First measure.");
+  measureAndStore();
+  // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
+  // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
+  // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
+  // the new task attempts to access it.
+  blog_d("[MEASURER] Creating measurer task.");
+  xTaskCreate(measureLoop, MEASURER_TASK, 8192, this, tskIDLE_PRIORITY, NULL);
+}
 
+void Measurer::readSettings(const JsonObject &source)
+{
+  for (int i = 0; i < measureProviderCount; i++)
+  {
+    measureProviders[i]->readSettings(source);
+  }
+}
+void Measurer::writeSettings(JsonObject &target, const JsonObject &input)
+{
+  for (int i = 0; i < measureProviderCount; i++)
+  {
+    measureProviders[i]->writeSettings(target, input);
+  }
+}
 }

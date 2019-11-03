@@ -19,15 +19,22 @@
 
 */
 
-#include "BLEConnectionProvider.h"
+#include "connection/BLEConnectionProvider.h"
 
 // set up the data structures.
 
-BLEConnectionProvider::BLEConnectionProvider(Settings *settings) : ConnectionProvider(settings)
+namespace beegl
 {
 
+BLEConnectionProvider::BLEConnectionProvider(Connection *connection, Settings *settings) : ConnectionProvider(connection, settings)
+{
 }
-
+BLEConnectionProvider *BLEConnectionProvider::createAndRegister(BeeGl *core)
+{
+    BLEConnectionProvider *i = new BLEConnectionProvider(&core->connection, &core->settings);
+    core->registerConnectionProvider(i);
+    return i;
+}
 void BLEConnectionProvider::btOff()
 {
     blog_i("[BLE] OFF");
@@ -49,8 +56,6 @@ void BLEConnectionProvider::shutdown()
     btOff();
 }
 
-
-
 bool BLEConnectionProvider::setup()
 {
     return true;
@@ -58,7 +63,7 @@ bool BLEConnectionProvider::setup()
 
 void BLEConnectionProvider::checkConnect()
 {
-   // not yet implemented
+    // not yet implemented
 }
 
 Client *BLEConnectionProvider::getClient()
@@ -66,4 +71,4 @@ Client *BLEConnectionProvider::getClient()
     // not supported
     return nullptr;
 }
-
+} // namespace beegl

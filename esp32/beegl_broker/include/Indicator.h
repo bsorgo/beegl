@@ -20,24 +20,23 @@
 
 */
 
-
-
-
 #include "Log.h"
 #include <Arduino.h>
-
+namespace beegl
+{
 class Indicator
 {
-    
-public:
-    Indicator();
-    void reportSuccess(int blinks);
-    void reportFail(int blinks);
-    void reportFail();
-    void reportSuccess();
-private:
-    const int RED_LED_PIN = 25;
-    const int GREEN_LED_PIN = 26;
-};
 
+public:
+  Indicator();
+  void reportSuccess(int blinks);
+  void reportFail(int blinks);
+  void reportFail();
+  void reportSuccess();
+
+private:
+  const int RED_LED_PIN = 25;
+  const int GREEN_LED_PIN = 26;
+};
+} // namespace beegl
 #endif

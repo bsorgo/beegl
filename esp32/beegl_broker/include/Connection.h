@@ -24,52 +24,73 @@
 #include "Log.h"
 #include "Settings.h"
 #include "Service.h"
+#define STR_INBOUNDMODE "inM"
+#define STR_OUTBOUNDMODE "outM"
+namespace beegl
+{
+class Connection;
 
-
-class ConnectionProvider
+class ConnectionProvider : public ISettingsHandler
 {
 public:
-  ConnectionProvider(Settings *settings) {m_settings = settings;};
-  virtual Client *getClient() {return nullptr;};
-  virtual void checkConnect() {};
-  virtual bool setup() { return true;};
-  virtual void shutdown() {};
-  virtual void suspend() {};
-  virtual void resume() {};
-  virtual const char getInboundType() { return 0xFF;}; 
-  virtual const char getOutboundType() { return 0xFF;};
-  virtual const char* getName() { return {0x00};};
-
+  ConnectionProvider(Connection *connection, Settings *settings);
+  virtual Client *getClient() { return nullptr; };
+  virtual void checkConnect(){};
+  virtual bool setup() { return true; };
+  virtual void shutdown(){};
+  virtual void suspend(){};
+  virtual void resume(){};
+  virtual const char getInboundType() { return 0xFF; };
+  virtual const char getOutboundType() { return 0xFF; };
+  virtual const char *getName() { return {0x00}; };
 
 protected:
-  Settings *m_settings;
-  
+  Connection *m_connection;
 };
 
-class Connection
+class Connection : public ISettingsHandler
 {
 
 public:
-  Connection(Service* service, Settings *settings);
+  Connection(Service *service, Settings *settings);
   Client *getClient();
   void checkConnect();
   bool setup();
   void shutdown();
   void suspend();
   void resume();
-  void addConnectionProvider(ConnectionProvider *connection);
-  
+  int registerConnectionProvider(ConnectionProvider *connection);
+
+  void readSettings(const JsonObject &source) override;
+  void writeSettings(JsonObject &target, const JsonObject &input) override;
+
+  void setOutboundMode(const char outboundMode)
+  {
+    m_outboundMode = outboundMode;
+  }
+  char getOutboundMode()
+  {
+    return m_outboundMode;
+  }
+
+  void setInboundMode(const char inboundMode)
+  {
+    m_inboundMode = inboundMode;
+  }
+  char getInboundMode()
+  {
+    return m_inboundMode;
+  }
 
 private:
-  int getOutboundConnectionProviders(ConnectionProvider** providers, char outboundTypeMask=0xFF);
-  Settings *m_settings;
+  int getOutboundConnectionProviders(ConnectionProvider **providers, char outboundTypeMask = 0xFF);
   Service *m_service;
-  ConnectionProvider* m_connection[5];
+  ConnectionProvider *m_connection[5];
   int connectionSize = 0;
-
   void webServerBind();
+
+  char m_outboundMode = 0x1;
+  char m_inboundMode = 0x0;
 };
-
-
-
+} // namespace beegl
 #endif

@@ -20,311 +20,320 @@
 */
 
 #include "Publisher.h"
-
+namespace beegl
+{
 void Publisher::publishCallback()
 {
   Publisher::getInstance()->publish();
 }
 
-Timer Publisher::p_publisherTimer ;
-Publisher* Publisher::p_instance = NULL;
+Timer Publisher::p_publisherTimer;
+Publisher *Publisher::p_instance = NULL;
 
+Publisher::Publisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service) : ISettingsHandler(settings)
+{
+  Publisher::p_instance = this;
+  m_connection = connection;
+  m_runtime = runtime;
+  m_service = service;
+  webServerBind();
+  backlog();
+}
+void Publisher::backlog()
+{
+  if (!FILESYSTEM.exists(BACKLOG_DIR))
+  {
+    FILESYSTEM.mkdir(BACKLOG_DIR);
+  }
+}
+Publisher *Publisher::getInstance()
+{
+  return p_instance;
+}
 
 void Publisher::setup()
 {
-    p_publisherTimer.setCallback(Publisher::publishCallback);
-    getSelectedStrategy();
+  Publisher::p_publisherTimer.setCallback(Publisher::publishCallback);
+  getSelectedStrategy();
 }
 
 void Publisher::update()
 {
-    if(!m_runtime->getSafeMode())
+  if (!m_runtime->getSafeMode())
+  {
+    PublishStrategy *strategy = getSelectedStrategy();
+    if (strategy == nullptr)
     {
-        PublishStrategy *strategy = getSelectedStrategy();
-        if (strategy == nullptr)
-        {
-            return;
-        }
-        strategy->update();
-        Publisher::p_publisherTimer.update();
+      return;
     }
+    strategy->update();
+    Publisher::p_publisherTimer.update();
+  }
 }
 
-PublishStrategy::PublishStrategy(Runtime *runtime, Settings *settings, Connection *connection, Service *service)
+int Publisher::registerPublishStrategy(PublishStrategy *publishStrategy)
 {
-    m_connection = connection;
-    m_settings = settings;
-    m_runtime = runtime;
-    m_service = service;
-}
-
-Publisher::Publisher(Runtime *runtime, Settings *settings, Connection *connection, Service *service)
-{
-    p_instance = this;
-    m_connection = connection;
-    m_settings = settings;
-    m_runtime = runtime;
-    m_service = service;
-    if (!FILESYSTEM.exists(BACKLOG_DIR))
-    {
-        FILESYSTEM.mkdir(BACKLOG_DIR);
-    }
-    webServerBind();
-    
-}
-
-Publisher* Publisher::getInstance() {
-    return p_instance;
-}
-
-void Publisher::addPublishStrategy(PublishStrategy *publishStrategy)
-{
-    if(publishStrategy!=nullptr)
-    {
-        blog_d("[PUBLISHER] Add publish strategy: %u", publishStrategy->getProtocol());
-        m_publishStrategies[publishStrategyCount] = publishStrategy;
-        publishStrategyCount++;
-    }
+  if (publishStrategy != nullptr)
+  {
+    blog_d("[PUBLISHER] Add publish strategy: %u", publishStrategy->getProtocol());
+    m_publishStrategies[publishStrategyCount] = publishStrategy;
+    publishStrategyCount++;
+    return publishStrategyCount;
+  }
+  return -1;
 }
 
 PublishStrategy *Publisher::getSelectedStrategy()
 {
-    if (m_selectedStrategy == nullptr || m_selectedStrategy->getProtocol() != m_settings->protocol)
+  if (m_selectedStrategy == nullptr || m_selectedStrategy->getProtocol() != m_protocol)
+  {
+    for (int i = 0; i < publishStrategyCount; i++)
     {
-        for (int i = 0; i < publishStrategyCount; i++)
-        {
-            if (m_publishStrategies[i]->getProtocol() == m_settings->protocol && m_publishStrategies[i]->getSupportedOutboundTypes() & m_settings->outboundMode)
-            {
-                blog_i("[PUBLISHER] Selected publish strategy: %u with publish interval: %lu", m_publishStrategies[i]->getProtocol(), m_publishStrategies[i]->getInterval());
-                m_selectedStrategy = m_publishStrategies[i];
-                m_selectedStrategy->setup();
-                p_publisherTimer.stop();
-                p_publisherTimer.setInterval(m_selectedStrategy->getInterval());
-                p_publisherTimer.start();
-                
-                break;
-            }
-        }
+      if (m_publishStrategies[i]->getProtocol() == m_protocol && m_publishStrategies[i]->getSupportedOutboundTypes() & m_connection->getOutboundMode())
+      {
+        blog_i("[PUBLISHER] Selected publish strategy: %u with publish interval: %lu", m_publishStrategies[i]->getProtocol(), m_publishStrategies[i]->getInterval());
+        m_selectedStrategy = m_publishStrategies[i];
+        m_selectedStrategy->setup();
+        p_publisherTimer.stop();
+        p_publisherTimer.setInterval(m_selectedStrategy->getInterval());
+        p_publisherTimer.start();
+
+        break;
+      }
     }
-    return m_selectedStrategy;
+  }
+  return m_selectedStrategy;
 }
 
-int Publisher::getStrategies(PublishStrategy** strategies, char outboundType)
+int Publisher::getStrategies(PublishStrategy **strategies, char outboundType)
 {
-    int j = 0;
-    for(int i=0;i<publishStrategyCount;i++)
+  int j = 0;
+  for (int i = 0; i < publishStrategyCount; i++)
+  {
+    PublishStrategy *strategy = m_publishStrategies[i];
+    if (strategy->getSupportedOutboundTypes() & outboundType)
     {
-        PublishStrategy* strategy = m_publishStrategies[i];
-        if(strategy->getSupportedOutboundTypes() & outboundType)
-        {
-            strategies[j] = strategy;
-            j++;
-        }
+      strategies[j] = strategy;
+      j++;
     }
-
-    return j;
+  }
+  return j;
 }
 
 int Publisher::getInterval()
 {
-    PublishStrategy* strategy = getSelectedStrategy();
-    if(strategy!=nullptr)
-    {
-        return strategy->getInterval();
-    }
-    else
-    {
-        return 60000;
-    }  
+  PublishStrategy *strategy = getSelectedStrategy();
+  if (strategy != nullptr)
+  {
+    return strategy->getInterval();
+  }
+  else
+  {
+    return 60000;
+  }
 }
 
 void Publisher::webServerBind()
 {
-    m_service->getWebServer()->serveStatic("/backlog/", FILESYSTEM, BACKLOG_DIR_PREFIX);
+  m_service->getWebServer()->serveStatic("/backlog/", FILESYSTEM, BACKLOG_DIR_PREFIX);
 
-    m_service->getWebServer()->on("/rest/backlogs", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        AsyncResponseStream *response = request->beginResponseStream("application/json");
-        StaticJsonDocument<128> jsonBuffer;
-        JsonObject root = jsonBuffer.to<JsonObject>();
-        JsonObject backlog = root.createNestedObject("backlog");
-        backlog["count"] = backlogCount;
+  m_service->getWebServer()->on("/rest/backlogs", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    StaticJsonDocument<128> jsonBuffer;
+    JsonObject root = jsonBuffer.to<JsonObject>();
+    JsonObject backlog = root.createNestedObject("backlog");
+    backlog["count"] = backlogCount;
 
-        serializeJson(jsonBuffer, *response);
-        jsonBuffer.clear();
-        request->send(response);
-    });
+    serializeJson(jsonBuffer, *response);
+    jsonBuffer.clear();
+    request->send(response);
+  });
 
-    m_service->getWebServer()->on("/rest/protocols", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        AsyncResponseStream *response = request->beginResponseStream("application/json");
-        const String outboundTypeStr = request->getParam(STR_OUTBOUNDMODE, false)->value();
-        
-        char outboundType = (char)outboundTypeStr.toInt();        
-        StaticJsonDocument<256> jsonBuffer;
-        JsonObject root = jsonBuffer.to<JsonObject>();
-        JsonArray array = root.createNestedArray("protocols");
-        
-        PublishStrategy* strategies[5];
-        int count = this->getStrategies(strategies, outboundType);
-        for(int i=0;i<count;i++)
-        {
-            JsonObject  proto = array.createNestedObject();
-            proto[STR_PUBLISHERPROTOCOL] =  (int) strategies[i]->getProtocol();
-            proto["name"] = strategies[i]->getProtocolName();
-        }
-        serializeJson(root, *response);
-        jsonBuffer.clear();
-        request->send(response);
-    });
+  m_service->getWebServer()->on("/rest/protocols", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    const String outboundTypeStr = request->getParam(STR_OUTBOUNDMODE, false)->value();
+
+    char outboundType = (char)outboundTypeStr.toInt();
+    StaticJsonDocument<256> jsonBuffer;
+    JsonObject root = jsonBuffer.to<JsonObject>();
+    JsonArray array = root.createNestedArray("protocols");
+
+    PublishStrategy *strategies[5];
+    int count = this->getStrategies(strategies, outboundType);
+    for (int i = 0; i < count; i++)
+    {
+      JsonObject proto = array.createNestedObject();
+      proto[STR_PUBLISHERPROTOCOL] = (int)strategies[i]->getProtocol();
+      proto["name"] = strategies[i]->getProtocolName();
+    }
+    serializeJson(root, *response);
+    jsonBuffer.clear();
+    request->send(response);
+  });
 }
 
 int Publisher::getIndex()
 {
-    storageIndex++;
-    if (storageIndex > STORAGE_SIZE - 1)
-    {
-        storageIndex = 0;
-    }
-    if (storageIndex == publishIndex)
-    {
-        publishIndex = -1;
-    }
-    return storageIndex;
+  storageIndex++;
+  if (storageIndex > STORAGE_SIZE - 1)
+  {
+    storageIndex = 0;
+  }
+  if (storageIndex == publishIndex)
+  {
+    publishIndex = -1;
+  }
+  return storageIndex;
 }
 
-int Publisher::storeMessage(const char* buffer)
+int Publisher::store(JsonDocument *measureValue)
 {
-    int i = getIndex();
-    strcpy(messageStorage[i], buffer);
-    blog_d("[STORE] Message: %s",messageStorage[i]);
-    return i;
+  blog_d("[PUBLISHER] Begin store message");
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
+  char message[MESSAGE_SIZE];
+  m_serializer.serialize(measureValue, message);
+  blog_d("[PUBLISHER]  Store message: %s", message);
+#endif
+  int i = getIndex();
+  messageStorage[i] = measureValue;
+  return i;
 }
-
-void Publisher::getMessage(char* buffer, const int index) 
-{
-    strcpy(buffer, messageStorage[index]);
-}
-
 bool Publisher::publish()
 {
-    if (!m_runtime->getSafeMode())
+  if (!m_runtime->getSafeMode())
+  {
+    PublishStrategy *strategy = getSelectedStrategy();
+    if (strategy == nullptr)
     {
-        PublishStrategy *strategy = getSelectedStrategy();
-        if(strategy==nullptr)
-        {
-            return false;
-        }
-        if (strategy == nullptr)
-        {
-            return false;
-        }
-        if (publishIndex != storageIndex || backlogCount > 0)
-        {
-            m_connection->resume();
-            m_connection->checkConnect();
-            bool connected = false;
-            int retries = 0;
-            while (!connected)
-            {
-                connected = strategy->reconnect();
-                retries++;
-                if (!connected)
-                {
-                    if (retries % 2 == 0)
-                    {
-                        m_connection->checkConnect();
-                    }
-                    if (retries % 5 == 0)
-                    {
-                        break;
-                        
-                    }
-                }
-            }
-            backlogCount = NVS.getInt(BACKLOG_NVS);
-            blog_d("[PUBLISHER] Backlog count: %u", backlogCount);
-            long fileNumber = 0;
-            // 
-            while (connected && TimeManagement::getInstance()->isAbsoluteTime() && backlogCount > 0)
-            {
-                fileNumber++;
-                String backlogFilename = String(BACKLOG_DIR_PREFIX);
-                backlogFilename += fileNumber;
-                backlogFilename += BACKLOG_EXTENSION;
-                File backlogFile = FILESYSTEM.open(backlogFilename, FILE_READ);
-                if (backlogFile)
-                {
-                    String backlogMessage = backlogFile.readString();
-                    blog_d("[PUBLISHER] Backlog: %s", backlogMessage.c_str());
-                    backlogFile.close();
-                    if (strategy->publishMessage(backlogMessage.c_str()))
-                    {
-                        if (!FILESYSTEM.remove(backlogFilename))
-                        {
-                            blog_e("[PUBLISHER] Failed to remove measurement backlog file: %s", backlogFilename.c_str());
-                        }
-                        backlogCount--;
-                        NVS.setInt(BACKLOG_NVS, backlogCount);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-
-                    blog_e("[PUBLISHER] Failed to open measurement backlog file: %s", backlogFilename.c_str());
-                    backlogCount--;
-                    NVS.setInt(BACKLOG_NVS, backlogCount);
-                }
-            }
-
-            while (publishIndex != storageIndex)
-            {
-                blog_d("[PUBLISHER] Message: %s", messageStorage[publishIndex + 1]);
-                if (
-                    (
-                    !connected || 
-                    backlogCount > 0 || 
-                    !getSelectedStrategy()->publishMessage(messageStorage[publishIndex + 1])            
-                    ) 
-                    && backlogCount < MAX_BACKLOG)
-                {
-                    // write to backlog only if absolute time- it makes sense
-                    if(TimeManagement::getInstance()->isAbsoluteTime())
-                    {
-                         backlogCount++;
-                        // add to backlog
-                        String backlogFilename = String(BACKLOG_DIR_PREFIX);
-                        backlogFilename += backlogCount;
-                        backlogFilename += BACKLOG_EXTENSION;
-                        File backlogFile = FILESYSTEM.open(backlogFilename, FILE_WRITE);
-                        if (backlogFile)
-                        {
-                            blog_i("[PUBLISHER] Writing to measurement backlog file %s:", backlogFilename.c_str());
-                            int len = strlen(messageStorage[publishIndex + 1]);
-                            backlogFile.write((uint8_t *)messageStorage[publishIndex + 1], len);
-                            backlogFile.close();
-                        }
-                        else
-                        {
-                            blog_e("[PUBLISHER] Failed to create measurement backlog file: %s", backlogFilename.c_str());
-                        }
-                        NVS.setInt(BACKLOG_NVS, backlogCount);
-                    }
-                   
-                }
-                if (backlogCount <= MAX_BACKLOG)
-                {
-                    publishIndex++;
-                    if (publishIndex > STORAGE_SIZE - 1)
-                    {
-                        publishIndex = -1;
-                    }
-                }
-            }
-            m_connection->suspend();
-        }
+      return false;
     }
-    return true;
+    if (publishIndex != storageIndex || backlogCount > 0)
+    {
+      m_connection->resume();
+      m_connection->checkConnect();
+      bool connected = false;
+      int retries = 0;
+      while (!connected)
+      {
+        connected = strategy->reconnect();
+        retries++;
+        if (!connected)
+        {
+          if (retries % 2 == 0)
+          {
+            m_connection->checkConnect();
+          }
+          if (retries % 5 == 0)
+          {
+            break;
+          }
+        }
+      }
+      backlogCount = NVS.getInt(BACKLOG_NVS);
+      blog_d("[PUBLISHER] Backlog count: %u", backlogCount);
+      long fileNumber = 0;
+      //
+      while (connected && TimeManagement::getInstance()->isAbsoluteTime() && backlogCount > 0)
+      {
+        fileNumber++;
+        String backlogFilename = String(BACKLOG_DIR_PREFIX);
+        backlogFilename += fileNumber;
+        backlogFilename += BACKLOG_EXTENSION;
+        File backlogFile = FILESYSTEM.open(backlogFilename, FILE_READ);
+        if (backlogFile)
+        {
+          JsonDocument *p = m_serializer.deserialize(backlogFile);
+
+          backlogFile.close();
+
+          if (strategy->publishMessage(p))
+          {
+            if (!FILESYSTEM.remove(backlogFilename))
+            {
+              blog_e("[PUBLISHER] Failed to remove measurement backlog file: %s", backlogFilename.c_str());
+            }
+            backlogCount--;
+            NVS.setInt(BACKLOG_NVS, backlogCount);
+          }
+          else
+          {
+            break;
+          }
+          delete p;
+        }
+        else
+        {
+
+          blog_e("[PUBLISHER] Failed to open measurement backlog file: %s", backlogFilename.c_str());
+          backlogCount--;
+          NVS.setInt(BACKLOG_NVS, backlogCount);
+        }
+      }
+
+      while (publishIndex != storageIndex)
+      {
+
+        if (
+            (
+                !connected ||
+                backlogCount > 0 ||
+                !getSelectedStrategy()->publishMessage(messageStorage[publishIndex + 1])) &&
+            backlogCount < MAX_BACKLOG)
+        {
+          // write to backlog only if absolute time- it makes sense
+          if (TimeManagement::getInstance()->isAbsoluteTime())
+          {
+            backlogCount++;
+            // add to backlog
+            String backlogFilename = String(BACKLOG_DIR_PREFIX);
+            backlogFilename += backlogCount;
+            backlogFilename += BACKLOG_EXTENSION;
+            File backlogFile = FILESYSTEM.open(backlogFilename, FILE_WRITE);
+            if (backlogFile)
+            {
+              blog_i("[PUBLISHER] Writing to measurement backlog file %s:", backlogFilename.c_str());
+              char message[MESSAGE_SIZE];
+              m_serializer.serialize(messageStorage[publishIndex + 1], message);
+              int len = strlen(message);
+              backlogFile.write((uint8_t *)message, len);
+              backlogFile.close();
+            }
+            else
+            {
+              blog_e("[PUBLISHER] Failed to create measurement backlog file: %s", backlogFilename.c_str());
+            }
+            NVS.setInt(BACKLOG_NVS, backlogCount);
+          }
+        }
+        if (backlogCount <= MAX_BACKLOG)
+        {
+          publishIndex++;
+          if (publishIndex > STORAGE_SIZE - 1)
+          {
+            publishIndex = -1;
+          }
+        }
+      }
+      m_connection->suspend();
+    }
+  }
+  return true;
 }
+
+void Publisher::readSettings(const JsonObject &source)
+{
+  // publisher settings
+
+  JsonObject publisherSettings = source[STR_PUBLISHERSETTINGS];
+  m_protocol = publisherSettings[STR_PUBLISHERPROTOCOL];
+}
+
+void Publisher::writeSettings(JsonObject &target, const JsonObject &input)
+{
+  JsonObject publisherSettings = target.createNestedObject(STR_PUBLISHERSETTINGS);
+  publisherSettings[STR_PUBLISHERPROTOCOL] = m_protocol;
+
+  Settings::merge(publisherSettings, input[STR_PUBLISHERSETTINGS]);
+}
+
+} // namespace beegl

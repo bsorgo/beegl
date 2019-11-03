@@ -26,17 +26,13 @@
 #define TIME_TO_SLEEP 600         /* wake up interval */
 
 #include "Runtime.h"
-
+namespace beegl
+{
 
 Timer Runtime::p_schedulerTimer;
-Runtime* Runtime::p_instance = NULL;
+Runtime *Runtime::p_instance = NULL;
 
-void Runtime::checkScheduler()
-{
-  Runtime::getInstance()->checkOperationalTime();
-}
-
-Runtime::Runtime(Service *server, Settings *settings, Connection *connection)
+Runtime::Runtime(Service *server, Settings *settings, Connection *connection) : ISettingsHandler(settings)
 {
   p_instance = this;
   m_settings = settings;
@@ -44,7 +40,53 @@ Runtime::Runtime(Service *server, Settings *settings, Connection *connection)
   m_server = server;
 
   webServerBind();
-  
+}
+
+void Runtime::readSettings(const JsonObject &source)
+{
+  // scheduler settings
+  JsonArray schSettings = source[STR_SCHSETTINGS];
+  schEntriesLength = schSettings.size();
+  int i = 0;
+  for (JsonObject schEntryInput : schSettings)
+  {
+    m_schEntries[i].schedulerHourFrom = schEntryInput[STR_SCHHOURFROM];
+    m_schEntries[i].schedulerMinFrom = schEntryInput[STR_SCHMINFROM];
+    m_schEntries[i].schedulerHourTo = schEntryInput[STR_SCHHOURTO];
+    m_schEntries[i].schedulerMinTo = schEntryInput[STR_SCHMINTO];
+    m_schEntries[i].updateFromServer = schEntryInput[STR_SCHUPDATE];
+    i++;
+  }
+}
+void Runtime::writeSettings(JsonObject &target, const JsonObject &input)
+{
+  JsonArray schSettings = target.createNestedArray(STR_SCHSETTINGS);
+  if (input[STR_SCHSETTINGS])
+  {
+    schEntriesLength = input[STR_SCHSETTINGS].size();
+    for (JsonObject schEntryInput : input[STR_SCHSETTINGS].as<JsonArray>())
+    {
+      JsonObject schEntry = schSettings.createNestedObject();
+      Settings::merge(schEntry, schEntryInput);
+    }
+  }
+  else
+  {
+    for (int i = 0; i < schEntriesLength; i++)
+    {
+      JsonObject schEntry = schSettings.createNestedObject();
+      schEntry[STR_SCHHOURFROM] = m_schEntries[i].schedulerHourFrom;
+      schEntry[STR_SCHMINFROM] = m_schEntries[i].schedulerMinFrom;
+      schEntry[STR_SCHHOURTO] = m_schEntries[i].schedulerHourTo;
+      schEntry[STR_SCHMINTO] = m_schEntries[i].schedulerMinTo;
+      schEntry[STR_SCHUPDATE] = m_schEntries[i].updateFromServer;
+    }
+  }
+}
+
+void Runtime::checkScheduler()
+{
+  Runtime::getInstance()->checkOperationalTime();
 }
 
 Runtime *Runtime::getInstance()
@@ -54,7 +96,7 @@ Runtime *Runtime::getInstance()
 
 void Runtime::update()
 {
-  if(!getSafeMode())
+  if (!getSafeMode())
   {
     Runtime::p_schedulerTimer.update();
   }
@@ -91,29 +133,29 @@ void Runtime::checkOperationalTime()
   if (millis() > 600000 && !getSafeMode())
   {
 
-    time_t t = m_settings->getTimezone()->toLocal(now());
+    time_t t = TimeManagement::getInstance()->getTimezone()->toLocal(now());
     // in seconds
 
     int time = hour(t) * 60 + minute(t);
-    for (int i = 0; i < m_settings->schEntriesLength; i++)
+    for (int i = 0; i < schEntriesLength; i++)
     {
 
-      int nextEntry = (i == m_settings->schEntriesLength - 1 ? 0 : i + 1);
-      int iTimeFrom = m_settings->schEntries[i].schedulerHourFrom * 60 + m_settings->schEntries[i].schedulerMinFrom;
-      int iTimeTo = m_settings->schEntries[i].schedulerHourTo * 60 + m_settings->schEntries[i].schedulerMinTo;
-      int nextTimeFrom = m_settings->schEntries[nextEntry].schedulerHourFrom * 60 + m_settings->schEntries[nextEntry].schedulerMinFrom;
+      int nextEntry = (i == schEntriesLength - 1 ? 0 : i + 1);
+      int iTimeFrom = m_schEntries[i].schedulerHourFrom * 60 + m_schEntries[i].schedulerMinFrom;
+      int iTimeTo = m_schEntries[i].schedulerHourTo * 60 + m_schEntries[i].schedulerMinTo;
+      int nextTimeFrom = m_schEntries[nextEntry].schedulerHourFrom * 60 + m_schEntries[nextEntry].schedulerMinFrom;
 
-      blog_d("[SCHEDULER] Entries:%u, Entry: %u;%u:%u,%u:%u  Next entry: %u;%u:%u,%u:%u", m_settings->schEntriesLength, i,
-             m_settings->schEntries[i].schedulerHourFrom,
-             m_settings->schEntries[i].schedulerMinFrom,
-             m_settings->schEntries[i].schedulerHourTo,
-             m_settings->schEntries[i].schedulerMinTo,
+      blog_d("[SCHEDULER] Entries:%u, Entry: %u;%u:%u,%u:%u  Next entry: %u;%u:%u,%u:%u", schEntriesLength, i,
+             m_schEntries[i].schedulerHourFrom,
+             m_schEntries[i].schedulerMinFrom,
+             m_schEntries[i].schedulerHourTo,
+             m_schEntries[i].schedulerMinTo,
 
              nextEntry,
-             m_settings->schEntries[nextEntry].schedulerHourFrom,
-             m_settings->schEntries[nextEntry].schedulerMinFrom,
-             m_settings->schEntries[nextEntry].schedulerHourTo,
-             m_settings->schEntries[nextEntry].schedulerMinTo);
+             m_schEntries[nextEntry].schedulerHourFrom,
+             m_schEntries[nextEntry].schedulerMinFrom,
+             m_schEntries[nextEntry].schedulerHourTo,
+             m_schEntries[nextEntry].schedulerMinTo);
 
       blog_d("[SCHEDULER] Calculated time: %u, iFrom:%u, iTo:%u, nextFrom:%u", time, iTimeFrom, iTimeTo, nextTimeFrom);
       if ((iTimeFrom > 0 || iTimeTo > 0) && ((i == 0 && time < iTimeFrom) || (time > iTimeTo)) &&
@@ -208,3 +250,29 @@ void Runtime::setSafeMode(int8_t safeMode)
 {
   m_safeMode = safeMode;
 }
+
+SchEntryType Runtime::getCurrentSchedulerEntry()
+{
+  time_t t = TimeManagement::getInstance()->getLocalTime();
+  int time = hour(t) * 60 + minute(t) + 1;
+  for (int i = 0; i < schEntriesLength; i++)
+  {
+    int iTimeFrom = m_schEntries[i].schedulerHourFrom * 60 + m_schEntries[i].schedulerMinFrom;
+    int iTimeTo = m_schEntries[i].schedulerHourTo * 60 + m_schEntries[i].schedulerMinTo;
+    if (iTimeFrom <= time && iTimeTo > time)
+    {
+      blog_d("[SCHEDULER] Current entry: %u;%u:%u,%u:%u;%d",
+             i,
+             m_schEntries[i].schedulerHourFrom,
+             m_schEntries[i].schedulerMinFrom,
+             m_schEntries[i].schedulerHourTo,
+             m_schEntries[i].schedulerMinTo,
+             m_schEntries[i].updateFromServer);
+      return m_schEntries[i];
+    }
+  }
+  SchEntryType entry = {0, 0, 0, 0, false};
+  blog_d("[SCHEDULER] Returning default entry: -1;0:0;0:0;false");
+  return entry;
+}
+} // namespace beegl

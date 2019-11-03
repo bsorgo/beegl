@@ -18,7 +18,6 @@
 
 */
 
-
 #ifndef Updater_h
 #define Updater_h
 
@@ -36,25 +35,30 @@
 #ifndef SYSTEM_VARIANT
 #define SYSTEM_VARIANT ""
 #endif
-class Updater
+namespace beegl
+{
+class Updater : public ISettingsHandler
 {
 
 public:
-    Updater(Runtime *runtime, Service *service, Settings *settings, Connection *connection);
-    void checkFirmware();
-    bool checkDownloadFile(const char* filename);
-private:
-    Connection *m_connection;
-    Settings *m_settings;
-    Service *m_server;
-    Runtime *m_runtime;
-    const char* m_currentVersion;
-    void webServerBind();
-    void downloadFirmware(HttpClient *httpClient, char *filePath);
-    String getLocalFileMd5(const char* filename);
-    String getServerFileMd5(const char* filename);
-    bool downloadFile(const char* hostname, const char *path, const char* filename);
-    bool downloadFile(const char *filename);
-};
+  Updater(Runtime *runtime, Service *service, Settings *settings, Connection *connection);
+  void checkFirmware();
+  bool checkDownloadFile(const char *filename);
 
-#endif 
+private:
+  Connection *m_connection;
+  Service *m_server;
+  Runtime *m_runtime;
+  const char *m_currentVersion;
+  void webServerBind();
+  void downloadFirmware(HttpClient *httpClient, char *filePath);
+  String getLocalFileMd5(const char *filename);
+  String getServerFileMd5(const char *filename);
+  bool downloadFile(const char *hostname, const char *path, const char *filename);
+  bool downloadFile(const char *filename);
+
+  char *getFirmwarePath();
+};
+} // namespace beegl
+
+#endif

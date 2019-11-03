@@ -1,8 +1,8 @@
-#ifndef TinyGsmConnectionProvider_h
-#define TinyGsmConnectionProvider_h
+#ifndef BLEConnectionProvider_h
+#define BLEConnectionProvider_h
 
 /*
-  TinyGsmConnectionProvider.h - TinyGSM connection
+  BLEConnectionProvider.h - BLE connection
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -24,39 +24,29 @@
 #include "Log.h"
 #include "Connection.h"
 #include "Settings.h"
-#include <TinyGsmClient.h>
-
-
-
-
-class TinyGsmConnectionProvider : public ConnectionProvider
+#include "BeeGl.h"
+#include <esp_bt.h>
+namespace beegl
+{
+class BLEConnectionProvider : public ConnectionProvider
 {
 
 public:
-  TinyGsmConnectionProvider(Settings *settings);
+  BLEConnectionProvider(Connection *connection, Settings *settings);
+  static BLEConnectionProvider* createAndRegister(BeeGl *core);
   Client *getClient() override;
   void checkConnect() override;
   bool setup() override;
   void shutdown() override;
-  TinyGsm *getModem();
-  void modemOff();
   void suspend() override;
   void resume() override;
-  void modemPowerup();
-  const char getInboundType() { return 0x0;}
-  const char getOutboundType() { return 0x2;}
-  const char* getName() { return "GSM/NB-IOT";}
+  const char getInboundType() { return 0x2; };
+  const char getOutboundType() { return 0x0; };
+  const char *getName() { return "BLE"; }
 
 private:
-  const int MODEM_RX_PIN = 15;
-  const int MODEM_TX_PIN = 14;
-  const int MODEM_POWER_PIN = 5;
-
-  HardwareSerial *serialAT;
-  TinyGsm *modem;
-  TinyGsmClient *gsmClient;
-  bool gsmSetup();
-  bool gprsSetup();
+  bool bleSetup();
+  void btOff();
 };
-
+} // namespace beegl
 #endif

@@ -20,30 +20,42 @@
 */
 
 #include "Connection.h"
-
-// set up the data structures.
-
-
-
-Connection::Connection(Service *service, Settings *settings)
+namespace beegl
 {
-    m_settings = settings;
-    m_service = service;
+ConnectionProvider::ConnectionProvider(Connection *connection, Settings *settings) : ISettingsHandler(settings)
+{
+    m_connection = connection;
 }
 
-void Connection::addConnectionProvider(ConnectionProvider *connection)
+Connection::Connection(Service *service, Settings *settings) : ISettingsHandler(settings)
+{
+    m_service = service;
+}
+void Connection::readSettings(const JsonObject &source)
+{
+    m_inboundMode = source[STR_INBOUNDMODE];
+    m_outboundMode = (source[STR_OUTBOUNDMODE] ? source[STR_OUTBOUNDMODE] : m_outboundMode);
+}
+void Connection::writeSettings(JsonObject &target, const JsonObject &input)
+{
+    target[STR_OUTBOUNDMODE] = m_outboundMode;
+    target[STR_INBOUNDMODE] = m_inboundMode;
+}
+
+int Connection::registerConnectionProvider(ConnectionProvider *connection)
 {
     blog_d("[CONNECTION] Adding connection provider: %s, inbound: %u, outbound: %u", connection->getName(), connection->getInboundType(), connection->getOutboundType());
     m_connection[connectionSize] = connection;
     connectionSize++;
+    return connectionSize;
 }
 
-int Connection::getOutboundConnectionProviders(ConnectionProvider** providers,char outboundTypeMask)
+int Connection::getOutboundConnectionProviders(ConnectionProvider **providers, char outboundTypeMask)
 {
     int j = 0;
-    for(int i=0;i<connectionSize;i++)
+    for (int i = 0; i < connectionSize; i++)
     {
-        if( (m_connection[i]->getOutboundType() & outboundTypeMask))
+        if ((m_connection[i]->getOutboundType() & outboundTypeMask))
         {
             providers[j] = m_connection[i];
             j++;
@@ -57,20 +69,20 @@ void Connection::webServerBind()
 {
     m_service->getWebServer()->on("/rest/connections/outbound", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
-       
+
         StaticJsonDocument<256> jsonBuffer;
         JsonObject root = jsonBuffer.to<JsonObject>();
         JsonArray array = root.createNestedArray("conn");
-        
-        ConnectionProvider* providers[5];
+
+        ConnectionProvider *providers[5];
         int count = this->getOutboundConnectionProviders(providers, 0xFF);
-        for(int i=0;i<count;i++)
+        for (int i = 0; i < count; i++)
         {
-            
-            JsonObject  proto = array.createNestedObject();
-            proto["name"] =  providers[i]->getName();
-            proto[STR_OUTBOUNDMODE] = (int) providers[i]->getOutboundType();
-            proto[STR_INBOUNDMODE] = (int) providers[i]->getInboundType();
+
+            JsonObject proto = array.createNestedObject();
+            proto["name"] = providers[i]->getName();
+            proto[STR_OUTBOUNDMODE] = (int)providers[i]->getOutboundType();
+            proto[STR_INBOUNDMODE] = (int)providers[i]->getInboundType();
         }
         serializeJson(jsonBuffer, *response);
         jsonBuffer.clear();
@@ -80,10 +92,10 @@ void Connection::webServerBind()
 
 void Connection::suspend()
 {
-    for(int i=0;i<connectionSize;i++)
+    for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
             connection->suspend();
         }
@@ -92,10 +104,10 @@ void Connection::suspend()
 
 void Connection::resume()
 {
-    for(int i=0;i<connectionSize;i++)
+    for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
             connection->suspend();
         }
@@ -104,10 +116,10 @@ void Connection::resume()
 
 void Connection::shutdown()
 {
-    for(int i=0;i<connectionSize;i++)
+    for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
             blog_d("[CONNECTION] Shutdown connection provider: %s", connection->getName());
             connection->shutdown();
@@ -118,13 +130,13 @@ void Connection::shutdown()
 bool Connection::setup()
 {
     bool ret = true;
-    for(int i=0;i<connectionSize;i++)
+    for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
             blog_d("[CONNECTION] Setup connection provider: %s", connection->getName());
-            if(!connection->setup())
+            if (!connection->setup())
             {
                 ret = false;
             }
@@ -141,10 +153,10 @@ bool Connection::setup()
 
 void Connection::checkConnect()
 {
-    for(int i=0;i<connectionSize;i++)
+    for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
             connection->checkConnect();
         }
@@ -153,13 +165,14 @@ void Connection::checkConnect()
 
 Client *Connection::getClient()
 {
-    for(int i=0;i<connectionSize;i++)
+    for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if(m_settings->inboundMode & connection->getInboundType() || m_settings->outboundMode & connection->getOutboundType())
+        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
             return connection->getClient();
         }
     }
     return nullptr;
 }
+} // namespace beegl

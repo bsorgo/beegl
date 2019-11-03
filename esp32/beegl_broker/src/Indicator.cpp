@@ -17,10 +17,10 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "Indicator.h"
 
-
+namespace beegl
+{
 #define BLING_PAUSE 80
 Indicator::Indicator()
 {
@@ -32,6 +32,7 @@ Indicator::Indicator()
 
 void Indicator::reportSuccess(int blinks)
 {
+    blog_d("[INDICATOR] Success - blinks: %u", blinks);
     digitalWrite(RED_LED_PIN, LOW);
     for (int i = 0; i < blinks; i++)
     {
@@ -44,6 +45,7 @@ void Indicator::reportSuccess(int blinks)
 
 void Indicator::reportFail(int blinks)
 {
+    blog_d("[INDICATOR] Success - blinks: %u", blinks);
     digitalWrite(RED_LED_PIN, LOW);
     for (int i = 0; i < blinks; i++)
     {
@@ -64,3 +66,5 @@ void Indicator::reportSuccess()
     digitalWrite(RED_LED_PIN, LOW);
     digitalWrite(GREEN_LED_PIN, HIGH);
 }
+
+} // namespace beegl

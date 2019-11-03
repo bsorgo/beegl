@@ -21,10 +21,6 @@
 #ifndef SettingsManagement_h
 #define SettingsManagement_h
 
-#define CONTENTTYPEJSON "application/json"
-#define CONTENTTYPE "Content-Type"
-#define CONTENTLENGTH "Content-Length"
-
 #include "Log.h"
 #include <SPIFFS.h>
 #include <ESPAsyncWebServer.h>
@@ -34,7 +30,16 @@
 #include "Runtime.h"
 #include <MD5Builder.h>
 
-class SettingsManagement
+#define CONTENTTYPEJSON "application/json"
+#define CONTENTTYPE "Content-Type"
+#define CONTENTLENGTH "Content-Length"
+
+#define STR_SETTINGSURL "setUrl"
+#define STR_SETTINGSUSERNAME "setUser"
+#define STR_SETTINGSPASSWORD "setPwd"
+namespace beegl
+{
+class SettingsManagement : public ISettingsHandler
 {
 
 public:
@@ -44,23 +49,21 @@ public:
   bool writeConfig(const JsonObject &input);
   bool writeConfig();
   bool readConfig();
-  bool writeSettingsToServer();
   void syncSettings();
+  bool writeSettingsToServer();
   void storeLastGood();
 
 private:
-  Settings *m_settings;
   Service *m_server;
   Connection *m_connection;
   Runtime *m_runtime;
   bool copyFile(const char *source, const char *destination);
   void webServerBind();
   bool readTimeAndSettings(HttpClient *httpClient, char *path);
-  void merge(JsonObject &dest, const JsonObject &src);
   bool writeSettings(HttpClient *httpClient, char *path, char *username, char *password);
-  bool writeConfigToFS(const char *filename, const JsonObject &root);
+  bool writeConfigToFS(const char *filename, const JsonDocument &root);
   String getLocalFileMd5(const char *filename);
   bool readAndParseJson(const char *filename, StaticJsonDocument<CONFIG_BUFFER> *jsonBuffer);
 };
-
+} // namespace beegl
 #endif

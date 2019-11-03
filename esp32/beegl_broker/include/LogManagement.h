@@ -24,17 +24,16 @@
 #include "Log.h"
 #include "Settings.h"
 #include "Service.h"
-
-class LogManagement
+namespace beegl
 {
-    public:
-    LogManagement(Settings* settings, Service* service);
+class LogManagement : public ISettingsHandler
+{
+public:
+  LogManagement(Settings *settings, Service *service);
 
-    private:
-    Settings *m_settings;
-    Service* m_server;
-    void webServerBind();
-
+private:
+  Service *m_server;
+  void webServerBind();
 };
-
+} // namespace beegl
 #endif

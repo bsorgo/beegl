@@ -23,13 +23,13 @@
 */
 
 #include "SettingsManagement.h"
-
-SettingsManagement::SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime *runtime)
+namespace beegl
+{
+SettingsManagement::SettingsManagement(Settings *settings, Connection *connection, Service *service, Runtime *runtime) : ISettingsHandler(settings)
 {
 
     m_server = service;
     m_connection = connection;
-    m_settings = settings;
     m_runtime = runtime;
     webServerBind();
 }
@@ -45,6 +45,10 @@ void SettingsManagement::webServerBind()
 
     m_server->getWebServer()->on("/rest/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SPIFFS, CONFIGJSON, String(), false);
+    });
+
+    m_server->getWebServer()->on("/rest/settings/default", HTTP_POST, [this](AsyncWebServerRequest *request) {
+        this->writeConfig();
     });
 
     m_server->getWebServer()->on("/rest/settings/sync", HTTP_POST,
@@ -103,8 +107,7 @@ void SettingsManagement::webServerBind()
                                          if (file)
                                          {
                                              auto error = deserializeJson(jsonBuffer, file);
-                                             
-                                             
+
                                              file.close();
                                              if (!error)
                                              {
@@ -139,114 +142,25 @@ void SettingsManagement::webServerBind()
  */
 bool SettingsManagement::writeConfig(const JsonObject &input)
 {
-
     blog_i("[SETTINGS] Writing settings");
 
     StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
     JsonObject root = jsonBuffer.to<JsonObject>();
 
-    root[STR_OUTBOUNDMODE] = m_settings->outboundMode;
-    root[STR_INBOUNDMODE] = m_settings->inboundMode;
+    m_settings->writeSettings(root, input);
+
     root[STR_DEVICENAME] = m_settings->deviceName;
     root[STR_RESTARTINTERVAL] = m_settings->restartInterval;
-    root[STR_TIMESOURCE] = m_settings->timeSource;
     root[STR_REFRESH] = m_settings->refreshInterval;
     root[STR_VER] = m_settings->firmwareVersion;
     root[STR_SETTINGSURL] = m_settings->httpTimeAndSettingsPrefix;
     root[STR_SETTINGSUSERNAME] = m_settings->httpTimeAndSettingUsername;
     root[STR_SETTINGSPASSWORD] = m_settings->httpTimeAndSettingPassword;
 
-    merge(root, input);
-
-    JsonObject wifiSettings = root.createNestedObject(STR_WIFISETTINGS);
-    wifiSettings[STR_WIFISSID] = m_settings->wifiSSID;
-    wifiSettings[STR_WIFIPASSWORD] = m_settings->wifiPassword;
-    wifiSettings[STR_WIFICUSTOMIP] = m_settings->wifiCustomIp;
-    wifiSettings[STR_WIFIIP] = m_settings->wifiIp.toString();
-    wifiSettings[STR_WIFIGATEWAY] = m_settings->wifiGateway.toString();
-    wifiSettings[STR_WIFINETMASK] = m_settings->wifiSubnet.toString();
-
-    merge(wifiSettings, input[STR_WIFISETTINGS]);
-
-    JsonObject scaleSettings = root.createNestedObject(STR_SCALESETTINGS);
-    scaleSettings[STR_SCALEFACTOR] = m_settings->scaleFactor;
-    scaleSettings[STR_SCALEOFFSET] = m_settings->scaleOffset;
-    scaleSettings[STR_SCALEUNIT] = m_settings->scaleUnit;
-
-    merge(scaleSettings, input[STR_SCALESETTINGS]);
-
-    JsonObject apSettings = root.createNestedObject(STR_APSETTINGS);
-    apSettings[STR_APPASSWORD] = m_settings->apPassword;
-    apSettings[STR_APIP] = m_settings->apIp.toString();
-    apSettings[STR_APGATEWAY] = m_settings->apGateway.toString();
-    apSettings[STR_APNETMASK] = m_settings->apSubnet.toString();
-
-    merge(apSettings, input[STR_APSETTINGS]);
-
-    JsonObject mqttSettings = root.createNestedObject(STR_MQTTSETTINGS);
-    mqttSettings[STR_MQTTSERVER] = m_settings->mqttServer;
-    mqttSettings[STR_MQTTPORT] = m_settings->mqttPort;
-    mqttSettings[STR_MQTTUSERNAME] = m_settings->mqttUsername;
-    mqttSettings[STR_MQTTPASSWORD] = m_settings->mqttPassword;
-    mqttSettings[STR_MQTTTOPIC] = m_settings->sensorTopic;
-
-    merge(mqttSettings, input[STR_MQTTSETTINGS]);
-
-    JsonObject loraSettings = root.createNestedObject(STR_LORASETTINGS);
-    loraSettings[STR_LORAAPPEUI] = m_settings->loraAppEUI;
-    loraSettings[STR_LORADEVEUI] = m_settings->loraDeviceEUI;
-    loraSettings[STR_LORAAPPKEY] = m_settings->loraAppKey;
-
-    merge(loraSettings, input[STR_LORASETTINGS]);
-
-    JsonObject gprsSettings = root.createNestedObject(STR_GPRSSETTINGS);
-    gprsSettings[STR_GPRSAPN] = m_settings->apn;
-    gprsSettings[STR_GPRSPASSWORD] = m_settings->apnPass;
-    gprsSettings[STR_GPRSUSERNAME] = m_settings->apnUser;
-
-    merge(gprsSettings, input[STR_GPRSSETTINGS]);
-
-    JsonObject timeSettings = root.createNestedObject(STR_TIMESETTINGS);
-    timeSettings[STR_TIMESZONE] = m_settings->summerTimeZone;
-    timeSettings[STR_TIMEZONE] = m_settings->standardTimeZone;
-
-    merge(timeSettings, input[STR_TIMESETTINGS]);
-
-    JsonObject measurerSettings = root.createNestedObject(STR_MEASURERSETTINGS);
-    measurerSettings[STR_MEASURERWEIGHT] = m_settings->measureWeight;
-    measurerSettings[STR_MEASURERTEMPHUM] = m_settings->measureTempAndHumidity;
-
-    merge(measurerSettings, input[STR_MEASURERSETTINGS]);
-
-    JsonObject publisherSettings = root.createNestedObject(STR_PUBLISHERSETTINGS);
-    publisherSettings[STR_PUBLISHERPROTOCOL] = m_settings->protocol;
-
-    merge(publisherSettings, input[STR_PUBLISHERSETTINGS]);
-
-    JsonArray schSettings = root.createNestedArray(STR_SCHSETTINGS);
-    if (input[STR_SCHSETTINGS])
-    {
-        m_settings->schEntriesLength = input[STR_SCHSETTINGS].size();
-        for (JsonObject schEntryInput : input[STR_SCHSETTINGS].as<JsonArray>())
-        {
-            JsonObject schEntry = schSettings.createNestedObject();
-            merge(schEntry, schEntryInput);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < m_settings->schEntriesLength; i++)
-        {
-            JsonObject schEntry = schSettings.createNestedObject();
-            schEntry[STR_SCHHOURFROM] = m_settings->schEntries[i].schedulerHourFrom;
-            schEntry[STR_SCHMINFROM] = m_settings->schEntries[i].schedulerMinFrom;
-            schEntry[STR_SCHHOURTO] = m_settings->schEntries[i].schedulerHourTo;
-            schEntry[STR_SCHMINTO] = m_settings->schEntries[i].schedulerMinTo;
-            schEntry[STR_SCHUPDATE] = m_settings->schEntries[i].updateFromServer;
-        }
-    }
+    Settings::merge(root, input);
+    
     blog_i("[SETTINGS] Merge configuration ");
-    return writeConfigToFS(CONFIGJSON, root);
+    return writeConfigToFS(CONFIGJSON, jsonBuffer);
     jsonBuffer.clear();
 }
 /*
@@ -267,7 +181,7 @@ bool SettingsManagement::readAndParseJson(const char *filename, StaticJsonDocume
         return false;
     }
     auto error = deserializeJson(*jsonBuffer, file);
-    if(error)
+    if (error)
     {
         file.close();
         return false;
@@ -281,20 +195,20 @@ bool SettingsManagement::readAndParseJson(const char *filename, StaticJsonDocume
 bool SettingsManagement::readConfig()
 {
     StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
-    
+
     if (!readAndParseJson(CONFIGJSON, &jsonBuffer))
     {
         blog_e("[SETTINGS] Failed to open config file for reading.");
         blog_i("[SETTINGS] Trying last good config.");
-        if (!readAndParseJson(CONFIGJSONLASTGOOD,  &jsonBuffer))
+        if (!readAndParseJson(CONFIGJSONLASTGOOD, &jsonBuffer))
         {
             blog_e("[SETTINGS] Failed to open last good config file for reading.");
             blog_i("[SETTINGS] Trying backup config.");
-            if (!readAndParseJson(CONFIGJSONBACKUP,  &jsonBuffer))
+            if (!readAndParseJson(CONFIGJSONBACKUP, &jsonBuffer))
             {
                 blog_e("[SETTINGS] Failed to open backup config file for reading.");
                 blog_i("[SETTINGS] Trying default minimalistic config.");
-                if (!readAndParseJson(CONFIGJSONDEFAULT,  &jsonBuffer))
+                if (!readAndParseJson(CONFIGJSONDEFAULT, &jsonBuffer))
                 {
                     blog_e("[SETTINGS] Failed to open default config file for reading.");
                     blog_i("[SETTINGS] Creating config from defaults.");
@@ -310,99 +224,17 @@ bool SettingsManagement::readConfig()
     }
     JsonObject root = jsonBuffer.as<JsonObject>();
 
+    m_settings->readSettings(root);
+
     strlcpy(m_settings->deviceName, root[STR_DEVICENAME] | m_settings->deviceName, 17);
-    m_settings->inboundMode = root[STR_INBOUNDMODE];
-    m_settings->outboundMode = (root[STR_OUTBOUNDMODE] ? root[STR_OUTBOUNDMODE] : m_settings->outboundMode);
+
     m_settings->deviceType = (root[STR_DEVICETYPE] ? root[STR_DEVICETYPE] : m_settings->deviceType);
-    m_settings->timeSource = (root[STR_TIMESOURCE] ? root[STR_TIMESOURCE] : m_settings->timeSource);
 
     m_settings->refreshInterval = (root[STR_REFRESH] ? root[STR_REFRESH] : m_settings->refreshInterval);
     strlcpy(m_settings->firmwareVersion, root[STR_VER] | m_settings->firmwareVersion, 9);
     strlcpy(m_settings->httpTimeAndSettingsPrefix, root[STR_SETTINGSURL] | m_settings->httpTimeAndSettingsPrefix, 64);
     strlcpy(m_settings->httpTimeAndSettingUsername, root[STR_SETTINGSUSERNAME] | m_settings->httpTimeAndSettingUsername, 17);
     strlcpy(m_settings->httpTimeAndSettingPassword, root[STR_SETTINGSPASSWORD] | m_settings->httpTimeAndSettingPassword, 17);
-
-    // wifi settings
-
-    JsonObject wifiSettings = root[STR_WIFISETTINGS];
-    strlcpy(m_settings->wifiSSID, wifiSettings[STR_WIFISSID] | m_settings->wifiSSID, 33);
-    strlcpy(m_settings->wifiPassword, wifiSettings[STR_WIFIPASSWORD] | m_settings->wifiPassword, 33);
-    m_settings->wifiCustomIp = wifiSettings[STR_WIFICUSTOMIP] ? wifiSettings[STR_WIFICUSTOMIP] : m_settings->wifiCustomIp;
-    m_settings->wifiIp.fromString(wifiSettings[STR_WIFIIP] | "192.168.0.155");
-    m_settings->wifiGateway.fromString(wifiSettings[STR_WIFIGATEWAY] | "192.168.0.1");
-    m_settings->wifiSubnet.fromString(wifiSettings[STR_WIFINETMASK] | "255.255.255.0");
-    // scale settings
-
-    JsonObject scaleSettings = root[STR_SCALESETTINGS];
-    if (!scaleSettings[STR_SCALEFACTOR].isNull())
-    {
-        m_settings->scaleFactor = scaleSettings[STR_SCALEFACTOR];
-    }
-    m_settings->scaleOffset = scaleSettings[STR_SCALEOFFSET] | 0;
-    strlcpy(m_settings->scaleUnit, scaleSettings[STR_SCALEUNIT] | m_settings->scaleUnit, 6);
-
-    // wifi ap settings
-
-    JsonObject apSettings = root[STR_APSETTINGS];
-    strlcpy(m_settings->apPassword, apSettings[STR_APPASSWORD] | m_settings->apPassword, 17);
-    m_settings->apIp.fromString(apSettings[STR_APIP] | "192.168.4.1");
-    m_settings->apGateway.fromString(apSettings[STR_APGATEWAY] | "192.168.4.1");
-    m_settings->apSubnet.fromString(apSettings[STR_APNETMASK] | "255.255.255.0");
-    // mqtt settings
-
-    JsonObject mqttSettings = root[STR_MQTTSETTINGS];
-    strlcpy(m_settings->mqttServer, mqttSettings[STR_MQTTSERVER] | m_settings->mqttServer, 33);
-    m_settings->mqttPort = mqttSettings[STR_MQTTPORT] | 1883;
-    strlcpy(m_settings->mqttUsername, mqttSettings[STR_MQTTUSERNAME] | m_settings->mqttUsername, 17);
-    strlcpy(m_settings->mqttPassword, mqttSettings[STR_MQTTPASSWORD] | m_settings->mqttPassword, 17);
-    strlcpy(m_settings->sensorTopic, mqttSettings[STR_MQTTTOPIC] | m_settings->sensorTopic, 65);
-
-    //lorawan settings
-
-    JsonObject loraSettings = root[STR_LORASETTINGS];
-    strlcpy(m_settings->loraAppEUI, loraSettings[STR_LORAAPPEUI] | m_settings->loraAppEUI, 17);
-    strlcpy(m_settings->loraDeviceEUI, loraSettings[STR_LORADEVEUI] | m_settings->loraDeviceEUI, 17);
-    strlcpy(m_settings->loraAppKey, loraSettings[STR_LORAAPPKEY] | m_settings->loraAppKey, 33);
-
-    // gprs settings
-
-    JsonObject gprsSettings = root[STR_GPRSSETTINGS];
-    strlcpy(m_settings->apn, gprsSettings[STR_GPRSAPN] | m_settings->apn, 32);
-    strlcpy(m_settings->apnUser, gprsSettings[STR_GPRSUSERNAME] | m_settings->apnUser, 16);
-    strlcpy(m_settings->apnPass, gprsSettings[STR_GPRSPASSWORD] | m_settings->apnPass, 16);
-
-    // time settings
-
-    JsonObject timeSettings = root[STR_TIMESETTINGS];
-    m_settings->standardTimeZone = timeSettings[STR_TIMEZONE] ? timeSettings[STR_TIMEZONE] : m_settings->standardTimeZone;
-    m_settings->summerTimeZone = timeSettings[STR_TIMESZONE] ? timeSettings[STR_TIMESZONE] : m_settings->summerTimeZone;
-
-    m_settings->setTimezone();
-
-    // measurer settings
-
-    JsonObject measurerSettings = root[STR_MEASURERSETTINGS];
-    m_settings->measureWeight = measurerSettings[STR_MEASURERWEIGHT] ? measurerSettings[STR_MEASURERWEIGHT] : m_settings->measureWeight;
-    m_settings->measureTempAndHumidity = measurerSettings[STR_MEASURERTEMPHUM] ? measurerSettings[STR_MEASURERTEMPHUM] : m_settings->measureTempAndHumidity;
-
-    // publisher settings
-
-    JsonObject publisherSettings = root[STR_PUBLISHERSETTINGS];
-    m_settings->protocol = publisherSettings[STR_PUBLISHERPROTOCOL];
-
-    // scheduler settings
-    JsonArray schSettings = root[STR_SCHSETTINGS];
-    m_settings->schEntriesLength = schSettings.size();
-    int i = 0;
-    for (JsonObject schEntryInput : schSettings)
-    {
-        m_settings->schEntries[i].schedulerHourFrom = schEntryInput[STR_SCHHOURFROM];
-        m_settings->schEntries[i].schedulerMinFrom = schEntryInput[STR_SCHMINFROM];
-        m_settings->schEntries[i].schedulerHourTo = schEntryInput[STR_SCHHOURTO];
-        m_settings->schEntries[i].schedulerMinTo = schEntryInput[STR_SCHMINTO];
-        m_settings->schEntries[i].updateFromServer = schEntryInput[STR_SCHUPDATE];
-        i++;
-    }
     jsonBuffer.clear();
     return true;
 }
@@ -426,10 +258,9 @@ bool SettingsManagement::writeSettingsToServer()
 void SettingsManagement::syncSettings()
 {
     Client *client = m_connection->getClient();
-    SchEntryType schEntry = m_settings->getCurrentSchedulerEntry();
-    if (schEntry.updateFromServer && client != nullptr && m_settings->outboundMode & 0x3)
+    SchEntryType schEntry = m_runtime->getCurrentSchedulerEntry();
+    if (schEntry.updateFromServer && client != nullptr && m_connection->getOutboundMode() & 0x3)
     {
-        // GPRS || WiFi
         blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
         char *hostname = m_settings->getSettingsHostname();
         char *path = m_settings->getSettingsPath();
@@ -461,7 +292,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
         {
         }
     }
-    
+
     if (res == 0 && responseCode == 200)
     {
         String responseBody = httpClient->responseBody();
@@ -470,7 +301,6 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
             StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
             auto error = deserializeJson(jsonBuffer, responseBody.c_str());
 
-            
             if (!error)
             {
                 JsonObject root = jsonBuffer.as<JsonObject>();
@@ -517,22 +347,12 @@ void SettingsManagement::storeLastGood()
 /**
  * Merges json objects from src -> dest
  */
-void SettingsManagement::merge(JsonObject &dest, const JsonObject &src)
-{
-    if (!src.isNull())
-    {
-        for (auto kvp : src)
-        {
-            dest[kvp.key()] = kvp.value();
-        }
-    }
-}
+
 /**
  *  Writes json to SPIFFS file
  */
-bool SettingsManagement::writeConfigToFS(const char *filename, const JsonObject &root)
+bool SettingsManagement::writeConfigToFS(const char *filename, const JsonDocument &doc)
 {
-
     SPIFFS.rename(CONFIGJSON, CONFIGJSONBACKUP);
     blog_i("[SPIFFS] Writing file %s", filename);
     File file = SPIFFS.open(filename, FILE_WRITE);
@@ -542,7 +362,7 @@ bool SettingsManagement::writeConfigToFS(const char *filename, const JsonObject 
         Serial.println(filename);
         return false;
     }
-    if (serializeJson(root, file) == 0)
+    if (serializeJson(doc, file) == 0)
     {
         blog_e("[SPIFFS] Failed to write to file %s", filename);
         return false;
@@ -602,3 +422,4 @@ String SettingsManagement::getLocalFileMd5(const char *path)
     file.close();
     return md5str;
 }
+} // namespace beegl
