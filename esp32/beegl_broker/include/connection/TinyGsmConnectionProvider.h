@@ -79,8 +79,8 @@ private:
   const int MODEM_TX_PIN = 14;
   const int MODEM_POWER_PIN = 5;
 
-  HardwareSerial serialAT{1};
-  TinyGsm modem {serialAT};
+  HardwareSerial serialAT;
+  TinyGsm modem;
   TinyGsmClient gsmClient {};
 
   /* GPRS parameters 

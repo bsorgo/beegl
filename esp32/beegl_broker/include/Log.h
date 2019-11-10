@@ -29,7 +29,6 @@
 
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
-
 #include "Storage.h"
 
 #ifndef MAX_LOG_FILES
@@ -53,9 +52,9 @@ long log_number();
 #define BEEGL_LONG_LOG_FORMAT(letter, format) "[" #letter "][%s:%u] %s(): " format "\r\n", pathToFileName(__FILE__), __LINE__, __FUNCTION__
 #define BEEGL_SHORT_LOG_FORMAT(letter, format) "[" #letter "]" format "\r\n"
 
-#define BEEGL_TAG_LONG_LOG_FORMAT(letter, tag, format) "[" #letter "][" #tag "][%s:%u] %s(): " format "\r\n", pathToFileName(__FILE__), __LINE__, __FUNCTION__
-#define BEEGL_TAG_SHORT_LOG_FORMAT(letter, tag, format) "[" #letter "][" #tag "]" format "\r\n "
-#define BEEGL_TAG_LOG_FORMAT(letter, tag, format) ARDUHAL_LOG_COLOR_##letter "[" #letter "][" #tag "][%s:%u] %s(): " format ARDUHAL_LOG_RESET_COLOR "\r\n", pathToFileName(__FILE__), __LINE__, __FUNCTION__
+#define BEEGL_TAG_LONG_LOG_FORMAT(letter, format, tag) "[%u][" #letter "][%s][%s:%u] %s(): " format "\r\n", millis(), tag, pathToFileName(__FILE__), __LINE__, __FUNCTION__
+#define BEEGL_TAG_SHORT_LOG_FORMAT(letter, format, tag) "[%u][" #letter "][%s] " format "\r\n , ", millis(), tag
+#define BEEGL_TAG_LOG_FORMAT(letter, format, tag) ARDUHAL_LOG_COLOR_##letter "[%u][" #letter "][%s][%s:%u] %s(): " format ARDUHAL_LOG_RESET_COLOR "\r\n", millis(), tag, pathToFileName(__FILE__), __LINE__, __FUNCTION__
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_VERBOSE
 #define blog_v(format, ...)                                              \
     do                                                                   \
@@ -69,11 +68,11 @@ long log_number();
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_VERBOSE
-#define btlog_v(tag, format, ...)                                                 \
-    do                                                                            \
-    {                                                                             \
-        log_printf(BEEGL_TAG_LOG_FORMAT(V, tag, format), ##__VA_ARGS__);          \
-        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(V, tag, format), ##__VA_ARGS__); \
+#define btlog_v(tag, format, ...)                                                \
+    do                                                                           \
+    {                                                                            \
+        log_printf(BEEGL_TAG_LOG_FORMAT(V, format, tag), ##__VA_ARGS__);         \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(V, format, tag), #__VA_ARGS__); \
     } while (0)
 #else
 #define btlog_v(tag, format, ...)
@@ -91,11 +90,11 @@ long log_number();
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-#define btlog_d(tag, format, ...)                                                  \
+#define btlog_d(tag, format, ...)                                                 \
     do                                                                            \
     {                                                                             \
-        log_printf(BEEGL_TAG_LOG_FORMAT(D, tag, format), ##__VA_ARGS__);          \
-        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(D, tag, format), ##__VA_ARGS__); \
+        log_printf(BEEGL_TAG_LOG_FORMAT(D, format, tag), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(D, format, tag), ##__VA_ARGS__); \
     } while (0)
 #else
 #define btlog_d(tag, format, ...)
@@ -113,11 +112,11 @@ long log_number();
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-#define btlog_i(tag, format, ...)                                                  \
+#define btlog_i(tag, format, ...)                                                 \
     do                                                                            \
     {                                                                             \
-        log_printf(BEEGL_TAG_LOG_FORMAT(I, tag, format), ##__VA_ARGS__);          \
-        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(I, tag, format), ##__VA_ARGS__); \
+        log_printf(BEEGL_TAG_LOG_FORMAT(I, format, tag), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(I, format, tag), ##__VA_ARGS__); \
     } while (0)
 #else
 #define btlog_i(tag, format, ...)
@@ -135,11 +134,11 @@ long log_number();
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_WARN
-#define btlog_w(tag, format, ...)                                                  \
+#define btlog_w(tag, format, ...)                                                 \
     do                                                                            \
     {                                                                             \
-        log_printf(BEEGL_TAG_LOG_FORMAT(W, tag, format), ##__VA_ARGS__);          \
-        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(W, tag, format), ##__VA_ARGS__); \
+        log_printf(BEEGL_TAG_LOG_FORMAT(W, format, tag), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(W, format, tag), ##__VA_ARGS__); \
     } while (0)
 #else
 #define btlog_w(tag, gformat, ...)
@@ -157,11 +156,11 @@ long log_number();
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_ERROR
-#define btlog_e(tag, format, ...)                                                  \
+#define btlog_e(tag, format, ...)                                                 \
     do                                                                            \
     {                                                                             \
-        log_printf(BEEGL_TAG_LOG_FORMAT(E, tag, format), ##__VA_ARGS__);          \
-        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(E, tag, format), ##__VA_ARGS__); \
+        log_printf(BEEGL_TAG_LOG_FORMAT(E, format, tag), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(E, format, tag), ##__VA_ARGS__); \
     } while (0)
 #else
 #define btlog_e(tag, format, ...)

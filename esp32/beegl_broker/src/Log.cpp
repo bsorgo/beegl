@@ -109,7 +109,7 @@ int fs_log_printf(const char *format, ...)
         logFile = FILESYSTEM.open(filename, FILE_APPEND);
         lastLogFileSize = 0;
         NVS.setInt(LAST_LOG_NVS, lastLog);
-        log_d("[%s] New log filename: %s", TAG_LOG filename.c_str());
+        log_d("[%s] New log filename: %s", TAG_LOG, filename.c_str());
         if (!logFile)
         {
             log_e("[%s] Failed to open new log file to append: %s", TAG_LOG,  filename.c_str());

@@ -24,7 +24,7 @@
 namespace beegl
 {
 
-TinyGsmConnectionProvider::TinyGsmConnectionProvider(Connection *connection, Settings *settings) : ConnectionProvider(connection, settings)
+TinyGsmConnectionProvider::TinyGsmConnectionProvider(Connection *connection, Settings *settings) : ConnectionProvider(connection, settings), serialAT(1), modem(serialAT)
 {
 
     gsmClient.init(&modem);
@@ -63,7 +63,7 @@ void TinyGsmConnectionProvider::modemOff()
 {
     btlog_i(TAG_GSM, "OFF");
     modem.poweroff();
-#if defined(TINY_GSM_MODEM_SIM800) || defined(TINY_GSM_MODEM_SIM800)
+#if defined(TINY_GSM_MODEM_SIM800)
     delay(500);
     modem.sendAT(GF("+CSCLK=2"));
     modem.waitResponse(5000L);

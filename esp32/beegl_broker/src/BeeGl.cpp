@@ -64,8 +64,6 @@ void BeeGl::prepare()
     }
 
     WiFiConnectionProvider::createAndRegister(this);
-
-
     timeManagement.registerTimeProviderStrategy(new TimeProviderStrategy(&settings, &connection));
 }
 
@@ -104,9 +102,9 @@ void BeeGl::begin()
         indicator.reportSuccess(2);
     }
 
-    log_i(TAG_DEVICE, "Device name: %s ", settings.deviceName);
-    log_i(TAG_DEVICE, "Inbound mode: %u ", connection.getInboundMode());
-    log_i(TAG_DEVICE, "Outbound mode: %u ", connection.getOutboundMode());
+    btlog_i(TAG_DEVICE, "Device name: %s ", settings.deviceName);
+    btlog_i(TAG_DEVICE, "Inbound mode: %u ", connection.getInboundMode());
+    btlog_i(TAG_DEVICE, "Outbound mode: %u ", connection.getOutboundMode());
 
     if (!connection.setup())
     {
