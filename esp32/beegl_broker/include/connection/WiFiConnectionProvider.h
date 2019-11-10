@@ -39,6 +39,9 @@
 #define STR_APIP "ip"
 #define STR_APGATEWAY "gw"
 #define STR_APNETMASK "nmsk"
+
+#define TAG_WIFI "WIFI"
+
 namespace beegl
 {
 class WiFiConnectionProvider : public ConnectionProvider
@@ -47,7 +50,7 @@ class WiFiConnectionProvider : public ConnectionProvider
 public:
   WiFiConnectionProvider(Connection *connection, Settings *settings);
   static WiFiConnectionProvider*createAndRegister(BeeGl *core);
-  Client *getClient() override;
+  Client *getClient() const override;
   void checkConnect() override;
   bool setup() override;
   void shutdown() override;

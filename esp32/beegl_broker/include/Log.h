@@ -43,6 +43,9 @@
 #define LOG_DIR_PREFIX LOG_DIR "/"
 #define LOG_EXTENSION ".log"
 #define LAST_LOG_NVS "last_log"
+
+#define TAG_LOG "LOG"
+
 namespace beegl
 {
 int fs_log_printf(const char *fmt, ...);
@@ -50,6 +53,9 @@ long log_number();
 #define BEEGL_LONG_LOG_FORMAT(letter, format) "[" #letter "][%s:%u] %s(): " format "\r\n", pathToFileName(__FILE__), __LINE__, __FUNCTION__
 #define BEEGL_SHORT_LOG_FORMAT(letter, format) "[" #letter "]" format "\r\n"
 
+#define BEEGL_TAG_LONG_LOG_FORMAT(letter, tag, format) "[" #letter "][" #tag "][%s:%u] %s(): " format "\r\n", pathToFileName(__FILE__), __LINE__, __FUNCTION__
+#define BEEGL_TAG_SHORT_LOG_FORMAT(letter, tag, format) "[" #letter "][" #tag "]" format "\r\n "
+#define BEEGL_TAG_LOG_FORMAT(letter, tag, format) ARDUHAL_LOG_COLOR_##letter "[" #letter "][" #tag "][%s:%u] %s(): " format ARDUHAL_LOG_RESET_COLOR "\r\n", pathToFileName(__FILE__), __LINE__, __FUNCTION__
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_VERBOSE
 #define blog_v(format, ...)                                              \
     do                                                                   \
@@ -60,6 +66,17 @@ long log_number();
 
 #else
 #define blog_v(format, ...)
+#endif
+
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_VERBOSE
+#define btlog_v(tag, format, ...)                                                 \
+    do                                                                            \
+    {                                                                             \
+        log_printf(BEEGL_TAG_LOG_FORMAT(V, tag, format), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(V, tag, format), ##__VA_ARGS__); \
+    } while (0)
+#else
+#define btlog_v(tag, format, ...)
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
@@ -73,6 +90,17 @@ long log_number();
 #define blog_d(format, ...)
 #endif
 
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
+#define btlog_d(tag, format, ...)                                                  \
+    do                                                                            \
+    {                                                                             \
+        log_printf(BEEGL_TAG_LOG_FORMAT(D, tag, format), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(D, tag, format), ##__VA_ARGS__); \
+    } while (0)
+#else
+#define btlog_d(tag, format, ...)
+#endif
+
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
 #define blog_i(format, ...)                                              \
     do                                                                   \
@@ -82,6 +110,17 @@ long log_number();
     } while (0)
 #else
 #define blog_i(format, ...)
+#endif
+
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+#define btlog_i(tag, format, ...)                                                  \
+    do                                                                            \
+    {                                                                             \
+        log_printf(BEEGL_TAG_LOG_FORMAT(I, tag, format), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(I, tag, format), ##__VA_ARGS__); \
+    } while (0)
+#else
+#define btlog_i(tag, format, ...)
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_WARN
@@ -95,6 +134,17 @@ long log_number();
 #define blog_w(format, ...)
 #endif
 
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_WARN
+#define btlog_w(tag, format, ...)                                                  \
+    do                                                                            \
+    {                                                                             \
+        log_printf(BEEGL_TAG_LOG_FORMAT(W, tag, format), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(W, tag, format), ##__VA_ARGS__); \
+    } while (0)
+#else
+#define btlog_w(tag, gformat, ...)
+#endif
+
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_ERROR
 #define blog_e(format, ...)                                              \
     do                                                                   \
@@ -104,6 +154,17 @@ long log_number();
     } while (0)
 #else
 #define blog_e(format, ...)
+#endif
+
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_ERROR
+#define btlog_e(tag, format, ...)                                                  \
+    do                                                                            \
+    {                                                                             \
+        log_printf(BEEGL_TAG_LOG_FORMAT(E, tag, format), ##__VA_ARGS__);          \
+        fs_log_printf(BEEGL_TAG_SHORT_LOG_FORMAT(E, tag, format), ##__VA_ARGS__); \
+    } while (0)
+#else
+#define btlog_e(tag, format, ...)
 #endif
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_NONE

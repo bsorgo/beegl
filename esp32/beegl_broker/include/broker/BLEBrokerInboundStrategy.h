@@ -31,6 +31,8 @@
 
 #include <AsyncJson.h>
 
+#define TAG_BLEBROKER "BLEBROKER"
+
 namespace beegl
 {
 typedef char *(*jsonFunctionPtr)(JsonObject &jsonObj);

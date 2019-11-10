@@ -13,24 +13,24 @@ void notFound(AsyncWebServerRequest *request)
 
 Service::Service(Settings *settings) : ISettingsHandler(settings)
 {
-  m_webserver = new AsyncWebServer(80);
-  m_webserver->onNotFound(notFound);
+  m_webserver.onNotFound(notFound);
 }
 void Service::setup()
 {
   webServerSetup();
 }
 
-AsyncWebServer *Service::getWebServer()
+AsyncWebServer *Service::getWebServer() const
 {
-  return m_webserver;
+  return (AsyncWebServer*) &m_webserver;
 }
 
 void Service::webServerSetup()
 {
-  blog_i("[WEB Server] Starting web server");
-  m_webserver->begin();
-  blog_i("[WEB Server] Web server started");
+  
+  btlog_i(TAG_SERVICE, "Starting web server");
+  m_webserver.begin();
+  btlog_i(TAG_SERVICE, "Web server started");
 }
 
 } // namespace beegl

@@ -7,6 +7,9 @@
 #else
 #define FILESYSTEM SPIFFS
 #endif
+
+#define TAG_STORAGE "STORAGE"
+
 namespace beegl
 {
 bool storage_setup();

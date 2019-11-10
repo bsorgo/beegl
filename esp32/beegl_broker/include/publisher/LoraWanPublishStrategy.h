@@ -28,6 +28,9 @@
 #define LORA_MESSAGE_BUFFER 51
 #define LORA_MEASUREMENT_MESSAGE_TYPE 0x30
 #define LORA_DELIMITER 0x7C
+
+#define TAG_LORAWANPUBLISHER "LORAWANPUBLISHER"
+#define LORAWANPUBLISHER "LoraWan"
 namespace beegl
 {
 class LoraWanPublishStrategy : public PublishStrategy
@@ -44,7 +47,7 @@ public:
   void writeSettings(JsonObject &target, const JsonObject &input) override {}
 
   const char getProtocol() const override { return 0x4; }
-  const char *getProtocolName() const override { return "LoraWan"; }
+  const char *getProtocolName() const override { return LORAWANPUBLISHER; }
   const int getInterval() const override { return 60000; }
   const char getSupportedOutboundTypes() const override { return 0x4; }
 

@@ -37,7 +37,7 @@ BLEConnectionProvider *BLEConnectionProvider::createAndRegister(BeeGl *core)
 }
 void BLEConnectionProvider::btOff()
 {
-    blog_i("[BLE] OFF");
+    btlog_i(TAG_BLE, "OFF");
     esp_bt_controller_disable();
 }
 
@@ -66,9 +66,4 @@ void BLEConnectionProvider::checkConnect()
     // not yet implemented
 }
 
-Client *BLEConnectionProvider::getClient()
-{
-    // not supported
-    return nullptr;
-}
 } // namespace beegl

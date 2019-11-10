@@ -44,7 +44,7 @@ void Broker::setup()
     {
       if (!m_inboundStrategies[i]->setup())
       {
-        blog_e("[BROKER] Error setting up broker strategy: %u", m_inboundStrategies[i]->getInboundType());
+        btlog_e(TAG_BROKER,"Error setting up broker strategy: %u", m_inboundStrategies[i]->getInboundType());
       }
     }
   }

@@ -33,7 +33,7 @@
 #include "connection/TinyGsmConnectionProvider.h"
 #endif
 #ifdef SUPPORTSLORAWAN
-#include "message/WHTMeasureValuesCLPPFormatter.h"
+#include "message/WHTCLPPSerializer.h"
 #include "connection/LoraWanConnectionProvider.h"
 #include "publisher/LoraWanPublishStrategy.h"
 #endif
@@ -93,7 +93,7 @@ void setup()
   MqttPublishStrategy::createAndRegister(&beeGl);
   HttpPublishStrategy::createAndRegister(&beeGl);
 #ifdef SUPPORTSLORAWAN
-  WHTMeasureValuesCLPPFormatter *loraFormatter = new WHTMeasureValuesCLPPFormatter();
+  WHTCLPPSerializer *loraFormatter = new WHTCLPPSerializer();
   LoraWanPublishStrategy::createAndRegister(&beeGl, loraFormatter);
 #endif
 

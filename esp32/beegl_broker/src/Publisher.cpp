@@ -20,6 +20,7 @@
 */
 
 #include "Publisher.h"
+
 namespace beegl
 {
 void Publisher::publishCallback()
@@ -75,7 +76,7 @@ int Publisher::registerPublishStrategy(PublishStrategy *publishStrategy)
 {
   if (publishStrategy != nullptr)
   {
-    blog_d("[PUBLISHER] Add publish strategy: %u", publishStrategy->getProtocol());
+    btlog_d(TAG_PUBLISHER, "Add publish strategy: %u", publishStrategy->getProtocol());
     m_publishStrategies[publishStrategyCount] = publishStrategy;
     publishStrategyCount++;
     return publishStrategyCount;
@@ -91,7 +92,7 @@ PublishStrategy *Publisher::getSelectedStrategy()
     {
       if (m_publishStrategies[i]->getProtocol() == m_protocol && m_publishStrategies[i]->getSupportedOutboundTypes() & m_connection->getOutboundMode())
       {
-        blog_i("[PUBLISHER] Selected publish strategy: %u with publish interval: %lu", m_publishStrategies[i]->getProtocol(), m_publishStrategies[i]->getInterval());
+        btlog_i(TAG_PUBLISHER, "Selected publish strategy: %u with publish interval: %lu", m_publishStrategies[i]->getProtocol(), m_publishStrategies[i]->getInterval());
         m_selectedStrategy = m_publishStrategies[i];
         m_selectedStrategy->setup();
         p_publisherTimer.stop();
@@ -188,11 +189,11 @@ int Publisher::getIndex()
 
 int Publisher::store(JsonDocument *measureValue)
 {
-  blog_d("[PUBLISHER] Begin store message");
+  btlog_d(TAG_PUBLISHER, "Begin store message");
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
   char message[MESSAGE_SIZE];
   m_serializer.serialize(measureValue, message);
-  blog_d("[PUBLISHER]  Store message: %s", message);
+  btlog_d(TAG_PUBLISHER, "Persist message: %s", message);
 #endif
   int i = getIndex();
   messageStorage[i] = measureValue;
@@ -200,6 +201,8 @@ int Publisher::store(JsonDocument *measureValue)
 }
 bool Publisher::publish()
 {
+   btlog_d(TAG_DEVICE, "Free heap: %u", ESP.getFreeHeap());
+
   if (!m_runtime->getSafeMode())
   {
     PublishStrategy *strategy = getSelectedStrategy();
@@ -230,7 +233,7 @@ bool Publisher::publish()
         }
       }
       backlogCount = NVS.getInt(BACKLOG_NVS);
-      blog_d("[PUBLISHER] Backlog count: %u", backlogCount);
+      btlog_d(TAG_PUBLISHER, "Backlog count: %u", backlogCount);
       long fileNumber = 0;
       //
       while (connected && TimeManagement::getInstance()->isAbsoluteTime() && backlogCount > 0)
@@ -250,7 +253,7 @@ bool Publisher::publish()
           {
             if (!FILESYSTEM.remove(backlogFilename))
             {
-              blog_e("[PUBLISHER] Failed to remove measurement backlog file: %s", backlogFilename.c_str());
+              btlog_e(TAG_PUBLISHER, "Failed to remove measurement backlog file: %s", backlogFilename.c_str());
             }
             backlogCount--;
             NVS.setInt(BACKLOG_NVS, backlogCount);
@@ -264,7 +267,7 @@ bool Publisher::publish()
         else
         {
 
-          blog_e("[PUBLISHER] Failed to open measurement backlog file: %s", backlogFilename.c_str());
+          btlog_e(TAG_PUBLISHER, "Failed to open measurement backlog file: %s", backlogFilename.c_str());
           backlogCount--;
           NVS.setInt(BACKLOG_NVS, backlogCount);
         }
@@ -291,7 +294,7 @@ bool Publisher::publish()
             File backlogFile = FILESYSTEM.open(backlogFilename, FILE_WRITE);
             if (backlogFile)
             {
-              blog_i("[PUBLISHER] Writing to measurement backlog file %s:", backlogFilename.c_str());
+              btlog_i(TAG_PUBLISHER, "Writing to measurement backlog file %s:", backlogFilename.c_str());
               char message[MESSAGE_SIZE];
               m_serializer.serialize(messageStorage[publishIndex + 1], message);
               int len = strlen(message);
@@ -300,13 +303,14 @@ bool Publisher::publish()
             }
             else
             {
-              blog_e("[PUBLISHER] Failed to create measurement backlog file: %s", backlogFilename.c_str());
+              btlog_e(TAG_PUBLISHER, "Failed to create measurement backlog file: %s", backlogFilename.c_str());
             }
             NVS.setInt(BACKLOG_NVS, backlogCount);
           }
         }
         if (backlogCount <= MAX_BACKLOG)
         {
+          delete messageStorage[publishIndex + 1];
           publishIndex++;
           if (publishIndex > STORAGE_SIZE - 1)
           {

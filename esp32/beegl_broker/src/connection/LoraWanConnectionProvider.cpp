@@ -63,7 +63,7 @@ void MyLoRaWAN::NetSaveSessionInfo(
     size_t nExtraInfo)
 {
     // write to log
-    blog_i("[LORAWAN] Session info. Country: %u, NetID: %u, FCntUp: %u, FCntDown:", Info.V2.Country, Info.V2.NetID, Info.V2.FCntUp, Info.V2.FCntDown);
+    btlog_i(TAG_LORAWAN, "Session info. Country: %u, NetID: %u, FCntUp: %u, FCntDown:%u", Info.V2.Country, Info.V2.NetID, Info.V2.FCntUp, Info.V2.FCntDown);
 }
 
 // set up the data structures.
@@ -115,17 +115,17 @@ void LoraWanConnectionProvider::shutdown()
 
 bool LoraWanConnectionProvider::setup()
 {
-    blog_i("[LORAWAN] Begin");
-    blog_i("[LORAWAN] App EUI: %s", m_loraAppEUI);
-    blog_i("[LORAWAN] Dev EUI: %s", m_loraDeviceEUI);
-    blog_d("[LORAWAN] App Key: %s", m_loraAppKey);
+    btlog_i(TAG_LORAWAN, "Begin");
+    btlog_i(TAG_LORAWAN, "App EUI: %s", m_loraAppEUI);
+    btlog_i(TAG_LORAWAN, "Dev EUI: %s", m_loraDeviceEUI);
+    btlog_d(TAG_LORAWAN, "App Key: %s", m_loraAppKey);
     from_hex_char(m_provisioningInfo.AppKey, m_loraAppKey, 32, false);
     from_hex_char(m_provisioningInfo.DevEUI, m_loraDeviceEUI, 16, true);
     from_hex_char(m_provisioningInfo.AppEUI, m_loraAppEUI, 16, true);
     loraWan.setProvisioningInfo(&m_provisioningInfo);
     loraWan.begin(loraDevicePinMap);
     loraWan.SetLinkCheckMode(0);
-    blog_i("[LORAWAN] Is provisioned: %s", loraWan.IsProvisioned() ? "Yes" : "No");
+    btlog_i(TAG_LORAWAN, "Is provisioned: %s", loraWan.IsProvisioned() ? "Yes" : "No");
     return true;
 }
 
@@ -134,9 +134,4 @@ void LoraWanConnectionProvider::checkConnect()
     // not supported
 }
 
-Client *LoraWanConnectionProvider::getClient()
-{
-    // client not supported
-    return NULL;
-}
 } // namespace beegl

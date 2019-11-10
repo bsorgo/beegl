@@ -37,6 +37,7 @@
 #define STR_SETTINGSURL "setUrl"
 #define STR_SETTINGSUSERNAME "setUser"
 #define STR_SETTINGSPASSWORD "setPwd"
+
 namespace beegl
 {
 class SettingsManagement : public ISettingsHandler

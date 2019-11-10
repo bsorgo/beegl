@@ -33,6 +33,7 @@
 #define STR_HUMIDITYUNITPERCENT "pct"
 
 #define DHT_PIN 22
+#define TAG_DHT "DHT"
 namespace beegl
 {
 class DHT22TempAndHumidityMeasureProvider : public MeasureProvider
@@ -45,7 +46,7 @@ public:
 
 private:
   const char m_pin = DHT_PIN;
-  DHTesp m_dht;
+  DHTesp m_dht {};
 };
 } // namespace beegl
 #endif

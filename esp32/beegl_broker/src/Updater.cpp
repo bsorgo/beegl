@@ -40,7 +40,7 @@ void Updater::webServerBind()
     ESP.restart(); }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
     if(!index){
-      blog_i("[UPDATER] UploadStart: %s\n", filename.c_str());
+      btlog_i(TAG_UPDATER, "UploadStart: %s\n", filename.c_str());
       if (!Update.begin(UPDATE_SIZE_UNKNOWN)) { 
         Update.printError(Serial);
       }
@@ -50,10 +50,10 @@ void Updater::webServerBind()
       Update.printError(Serial);
     }
     if(final) {
-    blog_i("[UPDATER] BodyEnd: %u B\n", index+len);
+    btlog_i(TAG_UPDATER, "BodyEnd: %u B\n", index+len);
      if(Update.end(true))
      {
-        blog_i("[UPDATER] Update Success: %u\nRebooting...\n", index+len);
+        btlog_i(TAG_UPDATER, "Update Success: %u\nRebooting...\n", index+len);
         ESP.restart();
      }
     } });
@@ -70,34 +70,34 @@ void Updater::checkFirmware()
     // firmware
     if (strcmp(m_runtime->FIRMWAREVERSION, m_settings->firmwareVersion) < 0)
     {
-      char *hostname = m_settings->getSettingsHostname();
-      char *path = getFirmwarePath();
+      char hostname[32];
+      char path[128];
+      m_settings->getSettingsHostname(hostname);
+      getFirmwarePath(path);
       strcat(path, SYSTEM_VARIANT);
       strcat(path, "_");
       strcat(path, m_settings->firmwareVersion);
       strcat(path, ".bin");
-      blog_i("[UPDATER] Firmware hostname: %s", hostname);
-      blog_i("[UPDATER] Firmware file path: %s", path);
+      btlog_i(TAG_UPDATER, "Firmware hostname: %s", hostname);
+      btlog_i(TAG_UPDATER, "Firmware file path: %s", path);
       m_connection->checkConnect();
       HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
       downloadFirmware(&httpClient, path);
       httpClient.stop();
-      free(hostname);
-      free(path);
     }
   }
 }
 
 String Updater::getLocalFileMd5(const char *filename)
 {
-  char *localFilename = (char *)malloc(sizeof(char) * 32);
+  char localFilename[32];
   strcpy(localFilename, "/");
   strcat(localFilename, filename);
   File file = FILESYSTEM.open(localFilename, FILE_READ);
 
   if (!file)
   {
-    blog_e("[UPDATER] Error. File %s not found.", localFilename);
+    btlog_e(TAG_UPDATER, "Error. File %s not found.", localFilename);
     ;
     return "0";
   }
@@ -106,17 +106,18 @@ String Updater::getLocalFileMd5(const char *filename)
   md5.addStream(file, 50000);
   md5.calculate();
   String md5str = md5.toString();
-  blog_i("[UPDATER] Local file:%s MD5:%s", filename, md5str.c_str());
+  btlog_i(TAG_UPDATER, "Local file:%s MD5:%s", filename, md5str.c_str());
   file.close();
-  free(localFilename);
   return md5str;
 }
 
 String Updater::getServerFileMd5(const char *filename)
 {
 
-  char *hostname = m_settings->getSettingsHostname();
-  char *path = getFirmwarePath();
+  char hostname[32];
+  char path[128];
+  m_settings->getSettingsHostname(hostname);
+  getFirmwarePath(path);
   strcat(path, filename);
   strcat(path, ".md5");
   m_connection->checkConnect();
@@ -127,21 +128,19 @@ String Updater::getServerFileMd5(const char *filename)
   {
     httpClient.skipResponseHeaders();
     String md5str = httpClient.readString();
-    blog_i("[UPDATER] Server file:%s MD5:%s", path, md5str.c_str());
+    btlog_i(TAG_UPDATER, "Server file:%s MD5:%s", path, md5str.c_str());
     return md5str;
   }
   else if (res == 0 && responseCode == 404)
   {
-    blog_i("[UPDATER] No server file on path:%s", path);
+    btlog_i(TAG_UPDATER, "No server file on path:%s", path);
     return "";
   }
   else
   {
-    blog_e("[UPDATER] Error obtaining md5 file :%s. Response code:%u", path, responseCode);
+    btlog_e(TAG_UPDATER, "Error obtaining md5 file :%s. Response code:%u", path, responseCode);
     return "";
   }
-  free(hostname);
-  free(path);
 }
 
 void Updater::downloadFirmware(HttpClient *httpClient, char *filePath)
@@ -156,9 +155,9 @@ void Updater::downloadFirmware(HttpClient *httpClient, char *filePath)
       Update.printError(Serial);
       return;
     }
-    blog_i("[UPDATER] Download start: %s\n", filePath);
+    btlog_i(TAG_UPDATER, "Download start: %s\n", filePath);
     int len = httpClient->contentLength();
-    blog_d("[UPDATER] Found file size: %u ", len);
+    btlog_d(TAG_UPDATER, "Found file size: %u ", len);
     uint8_t buff[1024] = {0};
     while (httpClient->connected() && (len > 0 || len == -1))
     {
@@ -175,13 +174,13 @@ void Updater::downloadFirmware(HttpClient *httpClient, char *filePath)
       {
         len -= c;
       }
-      blog_d("[UPDATER] Downloading .. left %u ", len);
+      btlog_d(TAG_UPDATER, "Downloading .. left %u ", len);
       delay(2);
     }
     delay(100);
     if (Update.end(true))
     {
-      blog_i("[UPDATER] Update success: %u. \nRebooting...\n", len);
+      btlog_i(TAG_UPDATER, "Update success: %u. \nRebooting...\n", len);
       m_runtime->setSafeModeOnRestart(0);
       ESP.restart();
     }
@@ -207,18 +206,19 @@ bool Updater::checkDownloadFile(const char *filename)
 }
 bool Updater::downloadFile(const char *filename)
 {
-  char *hostname = m_settings->getSettingsHostname();
-  char *path = getFirmwarePath();
+  char hostname[32];
+  char path[128];
+  m_settings->getSettingsHostname(hostname);
+  getFirmwarePath(path);
   strcat(path, filename);
   int result = downloadFile(hostname, path, filename);
-  free(hostname);
-  free(path);
+
   return result;
 }
 bool Updater::downloadFile(const char *hostname, const char *path, const char *filename)
 {
   int err = 0;
-  char *localFilename = (char *)malloc(sizeof(char) * 32);
+  char localFilename[32];
   strcpy(localFilename, "/");
   strcat(localFilename, filename);
   m_connection->checkConnect();
@@ -231,12 +231,12 @@ bool Updater::downloadFile(const char *hostname, const char *path, const char *f
     File f = FILESYSTEM.open(localFilename, FILE_WRITE);
     if (!f)
     {
-      free(localFilename);
+
       return false;
     }
-    blog_i("[UPDATER] Download start: %s\n", path);
+    btlog_i(TAG_UPDATER, "Download start: %s\n", path);
     int len = httpClient.contentLength();
-    blog_d("[UPDATER] File size: %u ", len);
+    btlog_d(TAG_UPDATER, "File size: %u ", len);
     uint8_t buff[512] = {0};
     while (httpClient.connected() && (len > 0 || len == -1))
     {
@@ -249,25 +249,22 @@ bool Updater::downloadFile(const char *hostname, const char *path, const char *f
       {
         len -= c;
       }
-      blog_d("[UPDATER] Downloading .. left %u ", len);
+      btlog_d(TAG_UPDATER, "Downloading .. left %u ", len);
       delay(2);
     }
     f.close();
   }
   else
   {
-    free(localFilename);
     return false;
   }
-  free(localFilename);
   return true;
 }
 
-char *Updater::getFirmwarePath()
+void Updater::getFirmwarePath(char *buffer)
 {
 
-  char *path = Settings::getPath(m_settings->httpTimeAndSettingsPrefix);
-  strcat(path, "fws/");
-  return path;
+  Settings::getPath(buffer, m_settings->httpTimeAndSettingsPrefix);
+  strcat(buffer, "fws/");
 }
-}
+} // namespace beegl

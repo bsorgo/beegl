@@ -108,7 +108,7 @@ void Runtime::update()
 
 void Runtime::initialize()
 {
-  blog_i("[ESP] Firmware version %s", FIRMWAREVERSION);
+  btlog_i(TAG_RUNTIME,"Firmware version %s", FIRMWAREVERSION);
   m_safeMode = getSafeModeOnRestart();
   p_schedulerTimer.setInterval(60000);
   p_schedulerTimer.setCallback(Runtime::checkScheduler);
@@ -145,7 +145,7 @@ void Runtime::checkOperationalTime()
       int iTimeTo = m_schEntries[i].schedulerHourTo * 60 + m_schEntries[i].schedulerMinTo;
       int nextTimeFrom = m_schEntries[nextEntry].schedulerHourFrom * 60 + m_schEntries[nextEntry].schedulerMinFrom;
 
-      blog_d("[SCHEDULER] Entries:%u, Entry: %u;%u:%u,%u:%u  Next entry: %u;%u:%u,%u:%u", schEntriesLength, i,
+      btlog_d(TAG_SCHEDULER, "Entries:%u, Entry: %u;%u:%u,%u:%u  Next entry: %u;%u:%u,%u:%u", schEntriesLength, i,
              m_schEntries[i].schedulerHourFrom,
              m_schEntries[i].schedulerMinFrom,
              m_schEntries[i].schedulerHourTo,
@@ -157,7 +157,7 @@ void Runtime::checkOperationalTime()
              m_schEntries[nextEntry].schedulerHourTo,
              m_schEntries[nextEntry].schedulerMinTo);
 
-      blog_d("[SCHEDULER] Calculated time: %u, iFrom:%u, iTo:%u, nextFrom:%u", time, iTimeFrom, iTimeTo, nextTimeFrom);
+      btlog_d(TAG_SCHEDULER, "[SCHEDULER] Calculated time: %u, iFrom:%u, iTo:%u, nextFrom:%u", time, iTimeFrom, iTimeTo, nextTimeFrom);
       if ((iTimeFrom > 0 || iTimeTo > 0) && ((i == 0 && time < iTimeFrom) || (time > iTimeTo)) &&
           ((time < nextTimeFrom) ||
            nextEntry == 0))
@@ -172,7 +172,7 @@ void Runtime::checkOperationalTime()
         {
           sleepTime = (nextTimeFrom - time) * 60;
         }
-        blog_d("[SCHEDULER] Sleep time: %u seconds\n\r", sleepTime);
+        btlog_d(TAG_SCHEDULER, "Sleep time: %u seconds\n\r", sleepTime);
         if (sleepTime)
         {
           break;
@@ -190,7 +190,7 @@ void Runtime::checkOperationalTime()
 void Runtime::deepSleep(uint32_t timeToSleep)
 {
   uint64_t timeToSleepuSeconds = timeToSleep * uS_TO_S_FACTOR;
-  blog_i("[ESP32] Deep sleep for %u s", timeToSleep);
+  btlog_i(TAG_RUNTIME,"Deep sleep for %u s", timeToSleep);
   m_connection->shutdown();
   Serial.flush();
   delay(1000);
@@ -211,22 +211,22 @@ void Runtime::printWakeupReason()
   switch (wakeup_reason)
   {
   case ESP_SLEEP_WAKEUP_EXT0:
-    blog_i("[ESP32] Wakeup caused by external signal using RTC_IO");
+    btlog_i(TAG_RUNTIME,"Wakeup caused by external signal using RTC_IO");
     break;
   case ESP_SLEEP_WAKEUP_EXT1:
-    blog_i("[ESP32] Wakeup caused by external signal using RTC_CNTL");
+    btlog_i(TAG_RUNTIME,"Wakeup caused by external signal using RTC_CNTL");
     break;
   case ESP_SLEEP_WAKEUP_TIMER:
-    blog_i("[ESP32] Wakeup caused by timer");
+    btlog_i(TAG_RUNTIME,"Wakeup caused by timer");
     break;
   case ESP_SLEEP_WAKEUP_TOUCHPAD:
-    blog_i("[ESP32] Wakeup caused by touchpad");
+    btlog_i(TAG_RUNTIME,"Wakeup caused by touchpad");
     break;
   case ESP_SLEEP_WAKEUP_ULP:
-    blog_i("[ESP32] Wakeup caused by ULP program");
+    btlog_i(TAG_RUNTIME,"Wakeup caused by ULP program");
     break;
   default:
-    blog_i("[ESP32] Wakeup was not caused by deep sleep. Reason: %u", wakeup_reason);
+    btlog_i(TAG_RUNTIME,"Wakeup was not caused by deep sleep. Reason: %u", wakeup_reason);
     break;
   }
 }
@@ -261,7 +261,7 @@ SchEntryType Runtime::getCurrentSchedulerEntry()
     int iTimeTo = m_schEntries[i].schedulerHourTo * 60 + m_schEntries[i].schedulerMinTo;
     if (iTimeFrom <= time && iTimeTo > time)
     {
-      blog_d("[SCHEDULER] Current entry: %u;%u:%u,%u:%u;%d",
+      btlog_d(TAG_SCHEDULER,"Current entry: %u;%u:%u,%u:%u;%d",
              i,
              m_schEntries[i].schedulerHourFrom,
              m_schEntries[i].schedulerMinFrom,
@@ -272,7 +272,7 @@ SchEntryType Runtime::getCurrentSchedulerEntry()
     }
   }
   SchEntryType entry = {0, 0, 0, 0, false};
-  blog_d("[SCHEDULER] Returning default entry: -1;0:0;0:0;false");
+  btlog_d(TAG_SCHEDULER,"Returning default entry: -1;0:0;0:0;false");
   return entry;
 }
 } // namespace beegl

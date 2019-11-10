@@ -52,6 +52,8 @@
 
 #include <ArduinoJson.h>
 #include <ArduinoHttpClient.h>
+#define TAG_SETTINGS "SETTINGS"
+#define TAG_DEVICE "DEVICE"
 namespace beegl
 {
 struct SchEntryType
@@ -100,11 +102,11 @@ public:
 
     Settings();
 
-    char *getSettingsHostname();
-    char *getSettingsPath();
+    void getSettingsHostname(char* buffer);
+    void getSettingsPath(char* buffer);
 
-    static char *getPath(char *url);
-    static char *getHostname(char *url);
+    static void getPath(char* buffer,const char *url);
+    static void getHostname(char* buffer,const char *url);
 
     void registerSettingsHandler(ISettingsHandler *handler);
 

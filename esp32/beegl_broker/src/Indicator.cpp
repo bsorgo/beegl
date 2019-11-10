@@ -32,7 +32,7 @@ Indicator::Indicator()
 
 void Indicator::reportSuccess(int blinks)
 {
-    blog_d("[INDICATOR] Success - blinks: %u", blinks);
+    btlog_d(TAG_INDICATOR, "Success - blinks: %u", blinks);
     digitalWrite(RED_LED_PIN, LOW);
     for (int i = 0; i < blinks; i++)
     {
@@ -45,7 +45,7 @@ void Indicator::reportSuccess(int blinks)
 
 void Indicator::reportFail(int blinks)
 {
-    blog_d("[INDICATOR] Success - blinks: %u", blinks);
+    btlog_d(TAG_INDICATOR, "Success - blinks: %u", blinks);
     digitalWrite(RED_LED_PIN, LOW);
     for (int i = 0; i < blinks; i++)
     {

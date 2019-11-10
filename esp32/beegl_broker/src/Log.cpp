@@ -58,7 +58,7 @@ int fs_log_printf(const char *format, ...)
         uint8_t cardType = SD.cardType();
         if (cardType == CARD_NONE)
         {
-            log_e("[LOG] No SD card attached.");
+            log_e("[%s] No SD card attached.", TAG_LOG);
             return 0;
         }
 #endif
@@ -67,7 +67,7 @@ int fs_log_printf(const char *format, ...)
 
             if (!FILESYSTEM.mkdir(LOG_DIR))
             {
-                log_e("[LOG] Error creating dir: %s", LOG_DIR);
+                log_e("[%s] Error creating dir: %s", TAG_LOG, LOG_DIR);
             }
         }
         lastLog = NVS.getInt(LAST_LOG_NVS);
@@ -89,11 +89,11 @@ int fs_log_printf(const char *format, ...)
             filename += LOG_EXTENSION;
         }
 
-        log_d("[LOG] Log filename: %s", filename.c_str());
+        log_d("[%s] Log filename: %s", TAG_LOG, filename.c_str());
         logFile = FILESYSTEM.open(filename, FILE_APPEND);
         if (!logFile)
         {
-            log_e("[LOG] Failed to open log file to append: %s", filename.c_str());
+            log_e("[%s] Failed to open log file to append: %s", TAG_LOG, filename.c_str());
             return 0;
         }
         lastLogFileSize = logFile.size();
@@ -109,10 +109,10 @@ int fs_log_printf(const char *format, ...)
         logFile = FILESYSTEM.open(filename, FILE_APPEND);
         lastLogFileSize = 0;
         NVS.setInt(LAST_LOG_NVS, lastLog);
-        log_d("[LOG] New log filename: %s", filename.c_str());
+        log_d("[%s] New log filename: %s", TAG_LOG filename.c_str());
         if (!logFile)
         {
-            log_e("[LOG] Failed to open new log file to append: %s", filename.c_str());
+            log_e("[%s] Failed to open new log file to append: %s", TAG_LOG,  filename.c_str());
             return 0;
         }
         int removeLog = lastLog - maxLogFiles;
@@ -123,7 +123,7 @@ int fs_log_printf(const char *format, ...)
             removeFilename += LOG_EXTENSION;
             if (!FILESYSTEM.remove(removeFilename))
             {
-                log_e("[LOG] Failed to remove log: %s", removeFilename.c_str());
+                log_e("[%s] Failed to remove log: %s", TAG_LOG, removeFilename.c_str());
             }
         }
     }

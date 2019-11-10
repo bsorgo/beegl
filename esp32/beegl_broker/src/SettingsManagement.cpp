@@ -81,7 +81,7 @@ void SettingsManagement::webServerBind()
                                      File file;
                                      if (!index)
                                      {
-                                         blog_i("[WEB] BodyStart: %u B\n", total);
+                                         btlog_i(TAG_SETTINGS, "BodyStart: %u B", total);
                                          file = SPIFFS.open(CONFIGJSONTEMP, FILE_WRITE);
                                      }
                                      else
@@ -102,7 +102,7 @@ void SettingsManagement::webServerBind()
                                      }
                                      if (index + len == total)
                                      {
-                                         blog_i("[WEB] BodyEnd: %u B\n", total);
+                                         btlog_i(TAG_SETTINGS, "BodyEnd: %u B", total);
                                          file = SPIFFS.open(CONFIGJSONTEMP, FILE_READ);
                                          if (file)
                                          {
@@ -114,7 +114,7 @@ void SettingsManagement::webServerBind()
                                                  JsonObject root = jsonBuffer.as<JsonObject>();
                                                  if (writeConfig(root))
                                                  {
-                                                     blog_i("[WEB] Writing config\n");
+                                                     btlog_i(TAG_SETTINGS, "Writing config");
                                                      jsonBuffer.clear();
                                                      readConfig();
                                                      request->send(200);
@@ -142,7 +142,7 @@ void SettingsManagement::webServerBind()
  */
 bool SettingsManagement::writeConfig(const JsonObject &input)
 {
-    blog_i("[SETTINGS] Writing settings");
+    btlog_i(TAG_SETTINGS, "Writing settings");
 
     StaticJsonDocument<CONFIG_BUFFER> jsonBuffer;
     JsonObject root = jsonBuffer.to<JsonObject>();
@@ -158,8 +158,8 @@ bool SettingsManagement::writeConfig(const JsonObject &input)
     root[STR_SETTINGSPASSWORD] = m_settings->httpTimeAndSettingPassword;
 
     Settings::merge(root, input);
-    
-    blog_i("[SETTINGS] Merge configuration ");
+
+    btlog_i(TAG_SETTINGS, "Merge configuration");
     return writeConfigToFS(CONFIGJSON, jsonBuffer);
     jsonBuffer.clear();
 }
@@ -198,24 +198,24 @@ bool SettingsManagement::readConfig()
 
     if (!readAndParseJson(CONFIGJSON, &jsonBuffer))
     {
-        blog_e("[SETTINGS] Failed to open config file for reading.");
-        blog_i("[SETTINGS] Trying last good config.");
+        btlog_e(TAG_SETTINGS, "Failed to open config file for reading.");
+        btlog_i(TAG_SETTINGS, "Trying last good config.");
         if (!readAndParseJson(CONFIGJSONLASTGOOD, &jsonBuffer))
         {
-            blog_e("[SETTINGS] Failed to open last good config file for reading.");
-            blog_i("[SETTINGS] Trying backup config.");
+            btlog_e(TAG_SETTINGS, "Failed to open last good config file for reading.");
+            btlog_i(TAG_SETTINGS, "Trying backup config.");
             if (!readAndParseJson(CONFIGJSONBACKUP, &jsonBuffer))
             {
-                blog_e("[SETTINGS] Failed to open backup config file for reading.");
-                blog_i("[SETTINGS] Trying default minimalistic config.");
+                btlog_e(TAG_SETTINGS, "Failed to open backup config file for reading.");
+                btlog_i(TAG_SETTINGS, "Trying default minimalistic config.");
                 if (!readAndParseJson(CONFIGJSONDEFAULT, &jsonBuffer))
                 {
-                    blog_e("[SETTINGS] Failed to open default config file for reading.");
-                    blog_i("[SETTINGS] Creating config from defaults.");
+                    btlog_e(TAG_SETTINGS, "Failed to open default config file for reading.");
+                    btlog_i(TAG_SETTINGS, "Creating config from defaults.");
                     writeConfig();
                     if (!readAndParseJson(CONFIGJSON, &jsonBuffer))
                     {
-                        blog_e("[SETTINGS] Failed even to open config from defaults. Returning");
+                        btlog_e(TAG_SETTINGS, "Failed even to open config from defaults. Returning");
                         return false;
                     }
                 }
@@ -241,17 +241,17 @@ bool SettingsManagement::readConfig()
 
 bool SettingsManagement::writeSettingsToServer()
 {
-    char *hostname = m_settings->getSettingsHostname();
-    char *path = m_settings->getSettingsPath();
+    char hostname[32];
+    char path[128];
+    m_settings->getSettingsHostname(hostname);
+    m_settings->getSettingsPath(path);
 
-    blog_d("[SETTINGS] Hostname: %s", hostname);
-    blog_d("[SETTINGS] Path: %s", path);
-    blog_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+    btlog_d(TAG_SETTINGS, "Hostname: %s", hostname);
+    btlog_d(TAG_SETTINGS, "Path: %s", path);
+    btlog_d(TAG_SETTINGS, "Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
 
     HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
     bool res = writeSettings(&httpClient, path, m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
-    free(hostname);
-    free(path);
     return res;
 }
 
@@ -261,19 +261,18 @@ void SettingsManagement::syncSettings()
     SchEntryType schEntry = m_runtime->getCurrentSchedulerEntry();
     if (schEntry.updateFromServer && client != nullptr && m_connection->getOutboundMode() & 0x3)
     {
-        blog_d("[SETTINGS] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
-        char *hostname = m_settings->getSettingsHostname();
-        char *path = m_settings->getSettingsPath();
-
-        blog_d("[SETTINGS] Hostname: %s", hostname);
-        blog_d("[SETTINGS] Path: %s", path);
-        blog_d("[SETTINGS] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+        btlog_d(TAG_SETTINGS, "Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
+        char hostname[32];
+        char path[128];
+        m_settings->getSettingsHostname(hostname);
+        m_settings->getSettingsPath(path);
+        btlog_d(TAG_SETTINGS, "Hostname: %s", hostname);
+        btlog_d(TAG_SETTINGS, "Path: %s", path);
+        btlog_d(TAG_SETTINGS, "Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
         m_connection->checkConnect();
         HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
         this->readTimeAndSettings(&httpClient, path);
         client->stop();
-        free(hostname);
-        free(path);
     }
 }
 
@@ -285,7 +284,7 @@ bool SettingsManagement::readTimeAndSettings(HttpClient *httpClient, char *path)
     httpClient->sendBasicAuth(m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
     httpClient->endRequest();
     int responseCode = httpClient->responseStatusCode();
-    blog_d("[SETTINGS] Response code from server: %u", responseCode);
+    btlog_d(TAG_SETTINGS, "Response code from server: %u", responseCode);
     if (res == 0)
     {
         while (httpClient->headerAvailable())
@@ -343,28 +342,22 @@ void SettingsManagement::storeLastGood()
 {
     copyFile(CONFIGJSON, CONFIGJSONLASTGOOD);
 }
-
-/**
- * Merges json objects from src -> dest
- */
-
 /**
  *  Writes json to SPIFFS file
  */
 bool SettingsManagement::writeConfigToFS(const char *filename, const JsonDocument &doc)
 {
     SPIFFS.rename(CONFIGJSON, CONFIGJSONBACKUP);
-    blog_i("[SPIFFS] Writing file %s", filename);
+    btlog_i(TAG_SETTINGS,"Writing file %s", filename);
     File file = SPIFFS.open(filename, FILE_WRITE);
     if (!file)
     {
-        blog_e("[SPIFFS] Failed to create file %s ", filename);
-        Serial.println(filename);
+        btlog_e(TAG_SETTINGS,"Failed to create file %s" , filename);
         return false;
     }
     if (serializeJson(doc, file) == 0)
     {
-        blog_e("[SPIFFS] Failed to write to file %s", filename);
+        btlog_e(TAG_SETTINGS,"Failed to write to file %s", filename);
         return false;
     }
     file.close();
@@ -398,7 +391,7 @@ bool SettingsManagement::writeSettings(HttpClient *httpClient, char *path, char 
     httpClient->stop();
     if (responseCode != 200)
     {
-        blog_e("[SETTINGS] Error. Response code from server: %u", responseCode);
+        btlog_e(TAG_SETTINGS, "Error. Response code from server: %u", responseCode);
         return false;
     }
     return true;
@@ -409,7 +402,7 @@ String SettingsManagement::getLocalFileMd5(const char *path)
     File file = SPIFFS.open(path, FILE_READ);
     if (!file)
     {
-        blog_e("[SETTINGS] Error. File %s not found.", path);
+        btlog_e(TAG_SETTINGS, "Error. File %s not found.", path);
         ;
         return "0";
     }
@@ -418,7 +411,7 @@ String SettingsManagement::getLocalFileMd5(const char *path)
     md5.addStream(file, 50000);
     md5.calculate();
     String md5str = md5.toString();
-    blog_i("[SETTINGS] Local file:%s MD5:%s", path, md5str.c_str());
+    btlog_i(TAG_SETTINGS, "Local file:%s MD5:%s", path, md5str.c_str());
     file.close();
     return md5str;
 }

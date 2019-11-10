@@ -27,10 +27,7 @@ namespace beegl
 TinyGsmConnectionProvider::TinyGsmConnectionProvider(Connection *connection, Settings *settings) : ConnectionProvider(connection, settings)
 {
 
-    serialAT = new HardwareSerial(1);
-    modem = new TinyGsm(*serialAT);
-    gsmClient = new TinyGsmClient();
-    gsmClient->init(modem);
+    gsmClient.init(&modem);
 
     pinMode(MODEM_POWER_PIN, OUTPUT);
     digitalWrite(MODEM_POWER_PIN, HIGH);
@@ -64,12 +61,12 @@ void TinyGsmConnectionProvider::writeSettings(JsonObject &target, const JsonObje
 
 void TinyGsmConnectionProvider::modemOff()
 {
-    blog_i("[GSM] OFF");
-    modem->poweroff();
+    btlog_i(TAG_GSM, "OFF");
+    modem.poweroff();
 #if defined(TINY_GSM_MODEM_SIM800) || defined(TINY_GSM_MODEM_SIM800)
     delay(500);
-    modem->sendAT(GF("+CSCLK=2"));
-    modem->waitResponse(5000L);
+    modem.sendAT(GF("+CSCLK=2"));
+    modem.waitResponse(5000L);
 #endif
 }
 
@@ -87,27 +84,27 @@ void TinyGsmConnectionProvider::suspend()
 {
 
 #if defined(TINY_GSM_MODEM_SIM7020)
-    modem->sendAT(GF("+CPSMS=1"));
-    modem->waitResponse(5000L);
+    modem.sendAT(GF("+CPSMS=1"));
+    modem.waitResponse(5000L);
 #endif
 #if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
-    modem->sendAT(GF("+CSCLK=2"));
-    modem->waitResponse(5000L);
+    modem.sendAT(GF("+CSCLK=2"));
+    modem.waitResponse(5000L);
 #endif
-    log_d("[GSM] SUSPENDED");
+    btlog_d(TAG_GSM, "SUSPENDED");
 }
 
 void TinyGsmConnectionProvider::resume()
 {
 #if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
     modemPowerup();
-    modem->testAT();
+    modem.testAT();
     delay(200);
-    modem->testAT();
+    modem.testAT();
     delay(200);
-    modem->waitResponse(10000L);
+    modem.waitResponse(10000L);
 #endif
-    blog_d("[GSM] RESUMED");
+    btlog_d(TAG_GSM, "RESUMED");
 }
 
 void TinyGsmConnectionProvider::shutdown()
@@ -118,13 +115,13 @@ void TinyGsmConnectionProvider::shutdown()
 bool TinyGsmConnectionProvider::gprsSetup()
 {
 
-    blog_i("[GSM] Connecting to APN %s with username %s and password %s", m_apn, m_apnUser, m_apnPass);
-    if (!modem->gprsConnect(m_apn, m_apnUser, m_apnPass))
+    btlog_i(TAG_GSM, "Connecting to APN %s with username %s and password %s", m_apn, m_apnUser, m_apnPass);
+    if (!modem.gprsConnect(m_apn, m_apnUser, m_apnPass))
     {
-        blog_i("[GSM] NOK");
+        btlog_e(TAG_GSM, "NOK");
         return false;
     }
-    blog_i("[GSM] OK");
+    btlog_i(TAG_GSM, "OK");
 
     return true;
 }
@@ -133,24 +130,24 @@ bool TinyGsmConnectionProvider::gprsSetup()
 bool TinyGsmConnectionProvider::gsmSetup()
 {
     modemPowerup();
-    modem->sendAT("");
-    modem->waitResponse(GSM_OK);
+    modem.sendAT("");
+    modem.waitResponse(GSM_OK);
 
     // Restart takes quite some time
     // To skip it, call init() instead of restart()
-    blog_i("[GSM] Initializing GPRS modem");
-    modem->restart();
-    if (modem->testAT() != 1)
+    btlog_i(TAG_GSM, "Initializing GPRS modem");
+    modem.restart();
+    if (modem.testAT() != 1)
     {
         return false;
     }
-    blog_i("[GSM] Modem type: %s , IMEI: %s, ICCID: %s", modem->getModemInfo().c_str(), modem->getIMEI().c_str(), modem->getSimCCID().c_str());
-    if (modem->testAT() != 1)
+    btlog_i(TAG_GSM, "Modem type: %s , IMEI: %s, ICCID: %s", modem.getModemInfo().c_str(), modem.getIMEI().c_str(), modem.getSimCCID().c_str());
+    if (modem.testAT() != 1)
     {
         return false;
     }
-    blog_i("[GSM] Waiting for network...");
-    if (!modem->waitForNetwork())
+    btlog_i(TAG_GSM, "Waiting for network...");
+    if (!modem.waitForNetwork())
     {
         modemOff();
         return false;
@@ -158,14 +155,14 @@ bool TinyGsmConnectionProvider::gsmSetup()
     else
     {
 
-        blog_i("[GSM] OK. Network strenght: %u ", modem->getSignalQuality());
+        btlog_i(TAG_GSM, "OK. Network strenght: %u ", modem.getSignalQuality());
     }
     return true;
 }
 bool TinyGsmConnectionProvider::setup()
 {
 
-    serialAT->begin(115200, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
+    serialAT.begin(115200, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
     while (!serialAT)
     {
         ;
@@ -178,17 +175,17 @@ bool TinyGsmConnectionProvider::setup()
 }
 void TinyGsmConnectionProvider::checkConnect()
 {
-    if (!modem->isGprsConnected())
+    if (!modem.isGprsConnected())
     {
         gprsSetup();
     }
 }
-Client *TinyGsmConnectionProvider::getClient()
+Client *TinyGsmConnectionProvider::getClient() const
 {
-    return gsmClient;
+    return (Client *)&gsmClient;
 }
-TinyGsm *TinyGsmConnectionProvider::getModem()
+TinyGsm *TinyGsmConnectionProvider::getModem() const
 {
-    return modem;
+    return (TinyGsm *)&modem;
 }
 } // namespace beegl

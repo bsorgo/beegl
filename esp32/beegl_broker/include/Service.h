@@ -24,6 +24,9 @@
 #include "Log.h"
 #include <ESPAsyncWebServer.h>
 #include "Settings.h"
+
+#define TAG_SERVICE "SERVICE"
+
 namespace beegl
 {
 class Service : public ISettingsHandler
@@ -31,13 +34,13 @@ class Service : public ISettingsHandler
 
 public:
   Service(Settings *settings);
-  AsyncWebServer *getWebServer();
+  AsyncWebServer *getWebServer() const;
   void setup();
 
 
 
 private:
-  AsyncWebServer *m_webserver;
+  AsyncWebServer m_webserver {80};
   void webServerSetup();
 };
 }

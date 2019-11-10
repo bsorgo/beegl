@@ -47,12 +47,12 @@ bool TimeManagement::setup()
         if (m_providers[i]->getType() == m_timeSource)
         {
             m_selectedProvider = m_providers[i];
-            blog_i("[TIME] Using time provider: %s", m_selectedProvider->getName());
+            btlog_i(TAG_TIME, "Using time provider: %s", m_selectedProvider->getName());
             return true;
         }
     }
     m_selectedProvider = new TimeProviderStrategy(m_settings, m_connection);
-    blog_i("[TIME] Using default time provider %s", m_selectedProvider->getName());
+    btlog_i(TAG_TIME, "Using default time provider %s", m_selectedProvider->getName());
     return false;
 }
 
@@ -144,7 +144,7 @@ bool TimeManagement::syncTime(char sourceType)
             {
 
                 sourceProvider = m_providers[i];
-                blog_i("[TIME] Using time source provider: %s for sync.", sourceProvider->getName());
+                btlog_i(TAG_TIME, "Using time source provider: %s for sync.", sourceProvider->getName());
                 break;
             }
         }
@@ -160,11 +160,11 @@ bool TimeManagement::syncTime(char sourceType)
     }
     if (!res)
     {
-        blog_e("[TIME] Can't sync time. Check settings, connection, ...");
+        btlog_e(TAG_TIME, "Can't sync time. Check settings, connection, ...");
     }
     else
     {
-        blog_i("[TIME] %s", getDateTimeString(getUTCTime()).c_str());
+        btlog_i(TAG_TIME, "UTC: %s", getDateTimeString(getUTCTime()).c_str());
     }
     return res;
 }
@@ -202,24 +202,22 @@ TimeManagement *TimeManagement::getInstance()
 
 String TimeManagement::getDateTimeString(time_t utc)
 {
-    char *buf = (char *)malloc(32);
+    char buf[32];
     TimeChangeRule *tcr;
     time_t t = m_timezone->toLocal(utc, &tcr);
-    char *abbrev = getStrTimezoneOffset(tcr);
+
+    char abbrev[7];
+    getStrTimezoneOffset(abbrev, tcr);
     sprintf(buf, STR_TIMEFORMAT, year(t), month(t), day(t), hour(t), minute(t), second(t), abbrev);
-    free(abbrev);
     String ret = String(buf);
-    free(buf);
     return ret;
 }
 
-char *TimeManagement::getStrTimezoneOffset(TimeChangeRule *tcr)
+void TimeManagement::getStrTimezoneOffset(char* buffer, TimeChangeRule *tcr)
 {
     int hours = abs(tcr->offset) / 60;
     int minutes = abs(tcr->offset) % 60;
-    char *abbrev = (char *)malloc(7);
-    sprintf(abbrev, "%s%02d:%02d", (tcr->offset > 0 ? "+" : "-"), hours, minutes);
-    return abbrev;
+    sprintf(buffer, "%s%02d:%02d", (tcr->offset > 0 ? "+" : "-"), hours, minutes);
 }
 
 Timezone *TimeManagement::getTimezone()

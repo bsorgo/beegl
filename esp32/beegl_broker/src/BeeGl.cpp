@@ -85,7 +85,6 @@ void BeeGl::begin()
         connection.setOutboundMode(0x0);
         connection.setInboundMode(0x1);
         connection.setup();
-        service.setup();
         runtime.setSafeModeOnRestart(0);
         timeManagement.setup();
         log_i("***************************************");
@@ -105,9 +104,9 @@ void BeeGl::begin()
         indicator.reportSuccess(2);
     }
 
-    log_i("[ESP] Device name: %s ", settings.deviceName);
-    log_i("[ESP] Inbound mode: %u ", connection.getInboundMode());
-    log_i("[ESP] Outbound mode: %u ", connection.getOutboundMode());
+    log_i(TAG_DEVICE, "Device name: %s ", settings.deviceName);
+    log_i(TAG_DEVICE, "Inbound mode: %u ", connection.getInboundMode());
+    log_i(TAG_DEVICE, "Outbound mode: %u ", connection.getOutboundMode());
 
     if (!connection.setup())
     {
@@ -118,8 +117,8 @@ void BeeGl::begin()
     {
         indicator.reportSuccess(3);
     }
-
-    service.setup();
+    
+    
     timeManagement.setup();
     timeManagement.syncTime();
     settingsManagement.syncSettings();
@@ -155,10 +154,10 @@ void BeeGl::reportStatus()
 
 bool BeeGl::nvsSetup()
 {
-    Serial.println("[NVS] Begin NVS");
+    Serial.printf("[%s] Begin NVS\n", TAG_DEVICE);
     if (!NVS.begin())
     {
-        Serial.println("[NVS] An Error has occurred while initilizing NVS");
+        Serial.printf("[%s] An Error has occurred while initilizing NVS\n", TAG_DEVICE);
         return false;
     }
     return true;

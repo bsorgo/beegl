@@ -38,6 +38,10 @@
 #define STR_SCHHOURTO "ht"
 #define STR_SCHMINTO "mt"
 #define STR_SCHUPDATE "upd"
+
+#define TAG_RUNTIME "RUNTIME"
+#define TAG_SCHEDULER "SCHEDULER"
+
 namespace beegl
 {
 class Runtime : public ISettingsHandler
@@ -63,7 +67,7 @@ public:
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
 
-  const struct SchEntryType* getSchEntries()
+  const struct SchEntryType *getSchEntries()
   {
     return m_schEntries;
   }
@@ -71,7 +75,7 @@ public:
 #ifdef VER
   const char *FIRMWAREVERSION = VER;
 #else
-  const char *FIRMWAREVERSION = "1.5.0";
+  const char *FIRMWAREVERSION = "1.0.0";
 #endif
 
 private:
@@ -98,5 +102,5 @@ private:
 
   void webServerBind();
 };
-}
+} // namespace beegl
 #endif

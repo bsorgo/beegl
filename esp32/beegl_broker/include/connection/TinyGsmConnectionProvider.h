@@ -31,6 +31,9 @@
 #define STR_GPRSAPN "apn"
 #define STR_GPRSUSERNAME "user"
 #define STR_GPRSPASSWORD "pwd"
+
+#define TAG_GSM "GSM"
+
 namespace beegl
 {
 class TinyGsmConnectionProvider : public ConnectionProvider
@@ -40,11 +43,11 @@ public:
   TinyGsmConnectionProvider(Connection *connection, Settings *settings);
   static TinyGsmConnectionProvider* createAndRegister(BeeGl *core);
 
-  Client *getClient() override;
+  Client *getClient() const override;
   void checkConnect() override;
   bool setup() override;
   void shutdown() override;
-  TinyGsm *getModem();
+  TinyGsm *getModem() const;
   void modemOff();
   void suspend() override;
   void resume() override;
@@ -76,9 +79,9 @@ private:
   const int MODEM_TX_PIN = 14;
   const int MODEM_POWER_PIN = 5;
 
-  HardwareSerial *serialAT;
-  TinyGsm *modem;
-  TinyGsmClient *gsmClient;
+  HardwareSerial serialAT{1};
+  TinyGsm modem {serialAT};
+  TinyGsmClient gsmClient {};
 
   /* GPRS parameters 
     apn:

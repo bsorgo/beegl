@@ -102,7 +102,7 @@ void WiFiConnectionProvider::shutdown()
 
 void WiFiConnectionProvider::wifiOff()
 {
-    blog_i("[WIFI] OFF");
+    btlog_i(TAG_WIFI, "OFF");
     WiFi.mode(WIFI_OFF);
 }
 
@@ -110,29 +110,29 @@ void WiFiConnectionProvider::wifiOff()
 bool WiFiConnectionProvider::wifiSetup()
 {
     int retries = 0;
-    blog_i("[WIFI] Settings: Use custom ip: %u, IP: %s GW: %s NETMASK: %s", m_wifiCustomIp, m_wifiIp.toString().c_str(), m_wifiGateway.toString().c_str(), m_wifiSubnet.toString().c_str());
-    blog_i("[WIFI] APSettings: IP: %s GW: %s NETMASK: %s", m_apIp.toString().c_str(), m_apGateway.toString().c_str(), m_apSubnet.toString().c_str());
+    btlog_i(TAG_WIFI, "Settings: Use custom ip: %u, IP: %s GW: %s NETMASK: %s", m_wifiCustomIp, m_wifiIp.toString().c_str(), m_wifiGateway.toString().c_str(), m_wifiSubnet.toString().c_str());
+    btlog_i(TAG_WIFI, "APSettings: IP: %s GW: %s NETMASK: %s", m_apIp.toString().c_str(), m_apGateway.toString().c_str(), m_apSubnet.toString().c_str());
     if ((m_connection->getInboundMode() & 0x1) && (m_connection->getOutboundMode() & 0x1))
     {
 
         // STA + AP
 
-        blog_i("[WIFI] Starting AP STA");
-        blog_i("[WIFI] Outbound connecting to %s", m_wifiSSID);
+        btlog_i(TAG_WIFI, "Starting AP STA");
+        btlog_i(TAG_WIFI, "Outbound connecting to %s", m_wifiSSID);
         WiFi.disconnect();
         WiFi.mode(WIFI_AP_STA);
         if (m_wifiCustomIp)
         {
             if (!WiFi.config(m_wifiIp, m_wifiGateway, m_wifiSubnet))
             {
-                blog_e("[WIFI] STA Config Failed");
+                btlog_e(TAG_WIFI,"STA Config Failed");
             }
         }
 
         WiFi.begin(m_wifiSSID, m_wifiPassword);
 
-        blog_i("[WIFI] AP started");
-        blog_i("[WIFI] AP IP: %s ", WiFi.softAPIP().toString().c_str());
+        btlog_i(TAG_WIFI, "AP started");
+        btlog_i(TAG_WIFI, "AP IP: %s ", WiFi.softAPIP().toString().c_str());
 
         while (WiFi.status() != WL_CONNECTED)
         {
@@ -144,30 +144,30 @@ bool WiFiConnectionProvider::wifiSetup()
             }
             retries++;
         }
-        blog_i("[WIFI] connected");
-        blog_i("[WIFI] address: %s ", WiFi.localIP().toString().c_str());
+        btlog_i(TAG_WIFI, "connected");
+        btlog_i(TAG_WIFI, "address: %s ", WiFi.localIP().toString().c_str());
     }
     else if ((m_connection->getInboundMode() & 0x1) && !(m_connection->getOutboundMode() & 0x1))
     {
-        blog_i("[WIFI] Starting AP");
+        btlog_i(TAG_WIFI, "Starting AP");
         WiFi.disconnect();
         WiFi.mode(WIFI_AP);
         WiFi.softAP(m_settings->deviceName, m_apPassword);
-        blog_i("[WIFI] AP started");
-        blog_i("[WIFI] AP IP: %s", WiFi.softAPIP().toString().c_str());
-        blog_i("[WIFI] AP password: %s", m_apPassword);
+        btlog_i(TAG_WIFI, "AP started");
+        btlog_i(TAG_WIFI, "AP IP: %s", WiFi.softAPIP().toString().c_str());
+        btlog_i(TAG_WIFI, "AP password: %s", m_apPassword);
     }
     else if (!(m_connection->getInboundMode() & 0x1) && (m_connection->getOutboundMode() & 0x1))
     {
-        blog_i("[WIFI] Starting STA");
-        blog_i("[WIFI] Outbound connecting to  %s", m_wifiSSID);
+        btlog_i(TAG_WIFI, "Starting STA");
+        btlog_i(TAG_WIFI, "Outbound connecting to  %s", m_wifiSSID);
         WiFi.disconnect();
         WiFi.mode(WIFI_STA);
         if (m_wifiCustomIp)
         {
             if (!WiFi.config(m_wifiIp, m_wifiGateway, m_wifiSubnet))
             {
-                blog_e("[WIFI] STA Config Failed");
+                btlog_e(TAG_WIFI, "STA Config Failed");
             }
         }
         WiFi.begin(m_wifiSSID, m_wifiPassword);
@@ -180,8 +180,8 @@ bool WiFiConnectionProvider::wifiSetup()
             }
             retries++;
         }
-        blog_i("[WIFI] connected");
-        blog_i("[WIFI] IP: %s", WiFi.localIP().toString().c_str());
+        btlog_i(TAG_WIFI, "connected");
+        btlog_i(TAG_WIFI, "IP: %s", WiFi.localIP().toString().c_str());
         return true;
     }
     return true;
@@ -200,7 +200,7 @@ void WiFiConnectionProvider::checkConnect()
     }
 }
 
-Client *WiFiConnectionProvider::getClient()
+Client *WiFiConnectionProvider::getClient() const
 {
     return wifiClient;
 }

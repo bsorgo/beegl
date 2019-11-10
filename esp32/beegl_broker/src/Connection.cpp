@@ -44,7 +44,7 @@ void Connection::writeSettings(JsonObject &target, const JsonObject &input)
 
 int Connection::registerConnectionProvider(ConnectionProvider *connection)
 {
-    blog_d("[CONNECTION] Adding connection provider: %s, inbound: %u, outbound: %u", connection->getName(), connection->getInboundType(), connection->getOutboundType());
+    btlog_d(TAG_CONNECTION, "Adding connection provider: %s, inbound: %u, outbound: %u", connection->getName(), connection->getInboundType(), connection->getOutboundType());
     m_connection[connectionSize] = connection;
     connectionSize++;
     return connectionSize;
@@ -121,7 +121,7 @@ void Connection::shutdown()
         ConnectionProvider *connection = m_connection[i];
         if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
-            blog_d("[CONNECTION] Shutdown connection provider: %s", connection->getName());
+            btlog_d(TAG_CONNECTION, "Shutdown connection provider: %s", connection->getName());
             connection->shutdown();
         }
     }
@@ -135,7 +135,7 @@ bool Connection::setup()
         ConnectionProvider *connection = m_connection[i];
         if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
         {
-            blog_d("[CONNECTION] Setup connection provider: %s", connection->getName());
+            btlog_d(TAG_CONNECTION, "Setup connection provider: %s", connection->getName());
             if (!connection->setup())
             {
                 ret = false;
@@ -143,11 +143,15 @@ bool Connection::setup()
         }
         else
         {
-            blog_d("[CONNECTION] Shutdown connection provider: %s", connection->getName());
+            btlog_d(TAG_CONNECTION, "Shutdown connection provider: %s", connection->getName());
             connection->shutdown();
         }
     }
     webServerBind();
+    if(m_inboundMode & 0x1 || m_outboundMode & 0x1)
+    {
+        m_service->setup();
+    }
     return ret;
 }
 

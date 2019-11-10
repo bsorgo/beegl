@@ -32,6 +32,10 @@
 #define STR_MQTTUSERNAME "user"
 #define STR_MQTTPASSWORD "pwd"
 #define STR_MQTTTOPIC "topic"
+
+#define TAG_MQTTPUBLISHER "MQTTPUBLISHER"
+#define MQTTPUBLISHER "Mqtt"
+
 namespace beegl
 {
 class MqttPublishStrategy : public PublishStrategy
@@ -46,7 +50,7 @@ public:
   bool publishMessage(JsonDocument *payload) override;
 
   const char getProtocol() const override { return 0x1; }
-  const char *getProtocolName() const override { return "MQTT"; }
+  const char *getProtocolName() const override { return MQTTPUBLISHER; }
   const int getInterval() const override { return 60000; }
   const char getSupportedOutboundTypes() const override { return 0x3; }
 

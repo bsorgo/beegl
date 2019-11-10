@@ -53,7 +53,7 @@ void Measurer::webServerBind()
     m_serializer.serialize(value, message);
     if (strlen(message) > 0)
     {
-      blog_d("JsonDocument: %s", message);
+      btlog_d(TAG_MEASURER, "JsonDocument: %s", message);
       request->send(200, JSON_MIMETYPE, message);
     }
     else
@@ -109,13 +109,13 @@ void Measurer::measureLoop(void *pvParameters)
 
 void Measurer::begin()
 {
-  blog_d("[MEASURER] First measure.");
+  btlog_d(TAG_MEASURER, "First measure.");
   measureAndStore();
   // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
   // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
   // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
   // the new task attempts to access it.
-  blog_d("[MEASURER] Creating measurer task.");
+  btlog_d(TAG_MEASURER, "Creating measurer task.");
   xTaskCreate(measureLoop, MEASURER_TASK, 8192, this, tskIDLE_PRIORITY, NULL);
 }
 

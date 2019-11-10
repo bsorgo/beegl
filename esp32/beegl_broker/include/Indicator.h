@@ -22,6 +22,9 @@
 
 #include "Log.h"
 #include <Arduino.h>
+
+#define TAG_INDICATOR "INDICATOR"
+
 namespace beegl
 {
 class Indicator

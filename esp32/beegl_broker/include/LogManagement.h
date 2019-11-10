@@ -24,6 +24,9 @@
 #include "Log.h"
 #include "Settings.h"
 #include "Service.h"
+
+#define TAG_LOGMANAGEMENT "LOGMANAGEMENT"
+
 namespace beegl
 {
 class LogManagement : public ISettingsHandler

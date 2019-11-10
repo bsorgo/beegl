@@ -1,5 +1,5 @@
 /*
-  LoraMeasurementCayenneLPPMessageFormatter.h - Measure values formatter
+  WHTCLPPSerializer.h - Measure values formatter 
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -17,8 +17,8 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef WHTMeasureValuesCLPPFormatter_h
-#define WHTMeasureValuesCLPPFormatter_h
+#ifndef WHTCLPPSerializer_h
+#define WHTCLPPSerializer_h
 
 #include "Message.h"
 #include "Measurer.h"
@@ -27,16 +27,18 @@
 #include "measurer/HX711WeightMeasureProvider.h"
 #include <CayenneLPP.h>
 
+#define TAG_LPP "LPP"
+#define PAYLOAD_SIZE 51
 namespace beegl
 {
-class WHTMeasureValuesCLPPFormatter : public IByteMessageSerializer
+class WHTCLPPSerializer : public IByteMessageSerializer
 {
 public:
-  WHTMeasureValuesCLPPFormatter() {}
+  WHTCLPPSerializer() {}
   int serializeBinary(JsonDocument *source, uint8_t *target) override;
 
 private:
-  CayenneLPP lpp = CayenneLPP(51);
+  CayenneLPP lpp = CayenneLPP(PAYLOAD_SIZE);
 };
 } // namespace beegl
 #endif

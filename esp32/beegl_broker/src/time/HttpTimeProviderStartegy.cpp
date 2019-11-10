@@ -84,13 +84,16 @@ bool HttpTimeProviderStrategy::syncTime()
     if (client != nullptr)
     {
         // GPRS || WiFi
-        blog_d("[HTTPTIME] Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
-        char *hostname = m_settings->getSettingsHostname();
-        char *path = m_settings->getSettingsPath();
+        btlog_d(TAG_TIME, "Time and setting prefix: %s", m_settings->httpTimeAndSettingsPrefix);
 
-        blog_d("[HTTPTIME] Hostname: %s", hostname);
-        blog_d("[HTTPTIME] Path: %s", path);
-        blog_d("[HTTPTIME] Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
+        char hostname[32];
+        char path[128];
+        m_settings->getSettingsHostname(hostname);
+        m_settings->getSettingsPath(path);
+
+        btlog_d(TAG_TIME, "Hostname: %s", hostname);
+        btlog_d(TAG_TIME, "Path: %s", path);
+        btlog_d(TAG_TIME, "Username: %s, password: %s", m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
         m_connection->checkConnect();
         HttpClient httpClient = HttpClient(*m_connection->getClient(), hostname, 80);
         httpClient.connectionKeepAlive();
@@ -99,9 +102,8 @@ bool HttpTimeProviderStrategy::syncTime()
         httpClient.sendBasicAuth(m_settings->httpTimeAndSettingUsername, m_settings->httpTimeAndSettingPassword);
         httpClient.endRequest();
         int responseCode = httpClient.responseStatusCode();
-        blog_d("[SETTINGS] Response code from server: %u", responseCode);
-        blog_d("[HTTPTIME] Response code from server: %u", res);
-        if (res == 0)
+        btlog_d(TAG_TIME, "Response code from server: %u", responseCode);
+        if (res == 0 && responseCode==200)
         {
             while (httpClient.headerAvailable())
             {
@@ -110,7 +112,7 @@ bool HttpTimeProviderStrategy::syncTime()
                 {
                     String dateStr = httpClient.readHeaderValue();
 
-                    blog_i("[HTTPTIME] Header date string: %s", dateStr.c_str());
+                    btlog_i(TAG_TIME, "Header date string: %s", dateStr.c_str());
                     char p[32];
 
                     char *token;
@@ -144,7 +146,7 @@ bool HttpTimeProviderStrategy::syncTime()
                     // seconds
                     token = strtok(NULL, ": ");
                     int seconds = atoi(token);
-                    blog_d("[HTTPTIME] Time fractions: %04d-%02d-%02dT%02d:%02d:%02d.000Z", years, months, days, hours, minutes, seconds);
+                    btlog_d(TAG_TIME, "Time fractions: %04d-%02d-%02dT%02d:%02d:%02d.000Z", years, months, days, hours, minutes, seconds);
 
                     setUTCTime(hours, minutes, seconds, days, months, years);
                     synced = true;
@@ -154,8 +156,6 @@ bool HttpTimeProviderStrategy::syncTime()
             httpClient.stop();
             client->stop();
         }
-        free(hostname);
-        free(path);
         return true;
     }
     return false;

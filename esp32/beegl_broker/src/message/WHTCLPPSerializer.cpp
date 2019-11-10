@@ -1,5 +1,5 @@
 /*
-  MeasureValuesFormatter.cpp - Measure values
+  WHTCLPPSerializer.cpp - Measure values
   
   This file is part of the BeeGl distribution (https://github.com/bsorgo/beegl).
   Copyright (c) 2019 Bostjan Sorgo
@@ -18,10 +18,10 @@
 
 */
 
-#include "message/WHTMeasureValuesCLPPFormatter.h"
+#include "message/WHTCLPPSerializer.h"
 namespace beegl
 {
-int WHTMeasureValuesCLPPFormatter::serializeBinary(JsonDocument *source, uint8_t *target)
+int WHTCLPPSerializer::serializeBinary(JsonDocument *source, uint8_t *target)
 {
   JsonObject root = source->as<JsonObject>();
   lpp.reset();
@@ -33,23 +33,24 @@ int WHTMeasureValuesCLPPFormatter::serializeBinary(JsonDocument *source, uint8_t
   else
   {
     long value = root[STR_EPOCHTIME];
-    value += now();
+    value += now()*1000;
     lpp.addUnixTime(2, value);
   }
+
   if (root.containsKey(STR_WEIGHTSENSOR))
   {
-    lpp.addGenericSensor(3, root[STR_WEIGHTSENSOR][STR_WEIGHT]);
+    lpp.addGenericSensor(4, root[STR_WEIGHTSENSOR][STR_WEIGHT]);
   }
   if (root.containsKey(STR_TEMPSENSOR))
   {
-    lpp.addTemperature(4, root[STR_TEMPSENSOR][STR_TEMP]);
+    lpp.addTemperature(5, root[STR_TEMPSENSOR][STR_TEMP]);
   }
   if (root.containsKey(STR_HUMIDITYSENSOR))
   {
-    lpp.addRelativeHumidity(5, root[STR_HUMIDITYSENSOR][STR_HUMIDITY]);
+    lpp.addRelativeHumidity(6, root[STR_HUMIDITYSENSOR][STR_HUMIDITY]);
   }
   int size = lpp.copy(target);
-  blog_d("[LORA] CayenneLPP message size: %u", size);
+  btlog_d(TAG_LPP, "CayenneLPP message size: %u", size);
   return size;
 }
-}
+} // namespace beegl

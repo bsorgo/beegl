@@ -27,6 +27,9 @@
 #define CONTENTTYPEJSON "application/json"
 #define CONTENTTYPE "Content-Type"
 #define CONTENTLENGTH "Content-Length"
+
+#define HTTPPUBLISHER_NAME "HTTP"
+#define TAG_HTTPPUBLISHER "HTTPPUBLISHER"
 namespace beegl
 {
 class HttpPublishStrategy : public PublishStrategy
@@ -42,13 +45,13 @@ public:
   void readSettings(const JsonObject &source) {}
   void writeSettings(JsonObject &target, const JsonObject &input) {}
   const char getProtocol() const override { return 0x2; }
-  const char *getProtocolName() const override { return "HTTP"; }
+  const char *getProtocolName() const override { return HTTPPUBLISHER_NAME; }
   const int getInterval() const override { return 60000; }
   const char getSupportedOutboundTypes() const override { return 0x3; }
 
 private:
   JsonMessageSerializer m_serializer;
-  char *getSensorPublishPath() const;
+  void getSensorPublishPath(char* buffer);
 };
 } // namespace beegl
 

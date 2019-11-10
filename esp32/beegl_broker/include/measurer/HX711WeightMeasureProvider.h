@@ -33,6 +33,9 @@
 #define STR_WEIGHTSENSOR "whtS"
 #define STR_WEIGHT "w"
 #define STR_WEIGHTUNIT "u"
+
+#define TAG_HX711 "HX711"
+
 namespace beegl
 {
 class HX711WeightMeasureProvider : public MeasureProvider
@@ -50,7 +53,7 @@ public:
 private:
   int m_channel;
 
-  HX711 *m_scale;
+  HX711 m_scale;
 
   /* SCALE parameters 
         scaleFactor: 

@@ -3,8 +3,7 @@ namespace beegl
 {
 HX711WeightMeasureProvider::HX711WeightMeasureProvider(Runtime *runtime, Service *service, Settings *settings) : MeasureProvider(runtime, service, settings)
 {
-    m_scale = new HX711();
-    m_scale->begin(SCALE_DOUT_PIN, SCALE_SCK_PIN);
+    m_scale.begin(SCALE_DOUT_PIN, SCALE_SCK_PIN);
     webServerBind();
 }
 
@@ -39,35 +38,35 @@ void HX711WeightMeasureProvider::writeSettings(JsonObject &target, const JsonObj
 
 void HX711WeightMeasureProvider::setup()
 {
-    blog_i("[HX711] Setup");
-    blog_i("[HX711] Scale factor: %f", m_scaleFactor);
-    blog_i("[HX711] Scale offset: %u", m_scaleOffset);
-    blog_i("[HX711] Scale unit: %s", m_scaleUnit);
+    btlog_i(TAG_HX711, "Setup");
+    btlog_i(TAG_HX711, "Scale factor: %f", m_scaleFactor);
+    btlog_i(TAG_HX711, "Scale offset: %u", m_scaleOffset);
+    btlog_i(TAG_HX711, "Scale unit: %s", m_scaleUnit);
 }
 
 void HX711WeightMeasureProvider::measure(JsonDocument *values)
 {
 
-    blog_d("[HX711] Measure start");
+    btlog_d(TAG_HX711, "Measure start");
     float weight = -1;
-    blog_d("[HX711] Powerup");
-    m_scale->power_up();
+    btlog_d(TAG_HX711, "Powerup");
+    m_scale.power_up();
     delay(200);
-    m_scale->set_scale(m_scaleFactor);
-    m_scale->set_offset(m_scaleOffset);
+    m_scale.set_scale(m_scaleFactor);
+    m_scale.set_offset(m_scaleOffset);
     delay(200);
 
-    weight = m_scale->get_units(10);
-    blog_d("[MEASURER] Read weight %f ", weight);
-    blog_d("[HX711] Shutdown");
-    m_scale->power_down();
+    weight = m_scale.get_units(10);
+    btlog_d(TAG_HX711, "Read weight %f ", weight);
+    btlog_d(TAG_HX711, "Shutdown");
+    m_scale.power_down();
     JsonObject target = values->as<JsonObject>();
     JsonObject weightv = target.createNestedObject(STR_WEIGHTSENSOR);
     weightv[STR_WEIGHT] = weight;
     String unit;
     unit = m_scaleUnit;
     weightv[STR_WEIGHTUNIT] = unit;
-    blog_d("[HX711] Measure end");
+    btlog_d(TAG_HX711, "Measure end");
 }
 
 void HX711WeightMeasureProvider::webServerBind()
@@ -84,17 +83,17 @@ void HX711WeightMeasureProvider::webServerBind()
 
 long HX711WeightMeasureProvider::zero()
 {
-    blog_d("[HX711] Powerup");
-    m_scale->power_up();
-    m_scale->set_scale(m_scaleFactor);
-    m_scale->set_offset(m_scaleOffset);
-    blog_i("[HX711] Tare");
-    m_scale->tare(10);
-    long tareValue = m_scale->get_offset();
-    blog_d("[HX711] Tare value: %u", tareValue);
-    m_scaleOffset = m_scale->get_offset();
-    blog_d("[HX711] Shutdown");
-    m_scale->power_down();
+    btlog_d(TAG_HX711, "Powerup");
+    m_scale.power_up();
+    m_scale.set_scale(m_scaleFactor);
+    m_scale.set_offset(m_scaleOffset);
+    btlog_i(TAG_HX711, "Tare");
+    m_scale.tare(10);
+    long tareValue = m_scale.get_offset();
+    btlog_d(TAG_HX711, "Tare value: %u", tareValue);
+    m_scaleOffset = m_scale.get_offset();
+    btlog_d(TAG_HX711, "Shutdown");
+    m_scale.power_down();
     return tareValue;
 }
 } // namespace beegl

@@ -26,6 +26,9 @@
 #include "Settings.h"
 #include "BeeGl.h"
 #include <esp_bt.h>
+
+#define TAG_BLE "BLE"
+
 namespace beegl
 {
 class BLEConnectionProvider : public ConnectionProvider
@@ -34,7 +37,6 @@ class BLEConnectionProvider : public ConnectionProvider
 public:
   BLEConnectionProvider(Connection *connection, Settings *settings);
   static BLEConnectionProvider* createAndRegister(BeeGl *core);
-  Client *getClient() override;
   void checkConnect() override;
   bool setup() override;
   void shutdown() override;

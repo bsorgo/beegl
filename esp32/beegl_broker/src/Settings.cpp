@@ -66,42 +66,36 @@ void Settings::writeSettings(JsonObject &target, const JsonObject &input)
     }
 }
 
-char *Settings::getSettingsPath()
+void Settings::getSettingsPath(char *buffer)
 {
 
-    char *path = getPath(httpTimeAndSettingsPrefix);
-    strcat(path, "v1/devices/");
-    strcat(path, deviceName);
-
-    return path;
+    getPath(buffer, httpTimeAndSettingsPrefix);
+    strcat(buffer, "v1/devices/");
+    strcat(buffer, deviceName);
 }
 
-char *Settings::getSettingsHostname()
+void Settings::getSettingsHostname(char *buffer)
 {
-    char *hostname = getHostname(httpTimeAndSettingsPrefix);
-    return hostname;
+    getHostname(buffer, httpTimeAndSettingsPrefix);
 }
 
 /**
  * Provides hostname fraction of url
  */
-char *Settings::getHostname(char *url)
+void Settings::getHostname(char *buffer, const char *url)
 {
-    char *hostname = (char *)malloc(sizeof(char) * 32);
     int firstDelimiter = strcspn(url, "/");
-    memcpy(hostname, url, firstDelimiter);
-    hostname[firstDelimiter] = '\0';
-    return hostname;
+    memcpy(buffer, url, firstDelimiter);
+    buffer[firstDelimiter] = '\0';
 }
 /**
  * Provides path fraction of url
  */
-char *Settings::getPath(char *url)
+void Settings::getPath(char *buffer, const char *url)
 {
-    char *path = (char *)malloc(sizeof(char) * 128);
+
     int firstDelimiter = strcspn(url, "/");
-    strncpy(path, url + firstDelimiter, strlen(url) - firstDelimiter + 1);
-    return path;
+    strncpy(buffer, url + firstDelimiter, strlen(url) - firstDelimiter + 1);
 }
 
 } // namespace beegl

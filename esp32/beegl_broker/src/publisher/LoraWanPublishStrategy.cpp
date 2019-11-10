@@ -50,11 +50,11 @@ void LoraWanPublishStrategy::LoraWanPublishStrategy::setup()
 
 bool LoraWanPublishStrategy::publishMessage(JsonDocument *payload)
 {
-    blog_d("[LORAWANPUBLISHER] Publishing....");
+    btlog_d(TAG_LORAWANPUBLISHER, "Publishing....");
     uint8_t outputMessage[LORA_MESSAGE_BUFFER];
     if (m_serializer == nullptr)
     {
-        blog_e("[LORAWANPUBLISHER] No formatter.");
+        btlog_e(TAG_LORAWANPUBLISHER, "No formatter.");
         return false;
     }
     int len = m_serializer->serializeBinary(payload, outputMessage);
@@ -64,7 +64,7 @@ bool LoraWanPublishStrategy::publishMessage(JsonDocument *payload)
     }
     else
     {
-        blog_e("[LORAWANPUBLISHER] No message.");
+        btlog_e(TAG_LORAWANPUBLISHER, "No message.");
         return true;
     }
     free(outputMessage);

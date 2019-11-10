@@ -35,10 +35,9 @@ MqttPublishStrategy *MqttPublishStrategy::createAndRegister(BeeGl *core)
 
 void MqttPublishStrategy::setup()
 {
-  blog_i("[MQTT] Setup");
+  btlog_i(TAG_MQTTPUBLISHER, "Setup");
   mqttClient->setClient(*PublishStrategy::m_connection->getClient());
-  blog_i("[MQTT] Server: mqttServer ");
-  blog_i("[MQTT] Server: %s, port %u", m_mqttServer, m_mqttPort);
+  btlog_i(TAG_MQTTPUBLISHER, "Server: %s, port %u", m_mqttServer, m_mqttPort);
   mqttClient->setServer(m_mqttServer, m_mqttPort);
 }
 void MqttPublishStrategy::update()
@@ -53,15 +52,15 @@ bool MqttPublishStrategy::reconnect()
     clientName += "-";
     clientName += String(micros() & 0xff, 16);
     // Attempt to connect
-    blog_d("[MQTTPUBLISHER] Client: %s, username: %s ", clientName.c_str(), m_mqttUsername);
+    btlog_d(TAG_MQTTPUBLISHER, "Client: %s, username: %s ", clientName.c_str(), m_mqttUsername);
     if (mqttClient->connect((char *)clientName.c_str(), m_mqttUsername, m_mqttPassword))
     {
-      blog_d("[MQTTPUBLISHER] Connected. ");
+      btlog_d(TAG_MQTTPUBLISHER, "Connected. ");
       return true;
     }
     else
     {
-      blog_e("[MQTTPUBLISHER] failed, rc=%u, try again in 3 seconds", mqttClient->state());
+      btlog_e(TAG_MQTTPUBLISHER, "Publish failed, rc=%u, try again in 3 seconds", mqttClient->state());
       // Wait 5 seconds before retrying
       delay(3000);
       return false;
@@ -75,18 +74,18 @@ bool MqttPublishStrategy::publishMessage(JsonDocument *payload)
 {
   char message[MESSAGE_SIZE];
   m_serializer.serialize(payload, message);
-  blog_d("[MQTTPUBLISHER] %s", m_sensorTopic);
+  btlog_d(TAG_MQTTPUBLISHER, "Topic: %s", m_sensorTopic);
 
   if (mqttClient->publish(m_sensorTopic, message))
   {
-    blog_d("[MQTTPUBLISHER] Publish OK");
+    btlog_d(TAG_MQTTPUBLISHER, "Publish OK");
     return true;
   }
-  blog_e("[MQTTPUBLISHER] Publish NOK");
+  btlog_e(TAG_MQTTPUBLISHER, "Publish NOK");
   return false;
 }
 const char getProtocol() { return 0x1; }
-const char *getProtocolName() { return "MQTT"; }
+const char *getProtocolName() { return MQTTPUBLISHER; }
 int getInterval() { return 60000; }
 const char getSupportedOutboundTypes() { return 0x3; }
 

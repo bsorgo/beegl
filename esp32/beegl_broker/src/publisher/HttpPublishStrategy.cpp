@@ -39,12 +39,14 @@ bool HttpPublishStrategy::publishMessage(JsonDocument *payload)
   char message[MESSAGE_SIZE];
   m_serializer.serialize(payload, message);
 
-  char *hostname = ISettingsHandler::m_settings->getSettingsHostname();
-  char *path = getSensorPublishPath();
+  char hostname[32];
+  char path[128];
+  m_settings->getSettingsHostname(hostname);
+  getSensorPublishPath(path);
 
-  blog_d("[HTTPPUBLISHER] Hostname: %s", hostname);
-  blog_d("[HTTPPUBLISHER] Path: %s", path);
-  blog_d("[HTTPPUBLISHER] Username: %s, password: %s", ISettingsHandler::m_settings->httpTimeAndSettingUsername, ISettingsHandler::m_settings->httpTimeAndSettingPassword);
+  btlog_d(TAG_HTTPPUBLISHER, "Hostname: %s", hostname);
+  btlog_d(TAG_HTTPPUBLISHER, "Path: %s", path);
+  btlog_d(TAG_HTTPPUBLISHER, "Username: %s, password: %s", ISettingsHandler::m_settings->httpTimeAndSettingUsername, ISettingsHandler::m_settings->httpTimeAndSettingPassword);
   HttpClient httpClient = HttpClient(*PublishStrategy::m_connection->getClient(), hostname, 80);
   httpClient.connectionKeepAlive();
   httpClient.setHttpResponseTimeout(8000);
@@ -59,15 +61,13 @@ bool HttpPublishStrategy::publishMessage(JsonDocument *payload)
   int responseCode = httpClient.responseStatusCode();
   httpClient.responseBody();
   httpClient.stop();
-  free(hostname);
-  free(path);
   if (responseCode == 200)
   {
     return true;
   }
   else
   {
-    blog_e("[HTTPPUBLISHER] Error. Response code from server: %u", responseCode);
+    btlog_e(TAG_HTTPPUBLISHER, "Error. Response code from server: %u", responseCode);
     return false;
   }
 }
@@ -78,11 +78,10 @@ bool HttpPublishStrategy::reconnect()
   return true;
 }
 
-char *HttpPublishStrategy::getSensorPublishPath() const
+void HttpPublishStrategy::getSensorPublishPath(char *buffer)
 {
 
-  char *path = Settings::getPath(m_settings->httpTimeAndSettingsPrefix);
-  strcat(path, "v1/measurements");
-  return path;
+  Settings::getPath(buffer, m_settings->httpTimeAndSettingsPrefix);
+  strcat(buffer, "v1/measurements");
 }
 } // namespace beegl

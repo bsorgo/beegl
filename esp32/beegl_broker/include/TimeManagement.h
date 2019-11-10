@@ -31,6 +31,9 @@
 #define STR_TIMEZONE "zone"
 
 #define STR_TIMEFORMAT "%04d-%02d-%02dT%02d:%02d:%02d%s"
+
+#define TAG_TIME "TIME"
+
 namespace beegl
 {
 class TimeProviderStrategy : public ISettingsHandler
@@ -38,7 +41,7 @@ class TimeProviderStrategy : public ISettingsHandler
 
 public:
     TimeProviderStrategy(Settings *settings, Connection *connection);
-    virtual time_t getUTCTime() { return now(); }
+    virtual time_t getUTCTime() { return now() * 1000; }
     virtual bool syncTime() { return false; };
     virtual bool syncTimeFrom(TimeProviderStrategy *sourceStrategy) { return false; };
     virtual void setUTCTime(uint8_t hours, uint8_t minutes, uint8_t seconds, uint8_t days, uint8_t months, uint8_t years) { setTime(hours, minutes, seconds, days, months, years); };
@@ -115,7 +118,7 @@ private:
     int m_summerTimeZone = 120;
     int m_standardTimeZone = 60;
 
-    char *getStrTimezoneOffset(TimeChangeRule *tcr);
+    void getStrTimezoneOffset(char* buffer, TimeChangeRule *tcr);
     void webServerBind();
 };
 } // namespace beegl

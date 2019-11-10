@@ -35,6 +35,9 @@
 #define STR_LORAAPPEUI "aeui"
 #define STR_LORADEVEUI "deui"
 #define STR_LORAAPPKEY "akey"
+
+#define TAG_LORAWAN "LORAWAN"
+
 namespace beegl
 {
 class MyLoRaWAN : public Arduino_LoRaWAN_ttn
@@ -63,7 +66,6 @@ public:
   LoraWanConnectionProvider(Connection *connection, Settings *settings);
   static LoraWanConnectionProvider* createAndRegister(BeeGl *core);
 
-  Client *getClient() override;
   void checkConnect() override;
   bool setup() override;
   void shutdown() override;

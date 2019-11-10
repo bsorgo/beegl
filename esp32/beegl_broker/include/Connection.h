@@ -26,6 +26,9 @@
 #include "Service.h"
 #define STR_INBOUNDMODE "inM"
 #define STR_OUTBOUNDMODE "outM"
+
+#define TAG_CONNECTION "CONNECTION"
+
 namespace beegl
 {
 class Connection;
@@ -34,7 +37,7 @@ class ConnectionProvider : public ISettingsHandler
 {
 public:
   ConnectionProvider(Connection *connection, Settings *settings);
-  virtual Client *getClient() { return nullptr; };
+  virtual Client *getClient() const { return nullptr; };
   virtual void checkConnect(){};
   virtual bool setup() { return true; };
   virtual void shutdown(){};

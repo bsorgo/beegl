@@ -30,6 +30,9 @@
 #include <ArduinoJson.h>
 
 #define MEASURER_TASK "Measure Task"
+
+#define TAG_MEASURER "MEASURER"
+
 namespace beegl
 {
 class MeasureProvider : public ISettingsHandler

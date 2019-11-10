@@ -40,6 +40,9 @@
 
 #define STR_PUBLISHERSETTINGS "pubS"
 #define STR_PUBLISHERPROTOCOL "proto"
+
+#define TAG_PUBLISHER "PUBLISHER"
+
 namespace beegl
 {
 class PublishStrategy : public ISettingsHandler

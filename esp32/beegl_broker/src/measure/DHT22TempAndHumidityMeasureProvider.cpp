@@ -4,7 +4,6 @@ namespace beegl
 DHT22TempAndHumidityMeasureProvider::DHT22TempAndHumidityMeasureProvider(
     Runtime *runtime, Service *service, Settings *settings) : MeasureProvider(runtime, service, settings)
 {
-    m_dht = DHTesp();
 }
 
 DHT22TempAndHumidityMeasureProvider *DHT22TempAndHumidityMeasureProvider::createAndRegister(BeeGl *core)
@@ -16,13 +15,13 @@ DHT22TempAndHumidityMeasureProvider *DHT22TempAndHumidityMeasureProvider::create
 
 void DHT22TempAndHumidityMeasureProvider::setup()
 {
-    blog_i("[DHT] Setup, pin: %u", m_pin);
+    btlog_i(TAG_DHT, "Setup, pin: %u", m_pin);
     m_dht.setup(m_pin, DHTesp::DHT22);
 }
 
 void DHT22TempAndHumidityMeasureProvider::measure(JsonDocument *values)
 {
-    blog_d("[DHT] Measure start");
+    btlog_d(TAG_DHT, "Measure start");
     TempAndHumidity sensorData = m_dht.getTempAndHumidity();
     JsonObject root = values->as<JsonObject>();
 
@@ -34,6 +33,6 @@ void DHT22TempAndHumidityMeasureProvider::measure(JsonDocument *values)
     temp[STR_TEMP] = sensorData.temperature;
     temp[STR_TEMPUNIT] = String(STR_TEMPUNITC);
 
-    blog_d("[DHT] Measure end");
+    btlog_d(TAG_DHT, "Measure end");
 }
 } // namespace beegl

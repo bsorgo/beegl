@@ -35,6 +35,9 @@
 #ifndef SYSTEM_VARIANT
 #define SYSTEM_VARIANT ""
 #endif
+
+#define TAG_UPDATER "UPDATER"
+
 namespace beegl
 {
 class Updater : public ISettingsHandler
@@ -57,7 +60,7 @@ private:
   bool downloadFile(const char *hostname, const char *path, const char *filename);
   bool downloadFile(const char *filename);
 
-  char *getFirmwarePath();
+  void getFirmwarePath(char* buffer);
 };
 } // namespace beegl
 

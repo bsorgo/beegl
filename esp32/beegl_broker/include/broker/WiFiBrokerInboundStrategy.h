@@ -25,6 +25,8 @@
 #include "BeeGl.h"
 #include <AsyncJson.h>
 
+#define TAG_WIFIBROKER "WIFIBROKER"
+
 namespace beegl
 {
 class WiFiBrokerInboundStrategy : public BrokerInboundStrategy

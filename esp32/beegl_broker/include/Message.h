@@ -31,6 +31,9 @@
 #ifndef MESSAGE_DOCUMENT_SIZE
 #define MESSAGE_DOCUMENT_SIZE 512
 #endif
+
+#define TAG_MESSAGE "MESSAGE"
+
 namespace beegl
 {
 class JsonMessageSerializer
@@ -42,7 +45,7 @@ public:
   bool serialize(JsonDocument *source, char *target)
   {
     size_t len = measureJson(*source);
-    blog_d("[FORMATTER] Serializing json of size: %u", len);
+    btlog_d(TAG_MESSAGE, "Serializing json of size: %u", len);
     serializeJson(*source, target, len + 1);
     return true;
   }
@@ -58,7 +61,7 @@ public:
     auto error = deserializeJson(*doc, source);
     if (error)
     {
-      blog_e("[FORMATTER] Error deserializing:%s", error);
+      btlog_e(TAG_MESSAGE, "Error deserializing:%s", error);
       return NULL;
     }
     return doc;
@@ -70,7 +73,7 @@ public:
     auto error = deserializeJson(*doc, source);
     if (error)
     {
-      blog_e("[FORMATTER] Error deserializing:%s", error);
+      btlog_e(TAG_MESSAGE, "Error deserializing:%s", error);
       return NULL;
     }
     return doc;

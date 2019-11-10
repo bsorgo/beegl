@@ -26,6 +26,9 @@
 #include "Message.h"
 
 #include <AsyncJson.h>
+
+#define TAG_BROKER "BROKER"
+
 namespace beegl
 {
 class IBrokerProcessor
