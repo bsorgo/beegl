@@ -95,7 +95,7 @@ void Connection::suspend()
     for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
+        if (m_outboundMode & connection->getOutboundType())
         {
             connection->suspend();
         }
@@ -107,9 +107,9 @@ void Connection::resume()
     for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
+        if (m_outboundMode & connection->getOutboundType())
         {
-            connection->suspend();
+            connection->resume();
         }
     }
 }
@@ -172,7 +172,7 @@ Client *Connection::getClient()
     for (int i = 0; i < connectionSize; i++)
     {
         ConnectionProvider *connection = m_connection[i];
-        if (m_inboundMode & connection->getInboundType() || m_outboundMode & connection->getOutboundType())
+        if (m_outboundMode & connection->getOutboundType())
         {
             return connection->getClient();
         }

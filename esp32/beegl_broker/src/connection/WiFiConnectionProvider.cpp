@@ -194,7 +194,7 @@ bool WiFiConnectionProvider::setup()
 
 void WiFiConnectionProvider::checkConnect()
 {
-    if (!WiFi.isConnected())
+    if (m_connection->getOutboundMode() & 0x1 && !WiFi.isConnected())
     {
         wifiSetup();
     }

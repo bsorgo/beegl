@@ -62,11 +62,13 @@ void TinyGsmConnectionProvider::writeSettings(JsonObject &target, const JsonObje
 void TinyGsmConnectionProvider::modemOff()
 {
     btlog_i(TAG_GSM, "OFF");
-    modem.poweroff();
-#if defined(TINY_GSM_MODEM_SIM800)
+    modem.radioOff();
+#if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
     delay(500);
     modem.sendAT(GF("+CSCLK=2"));
     modem.waitResponse(5000L);
+#else
+    modem.poweroff();
 #endif
 }
 
@@ -83,11 +85,16 @@ void TinyGsmConnectionProvider::modemPowerup()
 void TinyGsmConnectionProvider::suspend()
 {
 
-#if defined(TINY_GSM_MODEM_SIM7020)
+#ifdef TINY_GSM_MODEM_SIM7020
     modem.sendAT(GF("+CPSMS=1"));
     modem.waitResponse(5000L);
 #endif
-#if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
+
+#ifdef TINY_GSM_MODEM_SIM800
+    modem.sendAT(GF("+CFUN=4"));
+    modem.waitResponse(5000L);
+#endif
+#if defined(TINY_GSM_MODEM_SIM7020)
     modem.sendAT(GF("+CSCLK=2"));
     modem.waitResponse(5000L);
 #endif
@@ -96,13 +103,17 @@ void TinyGsmConnectionProvider::suspend()
 
 void TinyGsmConnectionProvider::resume()
 {
-#if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
+#if defined(TINY_GSM_MODEM_SIM7020) 
     modemPowerup();
     modem.testAT();
     delay(200);
     modem.testAT();
     delay(200);
     modem.waitResponse(10000L);
+#endif
+#ifdef TINY_GSM_MODEM_SIM800
+    modem.sendAT(GF("+CFUN=1"));
+    modem.waitResponse(5000L);
 #endif
     btlog_d(TAG_GSM, "RESUMED");
 }
@@ -136,12 +147,17 @@ bool TinyGsmConnectionProvider::gsmSetup()
     // Restart takes quite some time
     // To skip it, call init() instead of restart()
     btlog_i(TAG_GSM, "Initializing GPRS modem");
+#if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
+    modem.sendAT("+CSCLK=0");
+    modem.sendAT("+CFUN=1");
+#endif
     modem.restart();
     if (modem.testAT() != 1)
     {
         return false;
     }
-    btlog_i(TAG_GSM, "Modem type: %s , IMEI: %s, ICCID: %s", modem.getModemInfo().c_str(), modem.getIMEI().c_str(), modem.getSimCCID().c_str());
+
+    btlog_i(TAG_GSM, "Modem type: %s , IMEI: %s", modem.getModemInfo().c_str(), modem.getIMEI().c_str());
     if (modem.testAT() != 1)
     {
         return false;
@@ -155,7 +171,8 @@ bool TinyGsmConnectionProvider::gsmSetup()
     else
     {
 
-        btlog_i(TAG_GSM, "OK. Network strenght: %u ", modem.getSignalQuality());
+        btlog_i(TAG_GSM, "OK. Network strenght: %u", modem.getSignalQuality());
+        btlog_i(TAG_GSM, "Time: %s", modem.getGSMDateTime(DATE_FULL).c_str());
     }
     return true;
 }
