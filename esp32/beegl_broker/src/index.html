@@ -400,6 +400,23 @@
             }
         }
 
+        async function getInboundModes() {
+            const url = "/rest/connections/inbound"
+            try {
+                const json = await requestJson(url, "GET");
+                var sel = document.getElementById("inboundMode");
+                for (i = 0; i < json.conn.length; i++) {
+                    var k = json.conn[i];
+                    var opt = document.createElement("option");
+                    opt.value = k.inM;
+                    opt.text = k.name;
+                    sel.add(opt);
+                }
+            } catch (error) {
+                displayMessage("Error getting inbound connections. Error: " + error);
+            }
+        }
+
         async function getPublisherProtocols(outM) {
             const url = "/rest/protocols?outM=" + outM;
             try {
@@ -680,6 +697,7 @@
         async function init() {
             await getInfo();
             await getOutboundModes();
+            await getInboundModes();
             await fillForm();
             await fillLogs();
             await getTime();
@@ -802,16 +820,10 @@
                         <input type="text" id="deviceName" placeholder="Device name">
                         <label for="outboundMode">Outbound mode</label>
                         <select id="outboundMode" onchange="connectionChange();">
-
                         </select>
-
-
                         <label for="inboundMode">Inbound mode</label>
                         <select id="inboundMode" onchange="invalidateSettingsVisibility();">
-                            <option value="0">No inbound</option>
-                            <option value="1">WiFi</option>
-                            <option value="2">Bluetooth(BLE)</option>
-                            <option value="3">Wifi+Bluetooth(BLE)</option>
+                           
                         </select>
                         <label for="refresh">Refresh</label>
                         <input type="number" id="refresh" placeholder="Refresh in ms">
@@ -1053,4 +1065,4 @@
 </body>
 
 </html>                                                                                                                               
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

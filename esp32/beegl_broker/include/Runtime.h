@@ -23,7 +23,6 @@
 
 #include "Log.h"
 #include "Settings.h"
-#include "Connection.h"
 #include "Service.h"
 #include "TimeManagement.h"
 
@@ -47,8 +46,9 @@ namespace beegl
 class Runtime : public ISettingsHandler
 {
 
+
 public:
-  Runtime(Service *server, Settings *settings, Connection *connection);
+  Runtime(Service *server, Settings *settings);
   void checkOperationalTime();
   void update();
   void deepSleep(uint32_t timeToSleep);
@@ -67,6 +67,8 @@ public:
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
 
+  void registerShutdownHandler(IShutdownHandler* handler);
+  void executeShutdownHandlers();
   const struct SchEntryType *getSchEntries()
   {
     return m_schEntries;
@@ -81,7 +83,6 @@ public:
 private:
   static Timer p_schedulerTimer;
   static Runtime *p_instance;
-  Connection *m_connection;
   Service *m_server;
   int8_t m_safeMode;
   /*
@@ -98,6 +99,8 @@ private:
         Perform upate from server (firmware, settings, resources) in this time interval
     */
   struct SchEntryType m_schEntries[10] = {{0, 0, 23, 59, false}};
+  IShutdownHandler* shutdownHandlers[10];
+  int shutdownHandlerSize;
   int schEntriesLength = 1;
 
   void webServerBind();

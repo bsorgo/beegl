@@ -32,13 +32,11 @@ namespace beegl
 Timer Runtime::p_schedulerTimer;
 Runtime *Runtime::p_instance = NULL;
 
-Runtime::Runtime(Service *server, Settings *settings, Connection *connection) : ISettingsHandler(settings)
+Runtime::Runtime(Service *server, Settings *settings) : ISettingsHandler(settings)
 {
   p_instance = this;
   m_settings = settings;
-  m_connection = connection;
   m_server = server;
-
   webServerBind();
 }
 
@@ -81,6 +79,23 @@ void Runtime::writeSettings(JsonObject &target, const JsonObject &input)
       schEntry[STR_SCHMINTO] = m_schEntries[i].schedulerMinTo;
       schEntry[STR_SCHUPDATE] = m_schEntries[i].updateFromServer;
     }
+  }
+}
+
+void Runtime::registerShutdownHandler(IShutdownHandler *handler)
+{
+  if(handler!=nullptr)
+  {
+    shutdownHandlers[shutdownHandlerSize] = handler;
+    shutdownHandlerSize++;
+  }
+}
+
+void Runtime::executeShutdownHandlers()
+{
+  for(int i=0;i<shutdownHandlerSize;i++)
+  {
+    shutdownHandlers[i]->onShutdown();
   }
 }
 
@@ -189,13 +204,15 @@ void Runtime::checkOperationalTime()
 
 void Runtime::deepSleep(uint32_t timeToSleep)
 {
+ 
   uint64_t timeToSleepuSeconds = timeToSleep * uS_TO_S_FACTOR;
   btlog_i(TAG_RUNTIME,"Deep sleep for %u s", timeToSleep);
-  m_connection->shutdown();
+  
   Serial.flush();
   delay(1000);
   esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
   esp_sleep_enable_timer_wakeup(timeToSleepuSeconds);
+  executeShutdownHandlers();
   esp_deep_sleep_start();
 }
 

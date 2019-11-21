@@ -30,6 +30,8 @@ ConnectionProvider::ConnectionProvider(Connection *connection, Settings *setting
 Connection::Connection(Service *service, Settings *settings) : ISettingsHandler(settings)
 {
     m_service = service;
+    m_connection[0] = new ConnectionProvider(this, settings);
+    connectionSize++;
 }
 void Connection::readSettings(const JsonObject &source)
 {
@@ -52,8 +54,9 @@ int Connection::registerConnectionProvider(ConnectionProvider *connection)
 
 int Connection::getOutboundConnectionProviders(ConnectionProvider **providers, char outboundTypeMask)
 {
-    int j = 0;
-    for (int i = 0; i < connectionSize; i++)
+    int j = 1;
+    providers[0] = this->m_connection[0];
+    for (int i = 1; i < connectionSize; i++)
     {
         if ((m_connection[i]->getOutboundType() & outboundTypeMask))
         {
@@ -61,7 +64,44 @@ int Connection::getOutboundConnectionProviders(ConnectionProvider **providers, c
             j++;
         }
     }
-
+    return j;
+}
+int Connection::getInboundConnectionProviders(std::vector<std::pair<char, String>> &list, char inboundTypeMask)
+{
+    int j = 1;
+    std::pair<char, String> n;
+    n.first = m_connection[0]->getInboundType();
+    n.second = String(m_connection[0]->getName());
+    list.push_back(n);
+    for (int i = 1; i < connectionSize; i++)
+    {
+        if (m_connection[i]->getInboundType() & inboundTypeMask)
+        {
+            std::pair<char, String> c;
+            c.first = m_connection[i]->getInboundType();
+            c.second = String(m_connection[i]->getName());
+            list.push_back(c);
+        }
+    }
+    for (int i = 1; i < connectionSize; i++)
+    {
+        for (int k = 1; k < connectionSize; k++)
+        {
+            if (m_connection[i]->getInboundType() & inboundTypeMask && m_connection[k]->getInboundType() & inboundTypeMask && m_connection[i]->getInboundType() != m_connection[k]->getInboundType() && m_connection[i]->compatibleInboundType() & m_connection[k]->getInboundType())
+            {
+                char mask = m_connection[k]->getInboundType() + m_connection[i]->getInboundType();
+                auto found = std::find_if(list.begin(), list.end(), [&mask](const std::pair<char, String> &element) { return element.first == mask; });
+                if (found == list.end())
+                {
+                    std::pair<char, String> c;
+                    c.first = mask;
+                    c.second = String(m_connection[i]->getName()) + " & " + m_connection[k]->getName();
+                    list.push_back(c);
+                    j++;
+                }
+            }
+        }
+    }
     return j;
 }
 
@@ -83,6 +123,26 @@ void Connection::webServerBind()
             proto["name"] = providers[i]->getName();
             proto[STR_OUTBOUNDMODE] = (int)providers[i]->getOutboundType();
             proto[STR_INBOUNDMODE] = (int)providers[i]->getInboundType();
+        }
+        serializeJson(jsonBuffer, *response);
+        jsonBuffer.clear();
+        request->send(response);
+    });
+    m_service->getWebServer()->on("/rest/connections/inbound", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+
+        StaticJsonDocument<512> jsonBuffer;
+        JsonObject root = jsonBuffer.to<JsonObject>();
+        JsonArray array = root.createNestedArray("conn");
+
+        std::vector<std::pair<char, String>> list;
+        int count = this->getInboundConnectionProviders(list, 0xFF);
+
+        for (std::vector<std::pair<char, String>>::iterator it = list.begin(); it != list.end(); ++it)
+        {
+            JsonObject conn = array.createNestedObject();
+            conn[STR_INBOUNDMODE] = it->first;
+            conn["name"] = it->second;
         }
         serializeJson(jsonBuffer, *response);
         jsonBuffer.clear();
@@ -148,7 +208,7 @@ bool Connection::setup()
         }
     }
     webServerBind();
-    if(m_inboundMode & 0x1 || m_outboundMode & 0x1)
+    if (m_inboundMode & 0x1 || m_outboundMode & 0x1)
     {
         m_service->setup();
     }
@@ -178,5 +238,14 @@ Client *Connection::getClient()
         }
     }
     return nullptr;
+}
+
+void Connection::onShutdown()
+{
+    for (int i = 0; i < connectionSize; i++)
+    {
+        ConnectionProvider *connection = m_connection[i];
+        connection->shutdown();
+    }
 }
 } // namespace beegl

@@ -24,6 +24,7 @@
 #include "Log.h"
 #include "Settings.h"
 #include "Service.h"
+
 #define STR_INBOUNDMODE "inM"
 #define STR_OUTBOUNDMODE "outM"
 
@@ -43,15 +44,18 @@ public:
   virtual void shutdown(){};
   virtual void suspend(){};
   virtual void resume(){};
-  virtual const char getInboundType() { return 0xFF; };
-  virtual const char getOutboundType() { return 0xFF; };
-  virtual const char *getName() { return {0x00}; };
+  virtual const char getInboundType() { return 0x00; };
+  virtual const char getOutboundType() { return 0x00; };
+  virtual const char compatibleInboundType() { return 0x00;}
+  virtual const char *getName() { return "No connection";};
 
 protected:
   Connection *m_connection;
 };
 
-class Connection : public ISettingsHandler
+
+
+class Connection : public ISettingsHandler, public IShutdownHandler
 {
 
 public:
@@ -66,6 +70,8 @@ public:
 
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
+
+  void onShutdown() override;
 
   void setOutboundMode(const char outboundMode)
   {
@@ -87,6 +93,7 @@ public:
 
 private:
   int getOutboundConnectionProviders(ConnectionProvider **providers, char outboundTypeMask = 0xFF);
+  int getInboundConnectionProviders(std::vector<std::pair<char, String>>& list, char inboundTypeMask = 0xFF);
   Service *m_service;
   ConnectionProvider *m_connection[5];
   int connectionSize = 0;

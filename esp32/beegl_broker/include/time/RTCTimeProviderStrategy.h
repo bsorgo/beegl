@@ -41,7 +41,7 @@ public:
   void setUTCTime(time_t time);
   const char getType() { return 0x08; };
   const char *getName() { return "Real Time Clock"; }
-  const char getSupportedConnectionOutboundTypes() { return 0x07; };
+  const char getSupportedConnectionOutboundTypes() { return 0x00; };
   const char getSupportedSyncProviders() { return 0x06; };
   bool isAbsoluteTime();
   static int getMonthFromString(char *s);

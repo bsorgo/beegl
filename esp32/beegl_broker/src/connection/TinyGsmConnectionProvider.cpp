@@ -28,9 +28,9 @@ TinyGsmConnectionProvider::TinyGsmConnectionProvider(Connection *connection, Set
 {
 
     gsmClient.init(&modem);
-
     pinMode(MODEM_POWER_PIN, OUTPUT);
     digitalWrite(MODEM_POWER_PIN, HIGH);
+    
 }
 
 TinyGsmConnectionProvider *TinyGsmConnectionProvider::createAndRegister(BeeGl *core)
@@ -108,8 +108,9 @@ void TinyGsmConnectionProvider::resume()
     modem.testAT();
     delay(200);
     modem.testAT();
-    delay(200);
     modem.waitResponse(10000L);
+    modem.sendAT(GF("+CPSMS=0"));
+    modem.waitResponse(5000L);
 #endif
 #ifdef TINY_GSM_MODEM_SIM800
     modem.sendAT(GF("+CFUN=1"));
@@ -140,6 +141,11 @@ bool TinyGsmConnectionProvider::gprsSetup()
 // GPRS setup
 bool TinyGsmConnectionProvider::gsmSetup()
 {
+    serialAT.begin(115200, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
+    while (!serialAT)
+    {
+        ;
+    }
     modemPowerup();
     modem.sendAT("");
     modem.waitResponse(GSM_OK);
@@ -147,7 +153,7 @@ bool TinyGsmConnectionProvider::gsmSetup()
     // Restart takes quite some time
     // To skip it, call init() instead of restart()
     btlog_i(TAG_GSM, "Initializing GPRS modem");
-#if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
+#if defined(TINY_GSM_MODEM_SIM800) || defined(TINY_GSM_MODEM_SIM7020)
     modem.sendAT("+CSCLK=0");
     modem.sendAT("+CFUN=1");
 #endif
@@ -157,7 +163,7 @@ bool TinyGsmConnectionProvider::gsmSetup()
         return false;
     }
 
-    btlog_i(TAG_GSM, "Modem type: %s , IMEI: %s", modem.getModemInfo().c_str(), modem.getIMEI().c_str());
+    btlog_i(TAG_GSM, "Modem type: %s, IMEI: %s", modem.getModemInfo().c_str(), modem.getIMEI().c_str());
     if (modem.testAT() != 1)
     {
         return false;
@@ -178,8 +184,6 @@ bool TinyGsmConnectionProvider::gsmSetup()
 }
 bool TinyGsmConnectionProvider::setup()
 {
-
-    serialAT.begin(115200, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
     while (!serialAT)
     {
         ;

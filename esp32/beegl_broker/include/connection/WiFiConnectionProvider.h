@@ -59,6 +59,7 @@ public:
   const char getInboundType() { return 0x1; }
   const char getOutboundType() { return 0x1; }
   const char *getName() { return "WIFI"; }
+  const char compatibleInboundType() { return 0x02;}
 
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;

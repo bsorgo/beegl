@@ -64,7 +64,11 @@ void BeeGl::prepare()
     }
 
     WiFiConnectionProvider::createAndRegister(this);
+
     timeManagement.registerTimeProviderStrategy(new TimeProviderStrategy(&settings, &connection));
+
+    runtime.registerShutdownHandler(&publisher);
+    runtime.registerShutdownHandler(&connection);
 }
 
 void BeeGl::begin()

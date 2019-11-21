@@ -175,7 +175,7 @@ int TimeManagement::getTimeProviderStrategies(TimeProviderStrategy **providers, 
     {
         for (int i = 0; i < providerCount; i++)
         {
-            if (m_providers[i]->getSupportedConnectionOutboundTypes() & outboundType)
+            if (m_providers[i]->getSupportedConnectionOutboundTypes()==0x0 || m_providers[i]->getSupportedConnectionOutboundTypes())
             {
                 providers[j] = m_providers[i];
                 j++;

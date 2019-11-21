@@ -45,6 +45,7 @@ public:
   const char getInboundType() { return 0x2; };
   const char getOutboundType() { return 0x0; };
   const char *getName() { return "BLE"; }
+  const char compatibleInboundType() { return 0x01;}
 
 private:
   bool bleSetup();

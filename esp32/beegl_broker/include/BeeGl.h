@@ -52,7 +52,7 @@ public:
   Service service = Service(&settings);
   Connection connection = Connection(&service, &settings);
   TimeManagement timeManagement = TimeManagement(&service, &settings, &connection);
-  Runtime runtime = Runtime(&service, &settings, &connection);
+  Runtime runtime = Runtime(&service, &settings);
   Updater updater = Updater(&runtime, &service, &settings, &connection);
   Publisher publisher = Publisher(&runtime, &settings, &connection, &service);
   SettingsManagement settingsManagement = SettingsManagement(&settings, &connection, &service, &runtime);

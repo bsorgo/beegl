@@ -87,6 +87,13 @@ protected:
     Settings *m_settings;
 };
 
+class IShutdownHandler
+{
+  public:
+  virtual void onShutdown() = 0;
+};
+
+
 class Settings
 {
 

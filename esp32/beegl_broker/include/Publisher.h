@@ -29,7 +29,7 @@
 #include <timer.h>
 #include <timerManager.h>
 #include "TimeManagement.h"
-#define STORAGE_SIZE 30
+#define STORAGE_SIZE 10
 #define BACKLOG_NVS "backlog"
 #define BACKLOG_DIR "/backlog"
 #define BACKLOG_DIR_PREFIX BACKLOG_DIR "/"
@@ -56,14 +56,14 @@ public:
     m_service = service;
   }
 
-  virtual void setup() = 0;
+  virtual void setup() {}
   virtual bool reconnect() { return true; };
-  virtual bool publishMessage(JsonDocument *message) = 0;
+  virtual bool publishMessage(JsonDocument *message) { return false;}
   virtual void update(){};
-  virtual const char getProtocol() const = 0;
-  virtual const char *getProtocolName() const = 0;
-  virtual const int getInterval() const { return 60000; }
-  virtual const char getSupportedOutboundTypes() const = 0;
+  virtual const char getProtocol() const { return 0x00;};
+  virtual const char *getProtocolName() const { return "No publish";}
+  virtual const int getInterval() const { return -1; }
+  virtual const char getSupportedOutboundTypes() const { return 0xFF;};
 
 protected:
   Connection *m_connection;
@@ -71,7 +71,7 @@ protected:
   Service *m_service;
 };
 
-class Publisher : public ISettingsHandler
+class Publisher : public ISettingsHandler, public IShutdownHandler
 {
 
 public:
@@ -80,14 +80,17 @@ public:
   void setup();
   void update();
   bool publish();
-  int store(JsonDocument *measureValue);
+
+  void store(JsonDocument *measureValue);
   int registerPublishStrategy(PublishStrategy *publishStrategy);
   int getInterval();
   static Publisher *getInstance();
   static void publishCallback();
 
-  void readSettings(const JsonObject &source);
-  void writeSettings(JsonObject &target, const JsonObject &input);
+  void readSettings(const JsonObject &source) override;
+  void writeSettings(JsonObject &target, const JsonObject &input) override;
+  
+  void onShutdown() override;
 
   char getProtocol()
   {
@@ -102,19 +105,23 @@ private:
   PublishStrategy *m_publishStrategies[5];
   PublishStrategy *m_selectedStrategy = nullptr;
   int publishStrategyCount = 0;
-  int storageIndex = -1;
-  int publishIndex = -1;
   Connection *m_connection;
   Runtime *m_runtime;
   Service *m_service;
   JsonMessageSerializer m_serializer;
-  JsonDocument *messageStorage[20];
+  std::vector<JsonDocument*> messageStorage;
   char m_protocol = 0x1;
-
+  SemaphoreHandle_t storageSemaphore;
   int getStrategies(PublishStrategy **strategies, char outboundType);
   PublishStrategy *getSelectedStrategy();
   void webServerBind();
-  int getIndex();
+  //int getStoreIndex();
+  //void incPublishIndex(bool lock = true);
+  void popMessage();
+  void pushMessage(JsonDocument* message);
+  JsonDocument* backMessage();
+  void storeToBacklog(JsonDocument* message);
+  void storeAllToBacklog();
 };
 } // namespace beegl
 #endif
