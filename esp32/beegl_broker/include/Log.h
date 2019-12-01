@@ -53,7 +53,7 @@ long log_number();
 #define BEEGL_SHORT_LOG_FORMAT(letter, format) "[" #letter "]" format "\r\n"
 
 #define BEEGL_TAG_LONG_LOG_FORMAT(letter, format, tag) "[%u][" #letter "][%s][%s:%u] %s(): " format "\r\n", millis(), tag, pathToFileName(__FILE__), __LINE__, __FUNCTION__
-#define BEEGL_TAG_SHORT_LOG_FORMAT(letter, format, tag) "[%u][" #letter "][%s] " format "\r\n , ", millis(), tag
+#define BEEGL_TAG_SHORT_LOG_FORMAT(letter, format, tag) "[%u][" #letter "][%s] " format "\r\n", millis(), tag
 #define BEEGL_TAG_LOG_FORMAT(letter, format, tag) ARDUHAL_LOG_COLOR_##letter "[%u][" #letter "][%s][%s:%u] %s(): " format ARDUHAL_LOG_RESET_COLOR "\r\n", millis(), tag, pathToFileName(__FILE__), __LINE__, __FUNCTION__
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_VERBOSE
 #define blog_v(format, ...)                                              \

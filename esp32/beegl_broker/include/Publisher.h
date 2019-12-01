@@ -89,6 +89,8 @@ public:
 
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
+
+  void getInfo(JsonObject &target) override;
   
   void onShutdown() override;
 
@@ -112,6 +114,11 @@ private:
   std::vector<JsonDocument*> messageStorage;
   char m_protocol = 0x1;
   SemaphoreHandle_t storageSemaphore;
+
+
+  int m_failCnt = 0;
+  int m_successCnt = 0;
+
   int getStrategies(PublishStrategy **strategies, char outboundType);
   PublishStrategy *getSelectedStrategy();
   void webServerBind();
@@ -122,6 +129,7 @@ private:
   JsonDocument* backMessage();
   void storeToBacklog(JsonDocument* message);
   void storeAllToBacklog();
+  void deleteBacklogFile(const String& filename);
 };
 } // namespace beegl
 #endif

@@ -51,6 +51,11 @@ public:
     m_provisioningInfo = provisioningInfo;
   }
 
+  uint16_t m_country = 0;
+  uint32_t m_netId = 0;
+  uint32_t m_cntUp = 0;
+  uint32_t m_cntDown = 0;
+
 protected:
   // you'll need to provide implementations for each of the following.
   virtual bool GetOtaaProvisioningInfo(Arduino_LoRaWAN::OtaaProvisioningInfo *) override;
@@ -77,6 +82,8 @@ public:
 
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
+
+  void getInfo(JsonObject &target) override;
 
   const char *getLoraAppEUI()
   {
@@ -119,6 +126,7 @@ private:
   char m_loraAppEUI[17] = "0000000000000000";
   char m_loraDeviceEUI[17] = "0000000000000000";
   char m_loraAppKey[33] = "00000000000000000000000000000000";
+
 };
 } // namespace beegl
 #endif

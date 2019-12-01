@@ -64,6 +64,10 @@ void MyLoRaWAN::NetSaveSessionInfo(
 {
     // write to log
     btlog_i(TAG_LORAWAN, "Session info. Country: %u, NetID: %u, FCntUp: %u, FCntDown:%u", Info.V2.Country, Info.V2.NetID, Info.V2.FCntUp, Info.V2.FCntDown);
+    m_country = Info.V2.Country;
+    m_netId = Info.V2.NetID;
+    m_cntUp = Info.V2.FCntUp;
+    m_cntDown = Info.V2.FCntDown;
 }
 
 // set up the data structures.
@@ -125,6 +129,7 @@ bool LoraWanConnectionProvider::setup()
     loraWan.setProvisioningInfo(&m_provisioningInfo);
     loraWan.begin(loraDevicePinMap);
     loraWan.SetLinkCheckMode(0);
+    
     btlog_i(TAG_LORAWAN, "Is provisioned: %s", loraWan.IsProvisioned() ? "Yes" : "No");
     return true;
 }
@@ -132,6 +137,15 @@ bool LoraWanConnectionProvider::setup()
 void LoraWanConnectionProvider::checkConnect()
 {
     // not supported
+}
+
+void LoraWanConnectionProvider::getInfo(JsonObject &target)
+{
+  JsonObject info = target.createNestedObject("LoraWan");
+  info["Count up"] = loraWan.m_cntUp;
+  info["Count down"] = loraWan.m_cntDown;
+  info["Net ID"] = loraWan.m_netId;
+  info["Country"] = loraWan.m_country;
 }
 
 } // namespace beegl

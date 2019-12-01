@@ -109,6 +109,7 @@ void WiFiConnectionProvider::wifiOff()
 // Wifi setup
 bool WiFiConnectionProvider::wifiSetup()
 {
+    
     int retries = 0;
     btlog_i(TAG_WIFI, "Settings: Use custom ip: %u, IP: %s GW: %s NETMASK: %s", m_wifiCustomIp, m_wifiIp.toString().c_str(), m_wifiGateway.toString().c_str(), m_wifiSubnet.toString().c_str());
     btlog_i(TAG_WIFI, "APSettings: IP: %s GW: %s NETMASK: %s", m_apIp.toString().c_str(), m_apGateway.toString().c_str(), m_apSubnet.toString().c_str());
@@ -119,6 +120,8 @@ bool WiFiConnectionProvider::wifiSetup()
 
         btlog_i(TAG_WIFI, "Starting AP STA");
         btlog_i(TAG_WIFI, "Outbound connecting to %s", m_wifiSSID);
+        m_info+= "SSID: ";
+        m_info+= m_wifiSSID;
         WiFi.disconnect();
         WiFi.mode(WIFI_AP_STA);
         if (m_wifiCustomIp)
@@ -133,7 +136,8 @@ bool WiFiConnectionProvider::wifiSetup()
 
         btlog_i(TAG_WIFI, "AP started");
         btlog_i(TAG_WIFI, "AP IP: %s ", WiFi.softAPIP().toString().c_str());
-
+        m_info+= " AP IP: ";
+        m_info+= WiFi.softAPIP().toString();
         while (WiFi.status() != WL_CONNECTED)
         {
             delay(500);
@@ -146,6 +150,10 @@ bool WiFiConnectionProvider::wifiSetup()
         }
         btlog_i(TAG_WIFI, "connected");
         btlog_i(TAG_WIFI, "address: %s ", WiFi.localIP().toString().c_str());
+        m_info+= " IP: ";
+        m_info+= WiFi.localIP().toString();
+        m_info+=" Signal: ";
+        m_info+=WiFi.RSSI();
     }
     else if ((m_connection->getInboundMode() & 0x1) && !(m_connection->getOutboundMode() & 0x1))
     {
@@ -156,11 +164,15 @@ bool WiFiConnectionProvider::wifiSetup()
         btlog_i(TAG_WIFI, "AP started");
         btlog_i(TAG_WIFI, "AP IP: %s", WiFi.softAPIP().toString().c_str());
         btlog_i(TAG_WIFI, "AP password: %s", m_apPassword);
+        m_info+= "AP IP: ";
+        m_info+= WiFi.softAPIP().toString();
     }
     else if (!(m_connection->getInboundMode() & 0x1) && (m_connection->getOutboundMode() & 0x1))
     {
         btlog_i(TAG_WIFI, "Starting STA");
         btlog_i(TAG_WIFI, "Outbound connecting to  %s", m_wifiSSID);
+        m_info+= "SSID: ";
+        m_info+= m_wifiSSID;
         WiFi.disconnect();
         WiFi.mode(WIFI_STA);
         if (m_wifiCustomIp)
@@ -182,8 +194,13 @@ bool WiFiConnectionProvider::wifiSetup()
         }
         btlog_i(TAG_WIFI, "connected");
         btlog_i(TAG_WIFI, "IP: %s", WiFi.localIP().toString().c_str());
+        m_info+= " IP: ";
+        m_info+= WiFi.localIP().toString();
+        m_info+=" Signal: ";
+        m_info+=WiFi.RSSI();
         return true;
     }
+    
     return true;
 }
 
@@ -203,5 +220,11 @@ void WiFiConnectionProvider::checkConnect()
 Client *WiFiConnectionProvider::getClient() const
 {
     return wifiClient;
+}
+
+void WiFiConnectionProvider::getInfo(JsonObject &target)
+{
+  JsonObject info = target.createNestedObject("WiFi");
+  info["Status"] = m_info.c_str();
 }
 } // namespace beegl

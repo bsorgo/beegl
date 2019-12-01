@@ -76,7 +76,13 @@ extern const uint8_t index_html_end[] asm("_binary_src_index_html_end");
 
 class Settings;
 
-class ISettingsHandler
+class IInfoProvider
+{
+public:
+    virtual void getInfo(JsonObject &target){};
+};
+
+class ISettingsHandler : public IInfoProvider
 {
 public:
     ISettingsHandler(Settings *settings);
@@ -118,10 +124,13 @@ public:
     void registerSettingsHandler(ISettingsHandler *handler);
 
     ISettingsHandler *settingsHandlers[50];
+    IInfoProvider *infoProviders[50];
     int settingHandlerCount = 0;
 
     void readSettings(const JsonObject &source);
     void writeSettings(JsonObject &target, const JsonObject &input);
+
+    void getInfo(JsonObject &target);
 
     static void merge(JsonObject &dest, const JsonObject &src);
 };

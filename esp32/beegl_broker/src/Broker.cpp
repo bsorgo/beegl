@@ -44,7 +44,7 @@ void Broker::setup()
     {
       if (!m_inboundStrategies[i]->setup())
       {
-        btlog_e(TAG_BROKER,"Error setting up broker strategy: %u", m_inboundStrategies[i]->getInboundType());
+        btlog_e(TAG_BROKER, "Error setting up broker strategy: %u", m_inboundStrategies[i]->getInboundType());
       }
     }
   }
@@ -53,22 +53,38 @@ void Broker::processMessage(const JsonObject &message)
 {
   char temp[MESSAGE_SIZE];
   serializeJson(message, temp);
-  JsonDocument *doc = m_serializer.deserialize(temp);
-  JsonObject root = doc->as<JsonObject>();
-  enrich(root);
-  m_publisher->store(doc);
+  StaticJsonDocument<MESSAGE_DOCUMENT_SIZE> *doc = new StaticJsonDocument<MESSAGE_DOCUMENT_SIZE>();
+  bool res = m_serializer.deserialize(doc, temp);
+  if (res)
+  {
+    JsonObject root = doc->as<JsonObject>();
+    enrich(root);
+    m_publisher->store(doc);
+  }
+  else
+  {
+    btlog_e(TAG_BROKER, "Cant process message.");
+  }
 }
 
 void Broker::processMessage(const char *message)
 {
-  JsonDocument *doc = m_serializer.deserialize(message);
-  JsonObject root = doc->as<JsonObject>();
-  enrich(root);
-  m_publisher->store(doc);
+  StaticJsonDocument<MESSAGE_DOCUMENT_SIZE> *doc = new StaticJsonDocument<MESSAGE_DOCUMENT_SIZE>();
+  bool res = m_serializer.deserialize(doc, message);
+  if(res)
+  {
+    JsonObject root = doc->as<JsonObject>();
+    enrich(root);
+    m_publisher->store(doc);
+  }
+  else
+  {
+    btlog_e(TAG_BROKER, "Cant process message.");
+  }
 }
 
 void Broker::enrich(JsonObject &root)
 {
   root[STR_EPOCHTIME] = TimeManagement::getInstance()->getUTCTime();
 }
-}
+} // namespace beegl

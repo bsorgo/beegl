@@ -103,7 +103,7 @@ bool HttpTimeProviderStrategy::syncTime()
         httpClient.endRequest();
         int responseCode = httpClient.responseStatusCode();
         btlog_d(TAG_TIME, "Response code from server: %u", responseCode);
-        if (res == 0 && responseCode==200)
+        if (res == 0)
         {
             while (httpClient.headerAvailable())
             {

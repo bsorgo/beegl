@@ -127,7 +127,11 @@
             cursor: pointer;
             padding: 14px 16px;
             font-size: 17px;
-            width: 33%;
+            width: 25%;
+        }
+
+        .bigtext {
+            font-size: 64px;
         }
 
         .tablink:hover {
@@ -358,6 +362,9 @@
             try {
                 const json = await requestJson(url, "GET");
                 document.getElementById("weight").value = json.whtS.w;
+                document.getElementById("weightValue").innerText = json.whtS.w + " " + json.whtS.u;
+                document.getElementById("tempValue").innerText = json.tmpS.t + " " + json.tmpS.u;
+                document.getElementById("humValue").innerText = json.humS.h + " %";
             } catch (error) {
                 displayMessage("Error performing measure. Error: " + error);
             }
@@ -466,10 +473,35 @@
         }
 
         async function getInfo() {
-            const url = "/info";
+            const url = "/rest/info";
             try {
-                const response = await request(url, "GET");
-                document.getElementById("version").innerText = response;
+                const json = await requestJson(url, "GET");
+                var infos = document.getElementById("infos");
+
+                for (var key of Object.keys(json)) {
+                    if (typeof key !== undefined) {
+                        let legendTr = document.createElement('tr');
+                        let legendTd= document.createElement('td');
+                        legendTd.setAttribute("colspan","2");
+                        legendTd.setAttribute("style", "background-color:lightgray;font-weight:bold");
+                        legendTd.innerText=key;
+                        legendTr.appendChild(legendTd);
+                        infos.appendChild(legendTr);
+                        for (var subKey of Object.keys(json[key])) {
+                            let statementTr = document.createElement('tr');
+                            infos.append(statementTr);
+                            let titleTd = document.createElement('td');
+                            statementTr.appendChild(titleTd);
+                            titleTd.innerText = subKey;
+                            let valueTd = document.createElement('td');
+                            statementTr.appendChild(valueTd);
+                            valueTd.innerText = json[key][subKey];
+                        }
+                    }
+                }
+
+                document.getElementById("version").innerText = json["Runtime"]["Firmware"];
+                document.getElementById("safeMode").innerText = json["Runtime"]["Safe mode"] == 0 ? "" : "Safe mode";
             } catch (error) {
                 displayMessage("Error obtaining info. Error: " + error);
             }
@@ -478,11 +510,11 @@
             const url = "/rest/time";
             try {
                 const json = await requestJson(url, "GET");
-                const hour = pad(json.hour,2);
-                const minute = pad(json.minute,2);
-                const second = pad(json.second,2);
-                const month = pad(json.month,2);
-                const day = pad(json.day,2);
+                const hour = pad(json.hour, 2);
+                const minute = pad(json.minute, 2);
+                const second = pad(json.second, 2);
+                const month = pad(json.month, 2);
+                const day = pad(json.day, 2);
                 document.getElementById("setTime").value = `${hour}:${minute}`;
                 document.getElementById("setDate").value = `${json.year}-${month}-${day}`;
             } catch (error) {
@@ -522,7 +554,7 @@
                     "id": document.getElementById("deviceName").value,
                     "inM": document.getElementById("inboundMode").value,
                     "outM": document.getElementById("outboundMode").value,
-                    
+
                     "refresh": document.getElementById("refresh").value,
                     "setUrl": document.getElementById("setUrl").value,
                     "setUser": document.getElementById("setUsername").value,
@@ -637,7 +669,7 @@
                 document.getElementById("deviceName").value = json.id;
                 document.getElementById("inboundMode").value = json.inM;
                 document.getElementById("outboundMode").value = json.outM;
-                
+
                 document.getElementById("refresh").value = json.refresh;
 
                 document.getElementById("setUrl").value = json.setUrl;
@@ -701,6 +733,7 @@
             await fillForm();
             await fillLogs();
             await getTime();
+
             openPage('Settings', this, 'white')
         }
 
@@ -797,16 +830,35 @@
     <div class="box">
         <div class="row header">
             <h1>BeeGl Broker</h1>
+            <div id="safeMode"></div>
+            <button class="tablink" onclick="openPage('Measure', this, 'white')">Measure</button>
             <button class="tablink" onclick="openPage('Settings', this, 'white')">Settings</button>
             <button class="tablink" onclick="openPage('Log', this, 'white')">Log</button>
             <button class="tablink" onclick="openPage('System', this, 'white')">System</button>
         </div>
         <div class="row content">
+            <div id="Measure" class="tabcontent">
+                <form class="pure-form pure-form-stacked">
+                    <button onclick="measure()" type="button" class="button-success pure-button">Refresh</button>
+                    <legend>Weight</legend>
+                    <div id="weightValue" class="bigtext">
+                        0.00 g
+                    </div>
+                    <legend>Temperature</legend>
+                    <div id="tempValue" class="bigtext">
+                        0 C
+                    </div>
+                    <legend>Humidity</legend>
+                    <div id="humValue" class="bigtext">
+                        0 %
+                    </div>
+                </form>
+            </div>
             <div id="Settings" class="tabcontent">
                 <button onclick="submitForm()" type="button" class="button-success pure-button">Save</button>
                 <button onclick="reboot()" type="button" class="button-warning pure-button">Reboot</button>
                 <button onclick="fillForm()" type="button" class="button-warning pure-button">Reload</button>
-          
+
 
                 <form class="pure-form pure-form-stacked" id="settings">
                     <fieldset>
@@ -823,7 +875,7 @@
                         </select>
                         <label for="inboundMode">Inbound mode</label>
                         <select id="inboundMode" onchange="invalidateSettingsVisibility();">
-                           
+
                         </select>
                         <label for="refresh">Refresh</label>
                         <input type="number" id="refresh" placeholder="Refresh in ms">
@@ -971,7 +1023,7 @@
                             maxLength="32">
                     </fieldset>
 
-                   
+
 
                     <fieldset>
                         <legend>Scale Settings</legend>
@@ -1037,10 +1089,13 @@
                             placeholder=".pure-u-1-4">Refresh</button>
                     </div>
                 </form>
-                <pre id="log" class="log">
-                                    </pre>
+                <pre id="log" class="log"></pre>
             </div>
             <div id="System" class="tabcontent">
+                <table class="pure-table pure-table-bordered">                   
+                        <tbody id="infos">
+                        </tbody>
+                </table>
                 <form method="POST" action="/update" enctype="multipart/form-data" id="upload_form"
                     class="pure-form pure-form-stacked">
                     <fieldset>
@@ -1064,5 +1119,5 @@
     </div>
 </body>
 
-</html>                                                                                                                               
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+</html>
+                                   

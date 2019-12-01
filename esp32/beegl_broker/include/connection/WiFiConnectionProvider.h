@@ -64,6 +64,8 @@ public:
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
 
+  void getInfo(JsonObject &target) override;
+
   const char *getWifiPassword()
   {
     return m_wifiPassword;
@@ -147,6 +149,8 @@ private:
 
   void wifiOff();
   bool wifiSetup();
+
+  String m_info;
 };
 } // namespace beegl
 #endif

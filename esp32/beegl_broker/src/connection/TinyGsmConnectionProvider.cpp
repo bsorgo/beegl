@@ -29,8 +29,12 @@ TinyGsmConnectionProvider::TinyGsmConnectionProvider(Connection *connection, Set
 
     gsmClient.init(&modem);
     pinMode(MODEM_POWER_PIN, OUTPUT);
-    digitalWrite(MODEM_POWER_PIN, HIGH);
-    
+    digitalWrite(MODEM_POWER_PIN, LOW);
+    serialAT.begin(38400, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
+    while (!serialAT)
+    {
+        ;
+    }
 }
 
 TinyGsmConnectionProvider *TinyGsmConnectionProvider::createAndRegister(BeeGl *core)
@@ -65,37 +69,50 @@ void TinyGsmConnectionProvider::modemOff()
     modem.radioOff();
 #if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
     delay(500);
-    modem.sendAT(GF("+CSCLK=2"));
-    modem.waitResponse(5000L);
 #else
     modem.poweroff();
 #endif
 }
 
-void TinyGsmConnectionProvider::modemPowerup()
+bool TinyGsmConnectionProvider::modemPowerup()
 {
+    if(modem.testAT())
+    {
+        return true;
+    }
+    int i = 0;
+    do
+    {
+        i++;
+        if (i > 10)
+        {
+            return false;
+        }
+
 #if defined(TINY_GSM_MODEM_SIM7020) || defined(TINY_GSM_MODEM_SIM800)
-    digitalWrite(MODEM_POWER_PIN, LOW);
-    delay(400);
-    digitalWrite(MODEM_POWER_PIN, HIGH);
-    delay(800);
+
+        digitalWrite(MODEM_POWER_PIN, LOW);
+        delay(400);
+        digitalWrite(MODEM_POWER_PIN, HIGH);
+        delay(800);
+        if (!Serial)
+        {
+            serialAT.begin(38400, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
+        }
+        while (!serialAT)
+        {
+            ;
+        }
 #endif
+        modem.testAT();
+    } while (!modem.testAT());
+    return true;
 }
 
 void TinyGsmConnectionProvider::suspend()
 {
-
-#ifdef TINY_GSM_MODEM_SIM7020
-    modem.sendAT(GF("+CPSMS=1"));
-    modem.waitResponse(5000L);
-#endif
-
 #ifdef TINY_GSM_MODEM_SIM800
     modem.sendAT(GF("+CFUN=4"));
-    modem.waitResponse(5000L);
-#endif
-#if defined(TINY_GSM_MODEM_SIM7020)
-    modem.sendAT(GF("+CSCLK=2"));
     modem.waitResponse(5000L);
 #endif
     btlog_d(TAG_GSM, "SUSPENDED");
@@ -103,15 +120,7 @@ void TinyGsmConnectionProvider::suspend()
 
 void TinyGsmConnectionProvider::resume()
 {
-#if defined(TINY_GSM_MODEM_SIM7020) 
     modemPowerup();
-    modem.testAT();
-    delay(200);
-    modem.testAT();
-    modem.waitResponse(10000L);
-    modem.sendAT(GF("+CPSMS=0"));
-    modem.waitResponse(5000L);
-#endif
 #ifdef TINY_GSM_MODEM_SIM800
     modem.sendAT(GF("+CFUN=1"));
     modem.waitResponse(5000L);
@@ -126,7 +135,6 @@ void TinyGsmConnectionProvider::shutdown()
 
 bool TinyGsmConnectionProvider::gprsSetup()
 {
-
     btlog_i(TAG_GSM, "Connecting to APN %s with username %s and password %s", m_apn, m_apnUser, m_apnPass);
     if (!modem.gprsConnect(m_apn, m_apnUser, m_apnPass))
     {
@@ -141,15 +149,10 @@ bool TinyGsmConnectionProvider::gprsSetup()
 // GPRS setup
 bool TinyGsmConnectionProvider::gsmSetup()
 {
-    serialAT.begin(115200, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN, false);
-    while (!serialAT)
+    if(!modemPowerup())
     {
-        ;
+        return false;
     }
-    modemPowerup();
-    modem.sendAT("");
-    modem.waitResponse(GSM_OK);
-
     // Restart takes quite some time
     // To skip it, call init() instead of restart()
     btlog_i(TAG_GSM, "Initializing GPRS modem");
@@ -157,13 +160,16 @@ bool TinyGsmConnectionProvider::gsmSetup()
     modem.sendAT("+CSCLK=0");
     modem.sendAT("+CFUN=1");
 #endif
+
+
     modem.restart();
     if (modem.testAT() != 1)
     {
         return false;
     }
-
-    btlog_i(TAG_GSM, "Modem type: %s, IMEI: %s", modem.getModemInfo().c_str(), modem.getIMEI().c_str());
+    String modemInfo = "Modem type: " + modem.getModemInfo() + ", IMEI: " + modem.getIMEI();
+    btlog_i(TAG_GSM, "%s", modemInfo.c_str());
+    strcat(m_modemInfo, modemInfo.c_str());
     if (modem.testAT() != 1)
     {
         return false;
@@ -209,4 +215,14 @@ TinyGsm *TinyGsmConnectionProvider::getModem() const
 {
     return (TinyGsm *)&modem;
 }
+
+void TinyGsmConnectionProvider::getInfo(JsonObject &target)
+{
+  JsonObject info = target.createNestedObject("GSM or NB IoT");
+  float voltage = (float)modem.getBattVoltage() / 1000;
+  info["Modem info"] = m_modemInfo;
+  info["Battery voltage"] = voltage;
+  info["Signal quality"] = modem.getSignalQuality();
+}
+
 } // namespace beegl

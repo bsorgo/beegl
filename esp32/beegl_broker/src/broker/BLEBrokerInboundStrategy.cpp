@@ -28,7 +28,7 @@ BLEBrokerInboundStrategy::BLEBrokerInboundStrategy(Service *server, Settings *se
 }
 BLEBrokerInboundStrategy *BLEBrokerInboundStrategy::createAndRegister(BeeGl *core)
 {
-  BLEBrokerInboundStrategy * i = new BLEBrokerInboundStrategy(&core->service, &core->settings);
+  BLEBrokerInboundStrategy *i = new BLEBrokerInboundStrategy(&core->service, &core->settings);
   core->registerBrokerInboundStrategy(i);
   return i;
 }
@@ -73,5 +73,12 @@ void BLEBrokerInboundStrategy::BLESensorCallback::onWrite(BLECharacteristic *pCh
   {
     m_broker->processMessage(value.c_str());
   }
+}
+
+void BLEBrokerInboundStrategy::getInfo(JsonObject &target)
+{
+  JsonObject info = target.createNestedObject("BLE broker");
+  info["Service UUID"] = SERVICE_UUID;
+  info["Characteristic UUID"] = CHARACTERISTIC_UUID;
 }
 } // namespace beegl

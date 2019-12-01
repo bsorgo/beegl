@@ -132,9 +132,6 @@ void Runtime::initialize()
 
 void Runtime::webServerBind()
 {
-  m_server->getWebServer()->on("/info", HTTP_GET, [&](AsyncWebServerRequest *request) {
-    request->send(200, "text/plain", this->FIRMWAREVERSION);
-  });
   m_server->getWebServer()->on("/rest/reboot", HTTP_POST,
                                [](AsyncWebServerRequest *request) {
                                  ESP.restart();
@@ -291,5 +288,12 @@ SchEntryType Runtime::getCurrentSchedulerEntry()
   SchEntryType entry = {0, 0, 0, 0, false};
   btlog_d(TAG_SCHEDULER,"Returning default entry: -1;0:0;0:0;false");
   return entry;
+}
+
+void Runtime::getInfo(JsonObject &target)
+{
+  JsonObject info = target.createNestedObject("Runtime");
+  info["Safe mode"] = this->m_safeMode;
+  info["Firmware"] = this->FIRMWAREVERSION;
 }
 } // namespace beegl

@@ -34,7 +34,7 @@ WiFiBrokerInboundStrategy *WiFiBrokerInboundStrategy::createAndRegister(BeeGl *c
 }
 bool WiFiBrokerInboundStrategy::setup()
 {
-  sensorsHandler = new AsyncCallbackJsonWebHandler("/beegl/v1/measurements", [&](AsyncWebServerRequest *request, JsonVariant &json) {
+  sensorsHandler = new AsyncCallbackJsonWebHandler(WIFIBROKER_PATH, [&](AsyncWebServerRequest *request, JsonVariant &json) {
     JsonObject root = json.as<JsonObject>();
     m_broker->processMessage(root);
     request->send(200, "text/plain", "");
@@ -42,5 +42,11 @@ bool WiFiBrokerInboundStrategy::setup()
   m_server->getWebServer()->addHandler(sensorsHandler);
 
   return true;
+}
+
+void WiFiBrokerInboundStrategy::getInfo(JsonObject &target)
+{
+  JsonObject info = target.createNestedObject("WiFi HTTP broker");
+  info["Handler path"] = WIFIBROKER_PATH;
 }
 } // namespace beegl

@@ -48,7 +48,7 @@ public:
       m_broker = broker;
     }
     void onWrite(BLECharacteristic *pCharacteristic);
-
+    
   private:
     IBrokerProcessor *m_broker;
   };
@@ -59,6 +59,7 @@ public:
   virtual bool setup() override;
   const char getInboundType() const override { return 0x02; };
 
+  void getInfo(JsonObject &target) override;
 private:
   BLESensorCallback *m_bleCallback;
   BLEServer *pServer;

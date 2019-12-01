@@ -26,7 +26,7 @@
 #include <AsyncJson.h>
 
 #define TAG_WIFIBROKER "WIFIBROKER"
-
+#define WIFIBROKER_PATH "/beegl/v1/measurements"
 namespace beegl
 {
 class WiFiBrokerInboundStrategy : public BrokerInboundStrategy
@@ -37,6 +37,8 @@ public:
 
   virtual bool setup() override;
   const char getInboundType() const override { return 0x01; };
+
+  void getInfo(JsonObject &target) override;
 
 private:
   AsyncCallbackJsonWebHandler *sensorsHandler;

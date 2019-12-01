@@ -55,28 +55,27 @@ public:
     return true;
   }
 
-  JsonDocument *deserialize(const char *source)
+  bool deserialize(JsonDocument* doc, const char *source)
   {
-    StaticJsonDocument<MESSAGE_DOCUMENT_SIZE> *doc = new StaticJsonDocument<MESSAGE_DOCUMENT_SIZE>();
+    
     auto error = deserializeJson(*doc, source);
     if (error)
     {
-      btlog_e(TAG_MESSAGE, "Error deserializing:%s", error);
-      return NULL;
+      btlog_e(TAG_MESSAGE, "Error deserializing: %u", error);
+      return false;
     }
-    return doc;
+    return true;
   }
 
-  JsonDocument *deserialize(File &source)
+  bool deserialize(JsonDocument* doc,File &source)
   {
-    StaticJsonDocument<MESSAGE_DOCUMENT_SIZE> *doc = new StaticJsonDocument<MESSAGE_DOCUMENT_SIZE>();
     auto error = deserializeJson(*doc, source);
     if (error)
     {
-      btlog_e(TAG_MESSAGE, "Error deserializing:%s", error);
-      return NULL;
+      btlog_e(TAG_MESSAGE, "Error deserializing: %u", error);
+      return false;
     }
-    return doc;
+    return true;
   }
 };
 

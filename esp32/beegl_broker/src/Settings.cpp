@@ -66,6 +66,14 @@ void Settings::writeSettings(JsonObject &target, const JsonObject &input)
     }
 }
 
+void Settings::getInfo(JsonObject &target)
+{
+    for (int i = 0; i < settingHandlerCount; i++)
+    {
+        settingsHandlers[i]->getInfo(target);
+    }
+}
+
 void Settings::getSettingsPath(char *buffer)
 {
 

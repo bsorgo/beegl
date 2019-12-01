@@ -51,13 +51,14 @@ public:
   void modemOff();
   void suspend() override;
   void resume() override;
-  void modemPowerup();
+  bool modemPowerup();
   const char getInboundType() { return 0x0; }
   const char getOutboundType() { return 0x2; }
   const char *getName() { return "GSM/NB-IOT"; }
 
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
+  void getInfo(JsonObject &target) override;
 
   const char *getApn()
   {
@@ -94,6 +95,7 @@ private:
   char m_apn[33] = "internet";
   char m_apnUser[17] = "mobitel";
   char m_apnPass[17] = "internet";
+  char m_modemInfo[64] = "";
 
   bool gsmSetup();
   bool gprsSetup();

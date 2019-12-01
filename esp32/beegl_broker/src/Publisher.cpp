@@ -234,22 +234,34 @@ bool Publisher::publish()
       }
       backlogCount = NVS.getInt(BACKLOG_NVS);
       btlog_d(TAG_PUBLISHER, "Backlog count: %u", backlogCount);
-      long fileNumber = 0;
-      //
       while (connected && TimeManagement::getInstance()->isAbsoluteTime() && backlogCount > 0)
       {
-        fileNumber++;
         String backlogFilename = String(BACKLOG_DIR_PREFIX);
-        backlogFilename += fileNumber;
+        backlogFilename += backlogCount;
         backlogFilename += BACKLOG_EXTENSION;
+        
         File backlogFile = FILESYSTEM.open(backlogFilename, FILE_READ);
         if (backlogFile)
         {
-          JsonDocument *p = m_serializer.deserialize(backlogFile);
-
+          btlog_e(TAG_PUBLISHER, "Opening backlog file: %s", backlogFilename.c_str());
+          StaticJsonDocument<MESSAGE_DOCUMENT_SIZE>* doc = new StaticJsonDocument<MESSAGE_DOCUMENT_SIZE>();
+          bool res = m_serializer.deserialize(doc, backlogFile);
+          bool pres = false;
+          if(res)
+          {
+            pres = strategy->publishMessage(doc);
+            if(pres) 
+            {
+              m_successCnt++;
+            }
+            else
+            {
+              m_failCnt++;
+            }
+          }
           backlogFile.close();
-
-          if (strategy->publishMessage(p))
+          delete[] doc;
+          if (pres||!res)
           {
             if (!FILESYSTEM.remove(backlogFilename))
             {
@@ -262,7 +274,7 @@ bool Publisher::publish()
           {
             break;
           }
-          delete p;
+          
         }
         else
         {
@@ -272,7 +284,6 @@ bool Publisher::publish()
           NVS.setInt(BACKLOG_NVS, backlogCount);
         }
       }
-
       while (backMessage() != nullptr)
       {
         if (
@@ -283,7 +294,12 @@ bool Publisher::publish()
             backlogCount < MAX_BACKLOG)
         {
           storeToBacklog(backMessage());
+          m_failCnt++;
+        } else
+        {
+          m_successCnt++;
         }
+
         popMessage();
       }
       m_connection->suspend();
@@ -379,9 +395,16 @@ void Publisher::writeSettings(JsonObject &target, const JsonObject &input)
   Settings::merge(publisherSettings, input[STR_PUBLISHERSETTINGS]);
 }
 
+
+void Publisher::getInfo(JsonObject &target)
+{
+  JsonObject info = target.createNestedObject("Publisher");
+  info["Backlog count"] = NVS.getInt(BACKLOG_NVS);
+  info["Success publish count"] = m_successCnt;
+  info["Failed publish count"] = m_failCnt;
+}
 void Publisher::onShutdown()
 {
   storeAllToBacklog();
 }
-
 } // namespace beegl

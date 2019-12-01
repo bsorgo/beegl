@@ -67,6 +67,8 @@ public:
   void readSettings(const JsonObject &source) override;
   void writeSettings(JsonObject &target, const JsonObject &input) override;
 
+  void getInfo(JsonObject &target) override;
+
   void registerShutdownHandler(IShutdownHandler* handler);
   void executeShutdownHandlers();
   const struct SchEntryType *getSchEntries()

@@ -43,6 +43,17 @@ void SettingsManagement::webServerBind()
         request->send_P(200, "text/html", (char *)index_html_start);
     });
 
+      m_server->getWebServer()->on("/rest/info", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+
+        StaticJsonDocument<1024> jsonBuffer;
+        JsonObject root = jsonBuffer.to<JsonObject>();
+        this->m_settings->getInfo(root);
+        serializeJson(jsonBuffer, *response);
+        jsonBuffer.clear();
+        request->send(response);
+    });
+    
     m_server->getWebServer()->on("/rest/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SPIFFS, CONFIGJSON, String(), false);
     });
