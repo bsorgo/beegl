@@ -38,9 +38,9 @@ If you like **BeeGl**, give it a star, or fork it and contribute! If you find th
 - [TinyGSM](https://github.com/vshymanskyy) - forked - support SIM7020 (https://github.com/bsorgo/TinyGSM)
 - [Timer](https://github.com/brunocalou/Timer)
 - [ArduinoLorawan](https://github.com/mcci-catena/arduino-lorawan)
-- [ArduinoLorawan](https://github.com/mcci-catena/Catena-mcciadk.git) - forked (https://github.com/bsorgo/Catena-mcciadk.git)
-- [DS3231](https://github.com/NorthernWidget/DS3231
-- [CayenneLPP](https://github.com/ElectronicCats/CayenneLPP
+- [Mcciadk](https://github.com/mcci-catena/Catena-mcciadk.git) - forked ESP32 support (https://github.com/bsorgo/Catena-mcciadk.git)
+- [DS3231](https://github.com/NorthernWidget/DS3231)
+- [CayenneLPP](https://github.com/ElectronicCats/CayenneLPP)
 
 ### Server components
 
