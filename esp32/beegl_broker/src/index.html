@@ -677,40 +677,59 @@
                 document.getElementById("setPassword").value = json.setPwd;
 
                 document.getElementById("publisherProtocol").value = json.pubS.proto;
-
-                document.getElementById("scaleFactor").value = json.scaleS.f;
-                document.getElementById("scaleOffset").value = json.scaleS.off;
-                document.getElementById("scaleUnit").value = json.scaleS.u;
-
-                document.getElementById("wifiSSID").value = json.wifiS.ssid;
-                document.getElementById("wifiPassword").value = json.wifiS.pwd;
-                document.getElementById("wifiCustomIp").value = json.wifiS.cip;
-                document.getElementById("wifiIp").value = json.wifiS.ip
-                document.getElementById("wifiGateway").value = json.wifiS.gw;
-                document.getElementById("wifiNetmask").value = json.wifiS.nmsk;
-
-                document.getElementById("apPassword").value = json.apS.pwd;
-                document.getElementById("apIp").value = json.apS.ip;
-                document.getElementById("apGateway").value = json.apS.gw;
-                document.getElementById("apNetmask").value = json.apS.nmsk;
-
-                document.getElementById("gprsAPN").value = json.gprsS.apn;
-                document.getElementById("gprsUsername").value = json.gprsS.user;
-                document.getElementById("gprsPassword").value = json.gprsS.pwd;
-
-                document.getElementById("timeSource").value = json.timeS.tSrc;
-                document.getElementById("timeZone").value = json.timeS.zone;
-                document.getElementById("timeSZone").value = json.timeS.sZone;
-
-                document.getElementById("mqttServer").value = json.mqttS.server;
-                document.getElementById("mqttPort").value = json.mqttS.port;
-                document.getElementById("mqttUsername").value = json.mqttS.user;
-                document.getElementById("mqttPassword").value = json.mqttS.pwd;
-                document.getElementById("mqttTopic").value = json.mqttS.topic;
-
-                document.getElementById("loraDeviceEUI").value = json.loraS.deui;
-                document.getElementById("loraAppEUI").value = json.loraS.aeui;
-                document.getElementById("loraAppKey").value = json.loraS.akey;
+                if(typeof json.scaleS !=='undefined')
+                {
+                    document.getElementById("scaleFactor").value = json.scaleS.f;
+                    document.getElementById("scaleOffset").value = json.scaleS.off;
+                    document.getElementById("scaleUnit").value = json.scaleS.u;
+                }
+                
+                if(typeof json.wifiS !=='undefined')
+                {
+                    document.getElementById("wifiSSID").value = json.wifiS.ssid;
+                    document.getElementById("wifiPassword").value = json.wifiS.pwd;
+                    document.getElementById("wifiCustomIp").value = json.wifiS.cip;
+                    document.getElementById("wifiIp").value = json.wifiS.ip
+                    document.getElementById("wifiGateway").value = json.wifiS.gw;
+                    document.getElementById("wifiNetmask").value = json.wifiS.nmsk;
+                }
+                if(typeof json.apS !=='undefined')
+                {
+                    document.getElementById("apPassword").value = json.apS.pwd;
+                    document.getElementById("apIp").value = json.apS.ip;
+                    document.getElementById("apGateway").value = json.apS.gw;
+                    document.getElementById("apNetmask").value = json.apS.nmsk;
+                }
+                
+                if(typeof json.gprsS !=='undefined')
+                {
+                    document.getElementById("gprsAPN").value = json.gprsS.apn;
+                    document.getElementById("gprsUsername").value = json.gprsS.user;
+                    document.getElementById("gprsPassword").value = json.gprsS.pwd;
+                }
+                
+                if(typeof json.timeS !=='undefined')
+                {
+                    document.getElementById("timeSource").value = json.timeS.tSrc;
+                    document.getElementById("timeZone").value = json.timeS.zone;
+                    document.getElementById("timeSZone").value = json.timeS.sZone;
+                }
+                if(typeof json.mqttS !=='undefined')
+                {
+                    document.getElementById("mqttServer").value = json.mqttS.server;
+                    document.getElementById("mqttPort").value = json.mqttS.port;
+                    document.getElementById("mqttUsername").value = json.mqttS.user;
+                    document.getElementById("mqttPassword").value = json.mqttS.pwd;
+                    document.getElementById("mqttTopic").value = json.mqttS.topic;
+                }
+                
+                if(typeof json.loraS !=='undefined')
+                {
+                    document.getElementById("loraDeviceEUI").value = json.loraS.deui;
+                    document.getElementById("loraAppEUI").value = json.loraS.aeui;
+                    document.getElementById("loraAppKey").value = json.loraS.akey;       
+                }    
+                
 
                 for (i = 0; i < json.schS.length; i++) {
                     var k = json.schS[i];
@@ -1120,4 +1139,4 @@
 </body>
 
 </html>
-                                   
+                                             

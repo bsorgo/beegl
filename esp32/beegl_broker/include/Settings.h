@@ -20,7 +20,7 @@
 #ifndef BeescaleSettings_h
 #define BeescaleSettings_h
 
-#define CONFIG_BUFFER 2600
+#define CONFIG_BUFFER 2800
 
 #define STR_DEVICEID "id"
 #define STR_REFRESH "refresh"
