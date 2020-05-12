@@ -5,7 +5,7 @@ Beehive monitoring system based on _ESP32 based boards_ and _Node Red_.  Main sy
 # Main features
 
 - Measures weight, temperature and humidity 
-- Outbound communication through WiFi and GPRS (2G)
+- Outbound communication through WiFi, GPRS (2G), NB-IoT, LoraWan
 - Inbound communication using WiFi and Bluetooth (BLE)
 - Web based management API - Web GUI and rest
 - Pull/push OTA and setting updates
@@ -26,7 +26,7 @@ If you like **BeeGl**, give it a star, or fork it and contribute! If you find th
 
 ### Broker component
 
-- [ArduinoHTTPClient](https://github.com/arduino-libraries/ArduinoHttpClient) - forked (https://github.com/bsorgo/ArduinoHttpClient) - pending fixes for ESP32 environment
+- [ArduinoHTTPClient](https://github.com/arduino-libraries/ArduinoHttpClient) 
 - [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
 - [AsyncTcp](https://github.com/me-no-dev/AsyncTCP)
 - [DHT sensor library for ESPx](https://github.com/beegee-tokyo/DHTesp)
@@ -35,7 +35,12 @@ If you like **BeeGl**, give it a star, or fork it and contribute! If you find th
 - [PubSubClient](https://github.com/knolleary/pubsubclient)
 - [Time](https://github.com/PaulStoffregen/Time) - forked (https://github.com/bsorgo/Time) 
 - [Timezone](https://github.com/JChristensen/Timezone)
-- [TinyGSM](https://github.com/vshymanskyy)
+- [TinyGSM](https://github.com/vshymanskyy) - forked - support SIM7020 (https://github.com/bsorgo/TinyGSM)
+- [Timer](https://github.com/brunocalou/Timer)
+- [ArduinoLorawan](https://github.com/mcci-catena/arduino-lorawan)
+- [Mcciadk](https://github.com/mcci-catena/Catena-mcciadk.git) - forked ESP32 support (https://github.com/bsorgo/Catena-mcciadk.git)
+- [DS3231](https://github.com/NorthernWidget/DS3231)
+- [CayenneLPP](https://github.com/ElectronicCats/CayenneLPP)
 
 ### Server components
 
